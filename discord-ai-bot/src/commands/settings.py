@@ -1,6 +1,6 @@
 """
-AI Settings Command - /ai setting
-Mod-only command with dropdown menus for server configuration
+Ophelia AI 2.0 Settings Command - /ai setting
+Owner & Mod-only command with dropdown menus for server configuration
 """
 import discord
 from discord import app_commands
@@ -8,7 +8,7 @@ from discord.ext import commands
 from typing import Optional
 import logging
 
-from config.settings import DEFAULT_GUILD_SETTINGS, SYSTEM_PROMPTS
+from config.settings import DEFAULT_GUILD_SETTINGS, SYSTEM_PROMPTS, is_owner, config
 from src.utils.database import get_db
 from src.utils.cache import get_cache
 from src.handlers.ai_handler import get_ai_handler
@@ -17,7 +17,7 @@ logger = logging.getLogger("Settings")
 
 
 def check_is_mod():
-    """Check if user has moderation permissions"""
+    """Check if user has moderation permissions OR is owner"""
     async def predicate(interaction: discord.Interaction) -> bool:
         if not interaction.guild:
             await interaction.response.send_message(
@@ -25,14 +25,19 @@ def check_is_mod():
             )
             return False
         
-        # Check if user is admin or has manage_server permission
         user = interaction.user
+        
+        # Owners always have access!
+        if is_owner(user.id):
+            return True
+        
+        # Check mod permissions
         is_admin = interaction.guild.owner_id == user.id
         has_mod_perms = user.guild_permissions.manage_guild or user.guild_permissions.administrator
         
         if not (is_admin or has_mod_perms):
             await interaction.response.send_message(
-                "❌ Sirf Mods/Admins hi settings change kar sakte hain!", ephemeral=True
+                "❌ Sirf Mods/Admins/Owners hi settings change kar sakte hain!", ephemeral=True
             )
             return False
         
@@ -42,7 +47,7 @@ def check_is_mod():
 
 
 class SettingsView(discord.ui.View):
-    """Interactive settings view with dropdowns and buttons"""
+    """Interactive settings view with dropdowns and buttons - Ophelia AI 2.0"""
     
     def __init__(self, guild_id: int, original_response: discord.Message = None):
         super().__init__(timeout=300)  # 5 minute timeout
@@ -113,9 +118,14 @@ class SettingsView(discord.ui.View):
                 value="memory"
             ),
             discord.SelectOption(
-                label="⚡ Meta Commands",
-                description="AI ko commands use karne do",
-                value="meta_commands"
+                label="⚡ Natural Commands",
+                description="Natural language commands on/off",
+                value="natural_commands"
+            ),
+            discord.SelectOption(
+                label="🔒 Require Mention",
+                description="Mention zaroori hai ya nahi",
+                value="require_mention"
             ),
         ]
     )
@@ -137,7 +147,6 @@ class SettingsView(discord.ui.View):
             await interaction.response.edit_message(embed=embed, view=self)
         
         elif selected == "temperature":
-            # Show temperature modal
             modal = TemperatureModal(self.guild_id, self)
             await interaction.response.send_modal(modal)
         
@@ -198,15 +207,28 @@ class SettingsView(discord.ui.View):
             )
             await interaction.response.edit_message(embed=embed, view=self)
         
-        elif selected == "meta_commands":
-            new_val = not settings.get("meta_commands_enabled", True)
-            await self._save_settings(meta_commands_enabled=new_val)
+        elif selected == "natural_commands":
+            new_val = not settings.get("natural_language_commands", True)
+            await self._save_settings(natural_language_commands=new_val)
             
             embed = self._create_settings_embed(await self._get_settings())
-            status = "**ON** ⚡" if new_val else "**OFF** 🚫"
+            status = "**ON** 🗣️" if new_val else "**OFF** 🔕"
             embed.add_field(
-                name="⚡ Meta Commands Updated",
-                value=f"AI ko commands use karne ki permission {status}",
+                name="⚡ Natural Commands Updated",
+                value=f"Natural language commands ab {status}",
+                inline=False
+            )
+            await interaction.response.edit_message(embed=embed, view=self)
+        
+        elif selected == "require_mention":
+            new_val = not settings.get("require_mention", True)
+            await self._save_settings(require_mention=new_val)
+            
+            embed = self._create_settings_embed(await self._get_settings())
+            status = "**ON** ✅" if new_val else "**OFF** ❌"
+            embed.add_field(
+                name="🔒 Mention Requirement Updated",
+                value=f"Mention ab {'zaroori' if new_val else 'zaroori NAHI'} hai (owners ko hamesha kaam karega!)",
                 inline=False
             )
             await interaction.response.edit_message(embed=embed, view=self)
@@ -217,7 +239,8 @@ class SettingsView(discord.ui.View):
         ping_emoji = "✅" if settings.get("ping_reply_enabled", True) else "❌"
         everyone_emoji = "✅" if settings.get("everyone_ping_reply", False) else "❌"
         memory_emoji = "🟢" if settings.get("memory_enabled", True) else "🔴"
-        meta_emoji = "✅" if settings.get("meta_commands_enabled", True) else "❌"
+        natural_emoji = "✅" if settings.get("natural_language_commands", True) else "❌"
+        mention_emoji = "✅" if settings.get("require_mention", True) else "❌"
         
         ai_channels = settings.get("ai_channel_ids", [])
         channel_list = "\n".join([f"<#{cid}>" for cid in ai_channels]) if ai_channels else "*None*"
@@ -226,9 +249,9 @@ class SettingsView(discord.ui.View):
         personality_emojis = {"fun": "😄", "professional": "💼", "casual": "🙂"}
         
         embed = discord.Embed(
-            title="⚙️ AI Server Settings",
+            title="⚙️ Ophelia AI 2.0 - Server Settings",
             color=discord.Color.blurple(),
-            description=f"**Server ID:** `{self.guild_id}`\nDropdown se setting choose karo!"
+            description=f"**Server ID:** `{self.guild_id}`\n👑 **Owners**: <@1169492860278669312>, <@1463113729959919801>, <@1443836576802013316>\n\nDropdown se setting choose karo!"
         )
         
         embed.add_field(
@@ -264,8 +287,13 @@ class SettingsView(discord.ui.View):
         )
         
         embed.add_field(
-            name=f"⚡ Meta Commands: {meta_emoji}",
-            value="AI commands execute kar sake",
+            name=f"⚡ Natural Commands: {natural_emoji}",
+            value="'Avatar dikhao' jaise commands samjhega",
+            inline=True
+        )
+        embed.add_field(
+            name=f"🔒 Require Mention: {mention_emoji}",
+            value="Mention zaroori? (Owners ko nahi!)",
             inline=True
         )
         embed.add_field(
@@ -283,7 +311,8 @@ class SettingsView(discord.ui.View):
                 inline=False
             )
         
-        embed.set_footer(text="Settings automatically save ho jaati hain! • Dropdown se option choose karo")
+        embed.set_footer(text="Settings automatically save ho jaati hain! • Owners ko full access!")
+        embed.set_thumbnail(url="https://cdn.discordapp.com/embed/avatars/0.png")
         
         return embed
 
@@ -476,19 +505,19 @@ class PersonalitySelect(discord.ui.View):
 
 @app_commands.guild_only()
 class SettingsCog(commands.GroupCog, group_name="ai"):
-    """AI Settings commands group"""
+    """AI Settings commands group - Ophelia AI 2.0"""
     
     def __init__(self, bot):
         self.bot = bot
     
-    @app_commands.command(name="setting", description="⚙️ AI Bot Settings (Mods only!)")
+    @app_commands.command(name="setting", description="⚙️ AI Bot Settings (Mods/Owners only!)")
     @check_is_mod()
     async def ai_setting(self, interaction: discord.Interaction):
         """
         Main settings command - shows interactive settings panel.
-        Only users with Manage Server permission can use this.
+        Only users with Manage Server permission or owners can use this.
         """
-        logger.info(f"{interaction.user} opened settings for guild {interaction.guild.id}")
+        logger.info(f"🎛️ {interaction.user} opened settings for guild {interaction.guild.id}")
         
         # Create initial embed with current settings
         ai = get_ai_handler()
@@ -500,7 +529,7 @@ class SettingsCog(commands.GroupCog, group_name="ai"):
         await interaction.response.send_message(
             embed=embed,
             view=view,
-            ephemeral=False  # Visible to all so mods can see changes
+            ephemeral=False
         )
     
     @app_commands.command(name="status", description="📊 Current AI Status dekho")
@@ -512,17 +541,48 @@ class SettingsCog(commands.GroupCog, group_name="ai"):
         enabled = settings.get("enabled", True)
         status_emoji = "🟢 Online" if enabled else "🔴 Offline"
         personality = settings.get("personality", "fun")
+        natural_on = settings.get("natural_language_commands", True)
         
         embed = discord.Embed(
-            title=f"🤖 AI Bot Status: {status_emoji}",
+            title=f"🤖 Ophelia AI 2.0 Status: {status_emoji}",
             color=discord.Color.green() if enabled else discord.Color.red()
         )
         
         embed.add_field(name="Personality", value=personality.title(), inline=True)
         embed.add_field(name="Temperature", value=str(settings.get('temperature', 1.02)), inline=True)
         embed.add_field(name="Memory", value="🟢 On" if settings.get('memory_enabled') else "🔴 Off", inline=True)
+        embed.add_field(name="Natural Commands", value="✅ On" if natural_on else "❌ Off", inline=True)
+        embed.add_field(name="You're Owner?", value="👑 YES!" if is_owner(interaction.user.id) else "❌ No", inline=True)
         
-        embed.set_footer(text=f"Use /ai setting for more options (Mods only)")
+        embed.set_footer(text="Use /ai setting for more options | Natural commands: 'avatar dikhao' etc.")
+        
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+    
+    @app_commands.command(name="owners", description="👑 Bot Owners dekho")
+    async def show_owners(self, interaction: discord.Interaction):
+        """Show who the bot owners are"""
+        embed = discord.Embed(
+            title="👑 Ophelia AI 2.0 Owners",
+            description="Ye log is bot ke **SUPER OWNERS** hain - unko full power hai!",
+            color=discord.Color.gold()
+        )
+        
+        for owner_id in config.owner_ids:
+            try:
+                owner = await self.bot.fetch_user(owner_id)
+                embed.add_field(
+                    name=f"👑 {owner.name}#{owner.discriminator}",
+                    value=f"`ID: {owner_id}`",
+                    inline=True
+                )
+            except:
+                embed.add_field(
+                    name="👑 Unknown Owner",
+                    value=f"`ID: {owner_id}`",
+                    inline=True
+                )
+        
+        embed.set_footer(text="Owners can do ANYTHING with this bot!")
         
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
@@ -530,4 +590,4 @@ class SettingsCog(commands.GroupCog, group_name="ai"):
 async def setup(bot):
     """Setup function to add the cog to bot"""
     await bot.add_cog(SettingsCog(bot))
-    logger.info("✅ Settings Cog loaded!")
+    logger.info("✅ Ophelia AI 2.0 Settings Cog loaded!")

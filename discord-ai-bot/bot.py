@@ -1,6 +1,6 @@
 """
-Main Discord AI Bot
-Complete Discord bot with Groq API integration, memory, and server settings
+Ophelia AI 2.0 - Advanced Discord Bot
+Natural Language Commands • Full Discord API • Owner System
 """
 import discord
 from discord.ext import commands
@@ -12,13 +12,14 @@ import os
 # Add project root to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from config.settings import config
+from config.settings import config, is_owner, get_owners
 from src.utils.database import init_database, get_db
 from src.utils.cache import init_cache, get_cache
 from src.utils.groq_client import init_groq_client, get_groq_client
 from src.handlers.ai_handler import init_ai_handler, get_ai_handler
 from src.handlers.message_handler import init_message_handler, get_message_handler
 from src.utils.meta_commands import init_meta_commands
+from src.utils.natural_commands import init_natural_commands
 
 # Configure logging
 logging.basicConfig(
@@ -26,35 +27,39 @@ logging.basicConfig(
     format='%(asctime)s | %(name)s | %(levelname)s | %(message)s',
     datefmt='%Y-%m-%d %H:%M:%S'
 )
-logger = logging.getLogger("Bot")
+logger = logging.getLogger("OpheliaAI")
 
 
-class AIBot(commands.Bot):
-    """Main AI Bot class with enhanced functionality"""
+class OpheliaBot(commands.Bot):
+    """Ophelia AI 2.0 - Advanced Discord Bot with Natural Language Commands"""
     
     def __init__(self):
-        # Set up intents - we need all of them for full functionality
+        # Set up intents - we need ALL of them for full functionality!
         intents = discord.Intents.default()
-        intents.message_content = True  # Read message content
-        intents.members = True  # Track members for memory
-        intents.reactions = True  # Handle reactions
-        intents.presences = True  # User presence (optional)
+        intents.message_content = True      # Read message content (CRITICAL for natural language)
+        intents.members = True              # Track members for memory & info
+        intents.reactions = True            # Handle reactions
+        intents.presences = True            # User presence info
+        intents.moderation = True           # For timeout/kick/ban actions
         
         super().__init__(
-            command_prefix="!",  # Legacy prefix (mainly using slash commands)
+            command_prefix="!",            # Legacy prefix (mainly using slash commands)
             intents=intents,
-            help_command=None,  # We'll create custom help
+            help_command=None,              # Custom help command
             activity=discord.Activity(
                 type=discord.ActivityType.playing,
-                name="AI Chat | /ai help"
-            )
+                name="Natural Commands | @me bolna!"
+            ),
+            owner_ids=config.owner_ids      # Set owners for bot.owner_id checks
         )
         
         self.initialized = False
+        self.start_time = None
     
     async def setup_hook(self):
         """Called when bot is starting up - initialize all components"""
-        logger.info("🚀 Bot starting up...")
+        logger.info("🚀 Ophelia AI 2.0 starting up...")
+        self.start_time = datetime.utcnow()
         
         try:
             # Validate configuration
@@ -65,6 +70,9 @@ class AIBot(commands.Bot):
             if not config.has_valid_groq_keys:
                 logger.error("❌ No valid Groq API keys provided!")
                 return
+            
+            # Log owner IDs
+            logger.info(f"👑 Owners: {config.owner_ids}")
             
             # Initialize database connection
             logger.info("📦 Connecting to Supabase...")
@@ -91,11 +99,15 @@ class AIBot(commands.Bot):
             # Initialize AI handler
             ai = init_ai_handler()
             
-            # Initialize message handler
+            # Initialize message handler (with natural command support!)
             msg_handler = init_message_handler(self)
             
-            # Initialize meta-command system
+            # Initialize meta-command system (legacy /cmd support)
             meta = init_meta_commands(self)
+            
+            # Initialize NATURAL LANGUAGE COMMAND SYSTEM! 🧠
+            logger.info("🗣️ Initializing natural language command parser...")
+            natural = init_natural_commands(self)
             
             # Load cogs/commands
             logger.info("📦 Loading commands...")
@@ -103,7 +115,9 @@ class AIBot(commands.Bot):
             await self.load_extension("src.commands.utility")
             
             self.initialized = True
-            logger.info("✅ All systems initialized!")
+            logger.info("=" * 50)
+            logger.info("✅ Ophelia AI 2.0 FULLY INITIALIZED!")
+            logger.info("=" * 50)
             
         except Exception as e:
             logger.error(f"❌ Error during startup: {e}")
@@ -116,17 +130,19 @@ class AIBot(commands.Bot):
             logger.error("❌ Bot not properly initialized!")
             return
         
-        logger.info("=" * 50)
-        logger.info(f"🤖 {self.user.name} is online!")
+        logger.info("=" * 60)
+        logger.info(f"🤖 **OPHELIA AI 2.0** IS ONLINE!")
         logger.info(f"📊 Serving {len(self.guilds)} servers")
         logger.info(f"🆔 Bot ID: {self.user.id}")
-        logger.info("=" * 50)
+        logger.info(f"👑 Owners: {len(config.owner_ids)} users with FULL ACCESS")
+        logger.info(f"🗣️ Natural Language Commands: ENABLED")
+        logger.info("=" * 60)
         
-        # Update presence
+        # Update presence with cool status
         await self.change_presence(
             activity=discord.Activity(
                 type=discord.ActivityType.playing,
-                name="AI Chat | @me ya /ai help"
+                name="Bolo 'avatar dikhao' ya 'timeout do' | @me"
             )
         )
     
@@ -134,15 +150,20 @@ class AIBot(commands.Bot):
         """
         Main message handler.
         Processes incoming messages and triggers AI responses when appropriate.
+        Supports natural language commands!
         """
         # Don't process until fully initialized
         if not self.initialized:
             return
         
+        # Ignore bots (including ourselves)
+        if message.author.bot:
+            return
+        
         # Process regular commands first (prefix commands like !help)
         await self.process_commands(message)
         
-        # Then handle AI message processing
+        # Then handle AI message processing (includes natural commands!)
         try:
             handler = get_message_handler()
             await handler.handle_message(message)
@@ -167,23 +188,40 @@ class AIBot(commands.Bot):
             
             if channel:
                 embed = discord.Embed(
-                    title="🤖 Hello! Main aa gaya!",
+                    title="🤖✨ OPHELIA AI 2.0 AA GAYI! ✨",
                     description=(
-                        "Main **AI Bot** hoon!\n\n"
-                        "**Kaise use karo:**\n"
-                        "• Mere ko **@mention** karo reply ke liye\n"
-                        "• `/ai setting` se settings change karo (Mods only)\n"
-                        "• `/ai status` se current status dekho\n\n"
-                        "**Features:**\n"
-                        "• Long-term memory 🧠\n"
-                        "• Custom personality 😄\n"
-                        "• Meta-commands ⚡\n"
-                        "• Server-specific settings ⚙️\n\n"
-                        "Mazaa aayega! 😎"
+                        "Main **Ophelia AI 2.0** hoon - sabse advanced Discord AI!\n\n"
+                        "**🔥 Kaise use karo:**\n"
+                        "• Mere ko **@mention** karo ya seedha bolo\n"
+                        "• **Natural Language Commands** - koi syntax nahi!\n"
+                        "  `Avatar dikhao` | `Timeout do` | `Server info dikhao`\n\n"
+                        "**⚙️ Settings (Mods/Owners):**\n"
+                        "• `/ai setting` - Full settings panel\n"
+                        "• `/ai status` - Current status\n\n"
+                        "**👑 OWNER POWERS:**\n"
+                        "• Kick/Ban/Timeout/Mute users\n"
+                        "• Create channels & roles\n"
+                        "• Change bot status/nickname\n"
+                        "• Full Discord API access!\n\n"
+                        "**💡 Examples:**\n"
+                        "`@Ophelia avatar dikhao @user`\n"
+                        "`@Ophelia isko timeout do 10 min`\n"
+                        "`@Ophelia status set karo playing Minecraft`\n"
+                        "`@Ophelia channel banao memes`\n\n"
+                        "Mazaa aayega! 😎🔥"
                     ),
-                    color=discord.Color.blurple()
+                    color=discord.Color.magenta()  # Ophelia's color!
                 )
-                embed.set_footer(text="Use /ai setting to configure me!")
+                
+                embed.add_field(
+                    name="⚡ Natural Commands",
+                    value="Koi `/cmd` nahi - seedha **bol do** aur main samajh jaati hoon!",
+                    inline=False
+                )
+                
+                embed.set_footer(text="Made with ❤️ | Use /ai help for more info")
+                embed.set_thumbnail(url=self.user.avatar.url if self.user.avatar else None)
+                
                 await channel.send(embed=embed)
                 
         except Exception as e:
@@ -197,6 +235,8 @@ class AIBot(commands.Bot):
             await ctx.send("❌ Tere paas permission nahi hai bhai!", ephemeral=True)
         elif isinstance(error, commands.MissingRequiredArgument):
             await ctx.send(f"❌ Missing argument: `{error.param.name}`", ephemeral=True)
+        elif isinstance(error, commands.NotOwner):
+            await ctx.send("❌ Sirf owners ye command use kar sakte hain!", ephemeral=True)
         else:
             logger.error(f"Command error: {error}")
             await ctx.send(f"❌ Error: {str(error)}", ephemeral=True)
@@ -205,12 +245,12 @@ class AIBot(commands.Bot):
 async def main():
     """Main entry point"""
     # Create and run bot
-    bot = AIBot()
+    bot = OpheliaBot()
     
     try:
         await bot.start(config.token)
     except KeyboardInterrupt:
-        logger.info("🛑 Shutting down...")
+        logger.info("🛑 Shutting down Ophelia AI 2.0...")
         await bot.close()
     except discord.LoginFailure:
         logger.error("❌ Invalid Discord token! Check your .env file")
@@ -222,3 +262,7 @@ async def main():
 if __name__ == "__main__":
     # Run the bot
     asyncio.run(main())
+
+
+# Import datetime for start_time
+from datetime import datetime

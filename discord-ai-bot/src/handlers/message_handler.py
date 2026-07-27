@@ -1,6 +1,6 @@
 """
-Message Handler - Processes incoming messages and triggers AI responses
-Handles ping detection, AI channels, reply mode, etc.
+Advanced Message Handler for Ophelia AI 2.0
+Processes incoming messages with Natural Language Command support
 """
 import discord
 from discord.ext import commands
@@ -8,19 +8,20 @@ import logging
 import asyncio
 from typing import Optional
 
-from config.settings import DEFAULT_GUILD_SETTINGS
+from config.settings import DEFAULT_GUILD_SETTINGS, is_owner
 from src.handlers.ai_handler import get_ai_handler
 from src.utils.cache import get_cache
+from src.utils.natural_commands import get_natural_parser
 
 logger = logging.getLogger("MessageHandler")
 
 
 class MessageHandler:
-    """Handles all incoming message processing"""
+    """Advanced message handler with natural command support"""
     
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        self.processing_messages = set()  # Track messages being processed to avoid duplicates
+        self.processing_messages = set()  # Track messages being processed
     
     async def should_respond(self, message: discord.Message) -> tuple[bool, str]:
         """
@@ -31,16 +32,18 @@ class MessageHandler:
         if message.author.bot:
             return False, "bot_message"
         
-        # Only respond in guilds (servers), not DMs for now
+        # DMs - always respond (owners get full power)
         if not message.guild:
-            return False, "dm_message"
+            return True, "dm_message"
         
         ai = get_ai_handler()
         settings = await ai.get_guild_settings(message.guild.id)
         
         # Check if AI is enabled for this guild
         if not settings.get("enabled", True):
-            return False, "ai_disabled"
+            # But owners can always use it!
+            if not is_owner(message.author.id):
+                return False, "ai_disabled"
         
         # Check if message is in an AI channel (auto-reply without ping)
         ai_channel_ids = settings.get("ai_channel_ids", [])
@@ -54,7 +57,6 @@ class MessageHandler:
         is_mentioned = self.bot.user in message.mentions
         
         if is_mentioned:
-            # Bot was mentioned - check if ping reply enabled
             if settings.get("ping_reply_enabled", True):
                 return True, "mention"
             else:
@@ -65,14 +67,17 @@ class MessageHandler:
             if "@everyone" in message.content or "@here" in message.content:
                 return True, "everyone_ping"
         
-        # If mention required but no mention, don't respond
+        # Owners don't need mention in servers where bot is active
+        if is_owner(message.author.id) and settings.get("enabled", True):
+            return True, "owner_command"
+        
         if require_mention and not is_mentioned:
             return False, "no_mention_required"
         
         return False, "no_trigger"
     
     async def handle_message(self, message: discord.Message):
-        """Main message handler - processes and responds if needed"""
+        """Main message handler with natural command processing"""
         try:
             # Quick check if we should respond
             should_respond, reason = await self.should_respond(message)
@@ -88,37 +93,78 @@ class MessageHandler:
             self.processing_messages.add(msg_key)
             
             logger.info(
-                f"Processing message from {message.author} in #{message.channel.name} "
+                f"📩 Processing from {message.author} in #{getattr(message.channel, 'name', 'DM')} "
                 f"(reason: {reason})"
             )
             
             # Show typing indicator
             async with message.channel.typing():
-                # Generate AI response
+                # ===== FIRST: Try Natural Language Commands =====
+                try:
+                    natural_parser = get_natural_parser()
+                    cmd_response, was_cmd, cmd_embed = await natural_parser.process_message(
+                        message=message.content,
+                        guild=message.guild,
+                        channel=message.channel,
+                        author=message.author,
+                        referenced_message=message.reference.message_id if message.reference else None
+                    )
+                    
+                    # If referenced message exists, fetch it
+                    ref_msg = None
+                    if message.reference:
+                        try:
+                            ref_msg = await message.channel.fetch_message(message.reference.message_id)
+                            cmd_response, was_cmd, cmd_embed = await natural_parser.process_message(
+                                message=message.content,
+                                guild=message.guild,
+                                channel=message.channel,
+                                author=message.author,
+                                referenced_msg=ref_msg
+                            )
+                        except:
+                            pass
+                    
+                    if was_cmd and cmd_response:
+                        # Command was executed!
+                        logger.info(f"⚡ Natural command executed by {message.author}")
+                        
+                        if cmd_embed:
+                            await message.reply(cmd_response, embed=cmd_embed, mention_author=False)
+                        else:
+                            await message.reply(cmd_response, mention_author=False)
+                        
+                        self.processing_messages.discard(msg_key)
+                        return
+                        
+                except Exception as e:
+                    logger.debug(f"Not a natural command: {e}")
+                
+                # ===== THEN: Normal AI Chat Response =====
                 ai = get_ai_handler()
                 
                 response = await ai.generate_response(
-                    guild_id=message.guild.id,
+                    guild_id=message.guild.id if message.guild else 0,
                     channel_id=message.channel.id,
                     user_id=message.author.id,
                     user_message=self._clean_message_content(message),
                     username=str(message.author)
                 )
                 
-                # Send response with proper formatting
+                # Send response
                 await self._send_response(message, response)
             
-            # Remove from processing set after a delay
+            # Remove from processing set
             self.processing_messages.discard(msg_key)
             
         except Exception as e:
-            logger.error(f"Error handling message: {e}")
+            logger.error(f"❌ Error handling message: {e}")
+            import traceback
+            traceback.print_exc()
             
-            # Try to send error message
             try:
-                if msg_key in self.processing_messages:
-                    self.processing_messages.discard(msg_key)
-                await message.reply(f"😅 Arre bhai, kuch error aa gaya! Try again karo.")
+                self.processing_messages.discard(msg_key)
+                await message.reply(f"😅 Arre yaar, kuch error aa gaya! Try again karo.\n`{str(e)[:100]}`")
             except:
                 pass
     
@@ -130,8 +176,7 @@ class MessageHandler:
         content = message.content
         
         # Remove bot mention from content so it's not sent to API
-        if self.bot.user.mentioned_in(message):
-            # Remove the mention but keep everything else
+        if message.guild and self.bot.user.mentioned_in(message):
             for mention in message.mentions:
                 if mention.id == self.bot.user.id:
                     content = content.replace(mention.mention, "").strip()
@@ -141,64 +186,55 @@ class MessageHandler:
         while "  " in content:
             content = content.replace("  ", " ")
         
-        return content.strip() or "hi"  # Default to hi if empty
+        return content.strip() or "hi"
     
     async def _send_response(self, original_message: discord.Message, response: str):
         """
         Send AI response using Discord's reply feature.
-        Handles long messages, embeds when needed, etc.
+        Handles long messages, embeds when needed.
         """
-        max_length = 1900  # Leave some room for safety
+        max_length = 1900
         
-        # Check if response should be in embed (contains code blocks, etc.)
         should_embed = self._should_use_embed(response)
         
         if len(response) <= max_length:
-            # Single message response
             if should_embed:
                 embed = discord.Embed(
                     description=response,
                     color=discord.Color.blurple()
                 )
-                embed.set_footer(text=f"🤖 AI Response • Replying to {original_message.author.display_name}")
+                embed.set_footer(text=f"🤖 Ophelia AI 2.0 • Replying to {original_message.author.display_name}")
+                embed.set_thumbnail(url=self.bot.user.avatar.url if self.bot.user.avatar else None)
                 await original_message.reply(embed=embed, mention_author=False)
             else:
-                # Normal text reply - THIS IS THE KEY PART!
-                # Using reply=True makes Discord show it as a reply to the specific user
                 await original_message.reply(response, mention_author=False)
         else:
-            # Long response - split into chunks
             chunks = self._split_response(response, max_length)
             
             for i, chunk in enumerate(chunks):
                 if i == 0:
-                    # First chunk as reply
                     if should_embed:
                         embed = discord.Embed(description=chunk, color=discord.Color.blurple())
-                        embed.set_footer(text=f"🤖 AI Response ({i+1}/{len(chunks)})")
+                        embed.set_footer(text=f"🤖 Ophelia AI ({i+1}/{len(chunks)})")
                         await original_message.reply(embed=embed, mention_author=False)
                     else:
                         await original_message.reply(chunk, mention_author=False)
                 else:
-                    # Subsequent chunks as normal messages
                     if should_embed:
                         embed = discord.Embed(description=chunk, color=discord.Color.blurple())
-                        embed.set_footer(text=f"🤖 AI Response ({i+1}/{len(chunks)})")
+                        embed.set_footer(text=f"🤖 Ophelia AI ({i+1}/{len(chunks)})")
                         await original_message.channel.send(embed=embed)
                     else:
                         await original_message.channel.send(chunk)
                 
-                # Small delay between chunks
                 if i < len(chunks) - 1:
                     await asyncio.sleep(0.5)
     
     def _should_use_embed(self, response: str) -> bool:
         """Determine if response should be sent as embed"""
-        # Use embed if contains code blocks
         if "```" in response:
             return True
         
-        # Use embed if very long single line
         lines = response.split("\n")
         if any(len(line) > 100 for line in lines):
             return True
@@ -210,7 +246,6 @@ class MessageHandler:
         chunks = []
         current_chunk = ""
         
-        # Split by newlines first to preserve formatting
         lines = response.split("\n")
         
         for line in lines:
@@ -227,19 +262,19 @@ class MessageHandler:
         return chunks
 
 
-# Global message handler instance
+# Global instance
 message_handler: Optional[MessageHandler] = None
 
 
 def init_message_handler(bot: commands.Bot) -> MessageHandler:
-    """Initialize the global message handler"""
+    """Initialize global message handler"""
     global message_handler
     message_handler = MessageHandler(bot)
     return message_handler
 
 
 def get_message_handler() -> MessageHandler:
-    """Get the global message handler instance"""
+    """Get global message handler instance"""
     if message_handler is None:
         raise RuntimeError("Message handler not initialized!")
     return message_handler
