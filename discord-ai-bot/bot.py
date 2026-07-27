@@ -8,6 +8,7 @@ import logging
 import asyncio
 import sys
 import os
+from datetime import datetime
 
 # Add project root to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -263,6 +264,3 @@ if __name__ == "__main__":
     # Run the bot
     asyncio.run(main())
 
-
-# Import datetime for start_time
-from datetime import datetime
