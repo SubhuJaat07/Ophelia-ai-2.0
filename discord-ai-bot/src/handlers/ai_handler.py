@@ -1,6 +1,8 @@
 """
-AI Response Handler
-Manages conversation context, memory integration, and response generation
+AI Response Handler - UPGRADED with MULTI-MODEL SUPPORT
+- Different models for different tasks
+- Unique personality that makes Ophelia stand out!
+- Persistent memory integration
 """
 import logging
 from typing import List, Dict, Optional, Any
@@ -13,13 +15,18 @@ from config.settings import (
 )
 from src.utils.database import get_db
 from src.utils.cache import get_cache
-from src.utils.groq_client import get_groq_client
+from src.utils.groq_client import get_groq_client, TaskType
 
 logger = logging.getLogger("AIHandler")
 
 
 class AIHandler:
-    """Handles AI response generation with memory and context management"""
+    """
+    ENHANCED AI Handler with:
+    ✅ Multi-model smart routing
+    ✅ Unique personality system
+    ✅ Persistent memory support
+    """
     
     def __init__(self):
         self.db = None
@@ -39,22 +46,19 @@ class AIHandler:
         """Get guild settings from cache or database"""
         self._init_clients()
         
-        # Try cache first
         settings = self.cache.get_guild_settings(guild_id)
         if settings:
             return settings
         
-        # Fallback to database
         settings = await self.db.get_guild_settings(guild_id)
         if settings:
             self.cache.set_guild_settings(guild_id, settings)
             return settings
         
-        # Return default settings
         return DEFAULT_GUILD_SETTINGS.copy()
     
     async def build_system_prompt(self, guild_id: int) -> str:
-        """Build system prompt with personality and custom instructions"""
+        """Build UNIQUE system prompt with personality"""
         settings = await self.get_guild_settings(guild_id)
         
         personality_key = settings.get("personality", "fun")
@@ -69,24 +73,23 @@ class AIHandler:
         
         return system_prompt
     
-    # Groq FREE TIER LIMITS: 12,000 TPM (Tokens Per Minute)
-    # We must stay WELL UNDER this limit! Target: ~8,000 tokens max per request
+    # Token limits for Groq free tier
     MAX_TOTAL_CHARS = 6000  # ~2,000 tokens (safe for free tier)
-    MAX_MESSAGES = 8  # Fewer messages = fewer tokens
-    MAX_MESSAGE_LENGTH = 800  # Truncate long messages aggressively
-    MAX_SYSTEM_PROMPT_CHARS = 1500  # System prompt MUST be short!
+    MAX_MESSAGES = 8
+    MAX_MESSAGE_LENGTH = 800
+    MAX_SYSTEM_PROMPT_CHARS = 1500
     
     async def get_conversation_context(
         self,
         guild_id: int,
         channel_id: int,
         user_id: int,
-        max_messages: int = None  # Use default from class
+        max_messages: int = None,
+        task_type: TaskType = TaskType.CHAT
     ) -> List[Dict[str, str]]:
         """
-        Build conversation context including recent messages and relevant memories.
-        Includes smart truncation to prevent 413 (Request too large) errors.
-        Returns list of message dicts for the API.
+        Build conversation context with SMART MODEL SELECTION!
+        Returns messages optimized for the specific task type.
         """
         self._init_clients()
         
@@ -95,20 +98,19 @@ class AIHandler:
             
         messages = []
         
-        # Add system prompt (MUST be short for Groq free tier!)
+        # Add system prompt (shortened for token efficiency)
         system_prompt = await self.build_system_prompt(guild_id)
-        system_prompt = system_prompt[:self.MAX_SYSTEM_PROMPT_CHARS]  # Hard limit!
+        system_prompt = system_prompt[:self.MAX_SYSTEM_PROMPT_CHARS]
         if len(system_prompt) == self.MAX_SYSTEM_PROMPT_CHARS:
             system_prompt += "... [truncated]"
         messages.append({"role": "system", "content": system_prompt})
         
-        # Get relevant memories if enabled (but limit them!)
+        # Get relevant memories (if enabled) - from PERSISTENT storage!
         settings = await self.get_guild_settings(guild_id)
         if settings.get("memory_enabled", True):
-            memories = await self._get_relevant_memories(guild_id, user_id, limit=5)  # Reduced from 10
+            memories = await self._get_relevant_memories(guild_id, user_id, limit=5)
             if memories:
                 memory_context = self._format_memories(memories)
-                # Limit memory context size
                 if len(memory_context) > 1000:
                     memory_context = memory_context[:1000] + "... [truncated]"
                 messages.append({
@@ -116,11 +118,11 @@ class AIHandler:
                     "content": f"**What you remember about this server/user:**\n{memory_context}"
                 })
         
-        # Get recent conversation history
+        # Get conversation history - FROM PERSISTENT STORAGE (survives restarts!)
         conv_history = self.cache.get_conversation(channel_id)
         
         if not conv_history:
-            # Try loading from database
+            # Try database as fallback
             conv_history = await self.db.get_conversation_history(
                 guild_id, channel_id, limit=max_messages
             )
@@ -128,11 +130,9 @@ class AIHandler:
                 self.cache.set_conversation(channel_id, conv_history)
         
         if conv_history:
-            # Take last N messages and truncate each if needed
             recent_messages = conv_history[-max_messages:]
             for msg in recent_messages:
                 content = msg.get("content", "")
-                # Truncate long messages
                 if len(content) > self.MAX_MESSAGE_LENGTH:
                     content = content[:self.MAX_MESSAGE_LENGTH] + "... [truncated]"
                 messages.append({
@@ -140,27 +140,21 @@ class AIHandler:
                     "content": content
                 })
         
-        # FINAL SAFETY CHECK: Ensure total payload isn't too large
+        # Ensure payload limit
         messages = self._ensure_payload_limit(messages)
         
         return messages
     
     def _ensure_payload_limit(self, messages: List[Dict], max_chars: int = None) -> List[Dict]:
-        """
-        Ensure total message payload doesn't exceed Groq's limit.
-        Aggressively trims if needed to prevent 413 errors.
-        """
+        """Ensure total payload doesn't exceed Groq's limit"""
         if max_chars is None:
             max_chars = self.MAX_TOTAL_CHARS
         
-        # Calculate current size
         total_size = sum(len(m.get("content", "")) for m in messages)
         
-        # If within limit, return as-is
         if total_size <= max_chars:
             return messages
         
-        # Need to trim! Keep system prompt, trim history
         logger.warning(f"⚠️ Payload too large ({total_size} chars), trimming...")
         
         system_msgs = [m for m in messages if m.get("role") == "system"]
@@ -169,22 +163,19 @@ class AIHandler:
         available_space = max_chars - sum(len(m.get("content", "")) for m in system_msgs)
         
         if available_space <= 0:
-            # Even system prompts are too big, truncate them
-            logger.error("❌ System prompts too large, aggressive truncation needed!")
+            logger.error("❌ System prompts too large, using minimal prompt")
             return [{"role": "system", "content": "You are Ophelia AI, a helpful Discord bot."}]
         
-        # Trim from the end (keep most recent)
         trimmed_msgs = []
         current_size = 0
         
-        # Reverse to process oldest first, keep newest
         for msg in reversed(other_msgs):
             content = msg.get("content", "")
             if current_size + len(content) <= available_space:
-                trimmed_msgs.insert(0, msg)  # Insert at beginning to maintain order
+                trimmed_msgs.insert(0, msg)
                 current_size += len(content)
             else:
-                break  # Stop when we'd exceed limit
+                break
         
         final_messages = system_msgs + trimmed_msgs
         logger.info(f"✅ Trimmed payload from {total_size} to {sum(len(m.get('content','')) for m in final_messages)} chars")
@@ -195,11 +186,11 @@ class AIHandler:
         self,
         guild_id: int,
         user_id: int,
-        limit: int = 5  # Reduced from 10 to save space
+        limit: int = 5
     ) -> List[Dict]:
-        """Get relevant memories for context"""
+        """Get relevant memories - checks persistent storage first!"""
         try:
-            # Try cache first
+            # Check cache/persistent storage first
             cached = self.cache.get_memories(guild_id, user_id)
             if cached:
                 return cached
@@ -212,14 +203,14 @@ class AIHandler:
             
             return memories or []
         except Exception as e:
-            logger.error(f"Error fetching memories: {e}")
+            logger.debug(f"Memory fetch skipped: {e}")
             return []
     
     def _format_memories(self, memories: List[Dict]) -> str:
-        """Format memories for inclusion in prompt (compact!)"""
+        """Format memories compactly"""
         formatted = []
-        for mem in memories[:5]:  # Max 5 memories now
-            content = mem.get("content", "")[:150]  # Shorter truncation
+        for mem in memories[:5]:
+            content = mem.get("content", "")[:150]
             mem_type = mem.get("memory_type", "general")
             formatted.append(f"- [{mem_type}] {content}")
         
@@ -231,51 +222,56 @@ class AIHandler:
         channel_id: int,
         user_id: int,
         user_message: str,
-        username: str
+        username: str,
+        force_task_type: TaskType = None
     ) -> str:
         """
-        Generate AI response to a user message.
-        Handles streaming, memory storage, and error handling.
+        Generate AI response with MULTI-MODEL SMART ROUTING!
+        Automatically selects best model based on message type.
         """
         self._init_clients()
         
         try:
-            # Save user message to history
+            # Save user message to PERSISTENT memory
             await self._save_message(guild_id, channel_id, user_id, "user", user_message)
             
-            # Build conversation context
+            # Detect task type or use forced type
+            if force_task_type:
+                task_type = force_task_type
+            else:
+                task_type = self.groq.detect_task_type(user_message)
+            
+            # Build context
             messages = await self.get_conversation_context(
-                guild_id, channel_id, user_id
+                guild_id, channel_id, user_id, task_type=task_type
             )
             
             # Add current user message
-            messages.append({
-                "role": "user",
-                "content": user_message
-            })
+            messages.append({"role": "user", "content": user_message})
             
-            # Get guild settings for generation parameters
+            # Get settings
             settings = await self.get_guild_settings(guild_id)
             
-            # Cap max_tokens to stay within Groq free tier limits!
+            # Get model config for this task type
             requested_max_tokens = min(settings.get("max_tokens", 1024), 1024)
             
-            # Generate streaming response
+            # Generate response with SMART MODEL SELECTION! 🎯
             response_parts = []
             async for chunk in self.groq.chat_completion_stream(
                 messages=messages,
                 temperature=settings.get("temperature", 1.02),
                 max_tokens=requested_max_tokens,
-                top_p=settings.get("top_p", 1.0)
+                top_p=settings.get("top_p", 1.0),
+                task_type=task_type  # THIS IS THE MAGIC! ✨
             ):
                 response_parts.append(chunk)
             
             full_response = "".join(response_parts)
             
-            # Save assistant response to history
+            # Save assistant response to PERSISTENT memory
             await self._save_message(guild_id, channel_id, user_id, "assistant", full_response)
             
-            # Extract and save any important information as memories
+            # Extract and save important info as memories
             await self._extract_and_save_memories(
                 guild_id, user_id, user_message, full_response
             )
@@ -294,25 +290,21 @@ class AIHandler:
         user_message: str,
         username: str
     ):
-        """
-        Generate streaming AI response.
-        Yields chunks for real-time display.
-        """
+        """Generate streaming response with multi-model support"""
         self._init_clients()
         
         try:
-            # Save user message first
             await self._save_message(guild_id, channel_id, user_id, "user", user_message)
             
-            # Build context
+            # Auto-detect task type
+            task_type = self.groq.detect_task_type(user_message)
+            
             messages = await self.get_conversation_context(
-                guild_id, channel_id, user_id
+                guild_id, channel_id, user_id, task_type=task_type
             )
             messages.append({"role": "user", "content": user_message})
             
             settings = await self.get_guild_settings(guild_id)
-            
-            # Cap max_tokens for free tier safety
             requested_max_tokens = min(settings.get("max_tokens", 1024), 1024)
             
             full_response = ""
@@ -321,18 +313,14 @@ class AIHandler:
                 messages=messages,
                 temperature=settings.get("temperature", 1.02),
                 max_tokens=requested_max_tokens,
-                top_p=settings.get("top_p", 1.0)
+                top_p=settings.get("top_p", 1.0),
+                task_type=task_type
             ):
                 full_response += chunk
                 yield chunk
             
-            # Save complete response
             await self._save_message(guild_id, channel_id, user_id, "assistant", full_response)
-            
-            # Memory extraction
-            await self._extract_and_save_memories(
-                guild_id, user_id, user_message, full_response
-            )
+            await self._extract_and_save_memories(guild_id, user_id, user_message, full_response)
             
         except Exception as e:
             logger.error(f"Error in stream generation: {e}")
@@ -346,13 +334,13 @@ class AIHandler:
         role: str,
         content: str
     ):
-        """Save message to both cache and database"""
+        """Save message to BOTH cache AND disk (persistent!)"""
         self._init_clients()
         
-        # Update cache
+        # Update cache (this also saves to disk!)
         self.cache.add_to_conversation(channel_id, {"role": role, "content": content})
         
-        # Save to database (async, don't wait)
+        # Also save to database (async, don't wait - may fail gracefully)
         asyncio.create_task(
             self.db.save_message(guild_id, channel_id, user_id, role, content)
         )
@@ -364,14 +352,11 @@ class AIHandler:
         user_msg: str,
         ai_response: str
     ):
-        """Extract important info from conversations and store as memories"""
+        """Extract and save important info as long-term memories"""
         try:
-            # Simple heuristic-based memory extraction
-            # In production, this could use another LLM call
-            
             memories_to_save = []
             
-            # Detect user preferences (likes, dislikes)
+            # User preferences
             preference_keywords = ["i like", "i love", "i hate", "mujhe pasand", "mujhe pasand nahi"]
             msg_lower = user_msg.lower()
             for keyword in preference_keywords:
@@ -383,7 +368,7 @@ class AIHandler:
                     })
                     break
             
-            # Detect personal info sharing (name, birthday, etc.)
+            # Personal info
             personal_keywords = ["mera naam", "my name is", "born on", "birthday", "live in"]
             for keyword in personal_keywords:
                 if keyword in msg_lower:
@@ -394,7 +379,7 @@ class AIHandler:
                     })
                     break
             
-            # Save detected memories
+            # Save to both database AND persistent storage
             for mem in memories_to_save:
                 await self.db.save_memory(
                     guild_id=guild_id,
@@ -404,30 +389,34 @@ class AIHandler:
                     importance=mem["importance"]
                 )
                 
-            # Invalidate memory cache for this user
+                # Also update cache (which saves to disk!)
+                existing = self.cache.get_memories(guild_id, user_id) or []
+                existing.append(mem)
+                self.cache.set_memories(guild_id, user_id, existing)
+            
+            # Invalidate memory cache for refresh
             self.cache.set_memories(guild_id, user_id, [])
             
         except Exception as e:
             logger.debug(f"Memory extraction skipped: {e}")
 
 
-# Global AI handler instance
+# Global instance
 ai_handler: Optional[AIHandler] = None
 
 
 def init_ai_handler() -> AIHandler:
-    """Initialize the global AI handler"""
+    """Initialize global AI handler"""
     global ai_handler
     ai_handler = AIHandler()
     return ai_handler
 
 
 def get_ai_handler() -> AIHandler:
-    """Get the global AI handler instance"""
+    """Get global AI handler instance"""
     if ai_handler is None:
         raise RuntimeError("AI handler not initialized! Call init_ai_handler() first.")
     return ai_handler
 
 
-# Import asyncio here to avoid circular dependency at module level
 import asyncio
