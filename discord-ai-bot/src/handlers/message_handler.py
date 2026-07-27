@@ -143,12 +143,17 @@ class MessageHandler:
                 # ===== THEN: Normal AI Chat Response =====
                 ai = get_ai_handler()
                 
+                # Get user info for USER RECOGNITION! 👤
+                username = str(message.author.name)
+                display_name = message.author.display_name if message.guild else str(message.author)
+                
                 response = await ai.generate_response(
                     guild_id=message.guild.id if message.guild else 0,
                     channel_id=message.channel.id,
                     user_id=message.author.id,
                     user_message=self._clean_message_content(message),
-                    username=str(message.author)
+                    username=username,  # NOW SHE KNOWS YOUR NAME!
+                    display_name=display_name  # AND DISPLAY NAME!
                 )
                 
                 # Send response

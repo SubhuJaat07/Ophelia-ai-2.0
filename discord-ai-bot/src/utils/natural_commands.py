@@ -192,6 +192,9 @@ class NaturalCommandParser:
         if self._matches_patterns(msg_lower, ["my permissions", "meri permissions", "bot permissions", "debug permissions", "check perms"]):
             return await self._cmd_debug_permissions(guild)
         
+        if self._matches_patterns(msg_lower, ["my profile", "mera profile", "kya jaanti ho mujhse", "what do you know about me", "mujhe kya pata hai"]):
+            return await self._cmd_show_user_profile(author)
+        
         return None
     
     def _matches_patterns(self, text: str, patterns: List[str]) -> bool:
@@ -966,6 +969,88 @@ class NaturalCommandParser:
         embed.set_footer(text="Use this to diagnose why commands fail!")
         
         return f"", True, embed
+    
+    async def _cmd_show_user_profile(self, user: discord.Member) -> Tuple[str, bool, Optional[discord.Embed]]:
+        """Show what Ophelia knows about this user - USER PROFILE!"""
+        try:
+            from src.utils.cache import get_cache
+            cache = get_cache()
+            
+            # Get user profile
+            profile = cache.get_user_context(user.id)
+            
+            if not profile:
+                embed = discord.Embed(
+                    title="🆕 NEW USER!",
+                    description=f"**{user.display_name}** - Main tumhe abhi se jaanti hu! 👋",
+                    color=discord.Color.green()
+                )
+                embed.add_field(name="💡 Tip:", value="Thoda baat karo, main tumhare baare me seekh jaungi! ✨", inline=False)
+                return f"", True, embed
+            
+            # Build profile display
+            relationship = profile.get("relationship_level", "new")
+            msg_count = profile.get("message_count", 0)
+            first_seen = profile.get("first_seen", "Unknown")
+            topics = profile.get("topics_discussed", [])
+            mood_history = profile.get("mood_history", [])
+            nicknames = profile.get("nicknames_given", [])
+            
+            # Relationship emoji
+            rel_emojis = {
+                "new": "👋",
+                "casual": "😊",
+                "friend": "🤗",
+                "bestie": "💕"
+            }
+            
+            embed = discord.Embed(
+                title=f"📊 {rel_emojis.get(relationship, '👋')} {user.display_name}'S PROFILE",
+                description=f"**Relationship:** {relationship.upper()}",
+                color=user.color or discord.Color.blurple()
+            )
+            
+            embed.set_thumbnail(url=user.avatar.url if user.avatar else user.default_avatar.url)
+            
+            # Stats
+            stats_text = (
+                f"**Messages:** {msg_count}\n"
+                f"**First Seen:** {first_seen[:10] if len(first_seen) > 10 else first_seen}\n"
+                f"**Status:** {'Active' if msg_count > 10 else 'New'}"
+            )
+            embed.add_field(name="📈 Stats", value=stats_text, inline=True)
+            
+            # Topics
+            if topics:
+                topics_text = ", ".join(topics[:8])
+                embed.add_field(name="💬 Topics Discussed", value=topics_text, inline=True)
+            
+            # Mood analysis (last 5 moods)
+            if mood_history:
+                recent_moods = [m["mood"] for m in mood_history[-5:]]
+                mood_emojis = {
+                    "happy": "😊", "sad": "😢", "angry": "😠", "excited": "🎉",
+                    "bored": "😐", "confused": "❓", "sarcastic": "😏", "neutral": "😌"
+                }
+                mood_display = " ".join([mood_emojis.get(m, m) for m in recent_moods])
+                embed.add_field(name="😊 Recent Moods", value=mood_display, inline=True)
+            
+            # Nicknames Ophelia uses
+            if nicknames:
+                embed.add_field(name="💝 I Call You:", value=", ".join(nicknames[-3:]), inline=True)
+            
+            # Relationship progress
+            next_level = {"new": "casual (30 msgs)", "casual": "friend (60 msgs)", 
+                          "friend": "bestie (100 msgs)", "bestie": "MAX LEVEL! 🏆"}
+            embed.add_field(name="⬆️ Next Level:", value=next_level.get(relationship, "Maxed out!"), inline=False)
+            
+            embed.set_footer(text="💡 More you chat, better I know you! • Ophelia AI 2.0")
+            
+            return f"", True, embed
+            
+        except Exception as e:
+            logger.error(f"Error showing profile: {e}")
+            return f"❌ Profile load nahi hua: `{str(e)[:80]}`", True, None
 
 
 # Global instance
