@@ -189,6 +189,9 @@ class NaturalCommandParser:
         if self._matches_patterns(msg_lower, ["help", "commands", "kya kar sakti hai", "features"]):
             return await self._cmd_show_help(author)
         
+        if self._matches_patterns(msg_lower, ["my permissions", "meri permissions", "bot permissions", "debug permissions", "check perms"]):
+            return await self._cmd_debug_permissions(guild)
+        
         return None
     
     def _matches_patterns(self, text: str, patterns: List[str]) -> bool:
@@ -589,23 +592,78 @@ class NaturalCommandParser:
     ) -> Tuple[str, bool, Optional[discord.Embed]]:
         """Kick a user - ANNOUNCEMENT STYLE EMBED!"""
         try:
+            # DEBUG: Check bot's role vs target's role
+            bot_member = guild.me
+            bot_top_role = bot_member.top_role
+            user_top_role = user.top_role
+            
+            logger.info(f"🔍 KICK DEBUG:")
+            logger.info(f"   Bot: {bot_member} | Top Role: {bot_top_role.name} (Pos: {bot_top_role.position})")
+            logger.info(f"   Target: {user} | Top Role: {user_top_role.name} (Pos: {user_top_role.position})")
+            logger.info(f"   Bot can kick? {bot_top_role.position > user_top_role.position}")
+            
+            # Check if bot has permission
+            if not bot_member.guild_permissions.kick_members:
+                embed = discord.Embed(
+                    title="❌ PERMISSION MISSING!",
+                    description="Mujhe **Kick Members** permission nahi mila! 😤",
+                    color=discord.Color.red()
+                )
+                embed.add_field(name="🔧 Fix karo:", value="Server Settings → Roles → Mera role → ✅ Kick Members ON karo!", inline=False)
+                return f"", True, embed
+            
+            # Check role hierarchy
+            if user_top_role.position >= bot_top_role.position and not user == guild.owner:
+                embed = discord.Embed(
+                    title="❌ ROLE HIERARCHY ISSUE!",
+                    description=f"**{user.display_name}** ka role mera role se **equal/higher** hai! 📊",
+                    color=discord.Color.orange()
+                )
+                embed.add_field(name="🤖 Mera Top Role", value=f"{bot_top_role.name} (Position: {bot_top_role.position})", inline=True)
+                embed.add_field(name="👤 Target ka Top Role", value=f"{user_top_role.name} (Position: {user_top_role.position})", inline=True)
+                embed.add_field(name="🔧 Fix karo:", value="Mera role ko **UPAR** le jao role list me! 📍", inline=False)
+                return f"", True, embed
+            
+            # Cannot kick server owner
+            if user.id == guild.owner_id:
+                return "❌ Server owner ko kick nahi kar sakte! 👑", True, None
+            
+            # Cannot kick yourself
+            if user.id == bot_member.id:
+                return "❌ Main khudko kick nahi kar sakti! 😅", True, None
+            
+            # NOW KICK!
             await user.kick(reason=f"Via AI by {moderator}: {reason}")
             
             embed = discord.Embed(
                 title="╔═════════════════════════════════╗\n║  👢  USER KICKED!                 ║\n╚═════════════════════════════════╝",
-                description=f"**{user.display_name}** ko server se kick kar diya gaya!",
-                color=discord.Color.red()
+                description=f"**{user.display_name}** ko server se kick kar diya gaya! 👢",
+                color=discord.Color.red(),
+                timestamp=datetime.now()
             )
             embed.add_field(name="👤 Kicked User", value=f"{user.mention} (`{user.id}`)", inline=True)
             embed.add_field(name="📝 Reason", value=reason or "Server rules violation", inline=True)
             embed.add_field(name="🔨 Kicked By", value=moderator.mention, inline=True)
-            embed.add_field(name="⏰ Time", value=datetime.now().strftime("%I:%M %p | %d %b %Y"), inline=True)
-            embed.set_footer(text="🤖 Ophelia AI 2.0 • Moderation Action")
+            embed.set_footer(text="🤖 Ophelia AI 2.0 • Action Complete!")
             
             return f"", True, embed
             
         except Exception as e:
-            return f"❌ Kick nahi ho paya: `{e}`", True, None
+            error_str = str(e)
+            logger.error(f"❌ Kick failed: {error_str}")
+            
+            # Better error messages based on error type
+            if "Missing Permissions" in error_str or "403" in error_str:
+                embed = discord.Embed(
+                    title="❌ KICK FAILED - Permission Issue!",
+                    description="Permission error aa gaya! 🔐",
+                    color=discord.Color.red()
+                )
+                embed.add_field(name="Error", value=f"`{error_str[:100]}`", inline=False)
+                embed.add_field(name="🔧 Fix:", value="1. Mera role upar le jao\n2. Admin permission on karo\n3. Kick Members enable karo", inline=False)
+                return f"", True, embed
+            else:
+                return f"❌ Kick nahi ho paya: `{error_str[:100]}`", True, None
     
     async def _cmd_ban(
         self, 
@@ -850,6 +908,62 @@ class NaturalCommandParser:
             )
         
         embed.set_footer(text="💡 Tip: @Ophelia [command] — Natural language works!")
+        
+        return f"", True, embed
+    
+    async def _cmd_debug_permissions(self, guild: discord.Guild) -> Tuple[str, bool, Optional[discord.Embed]]:
+        """Show bot's detailed permissions for debugging"""
+        bot = guild.me
+        perms = bot.guild_permissions
+        
+        embed = discord.Embed(
+            title="🔍 **BOT PERMISSIONS DEBUG**",
+            description=f"**Server:** {guild.name}\n**Bot:** {bot.display_name}",
+            color=discord.Color.blue()
+        )
+        
+        # Key permissions check
+        permissions_check = [
+            ("👢 Kick Members", perms.kick_members),
+            ("🚫 Ban Members", perms.ban_members),
+            ("⏰ Timeout Members", perms.moderate_members),
+            ("🗑️ Manage Messages", perms.manage_messages),
+            ("👤 Manage Nicknames", perms.manage_nicknames),
+            ("🎭 Manage Roles", perms.manage_roles),
+            ("💬 Add Reactions", perms.add_reactions),
+            ("📺 Connect Voice", perms.connect),
+            ("🔧 Administrator", perms.administrator),
+        ]
+        
+        perm_text = ""
+        for name, has_perm in permissions_check:
+            status = "✅" if has_perm else "❌"
+            perm_text += f"{status} {name}\n"
+        
+        embed.add_field(name="⚡ Permissions Status", value=perm_text, inline=True)
+        
+        # Role info
+        role_info = (
+            f"**My Top Role:** {bot.top_role.name}\n"
+            f"**Role Position:** {bot.top_role.position}\n"
+            f"**Total Roles:** {len(bot.roles)}\n"
+            f"**Is Bot?**: {bot.bot}"
+        )
+        embed.add_field(name="🤖 Role Info", value=role_info, inline=True)
+        
+        # Role hierarchy warning
+        embed.add_field(
+            name="📍 ROLE HIERARCHY CHECK",
+            value=(
+                "If kick fails even with ✅ permission:\n"
+                "1. Go to **Server Settings → Roles**\n"
+                "2. Drag **my role ABOVE** target's role\n"
+                "3. Higher position = More power! ⬆️"
+            ),
+            inline=False
+        )
+        
+        embed.set_footer(text="Use this to diagnose why commands fail!")
         
         return f"", True, embed
 
