@@ -41,8 +41,9 @@ class BotConfig:
     cache_ttl: int = int(os.getenv("CACHE_TTL", "3600"))
     
     # AI Generation Settings (defaults, can be overridden per server)
+    # NOTE: Groq FREE tier has 12,000 TPM limit - keep max_tokens LOW!
     default_temperature: float = 1.02
-    default_max_tokens: int = 32768
+    default_max_tokens: int = 1024  # Reduced from 32768 for free tier safety
     default_top_p: float = 1.0
     
     # Logging
@@ -67,7 +68,7 @@ class BotConfig:
 DEFAULT_GUILD_SETTINGS = {
     "enabled": True,                    # AI enabled/disabled
     "temperature": 1.02,                # Response creativity
-    "max_tokens": 32768,                # Max response length
+    "max_tokens": 1024,                # Max response length (reduced for Groq free tier!)
     "top_p": 1.0,                       # Nucleus sampling
     "custom_instructions": "",          # Custom system prompt additions
     "ping_reply_enabled": True,         # Reply on @mention

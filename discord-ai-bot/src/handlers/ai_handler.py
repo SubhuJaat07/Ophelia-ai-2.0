@@ -69,10 +69,12 @@ class AIHandler:
         
         return system_prompt
     
-    # Groq API limits - stay well under the max!
-    MAX_TOTAL_CHARS = 80000  # ~20k tokens (safe limit)
-    MAX_MESSAGES = 15  # Reduced from 30 to prevent 413 errors
-    MAX_MESSAGE_LENGTH = 2000  # Truncate individual long messages
+    # Groq FREE TIER LIMITS: 12,000 TPM (Tokens Per Minute)
+    # We must stay WELL UNDER this limit! Target: ~8,000 tokens max per request
+    MAX_TOTAL_CHARS = 6000  # ~2,000 tokens (safe for free tier)
+    MAX_MESSAGES = 8  # Fewer messages = fewer tokens
+    MAX_MESSAGE_LENGTH = 800  # Truncate long messages aggressively
+    MAX_SYSTEM_PROMPT_CHARS = 1500  # System prompt MUST be short!
     
     async def get_conversation_context(
         self,
@@ -93,9 +95,11 @@ class AIHandler:
             
         messages = []
         
-        # Add system prompt (with length limit!)
+        # Add system prompt (MUST be short for Groq free tier!)
         system_prompt = await self.build_system_prompt(guild_id)
-        system_prompt = system_prompt[:self.MAX_MESSAGE_LENGTH]  # Truncate if too long
+        system_prompt = system_prompt[:self.MAX_SYSTEM_PROMPT_CHARS]  # Hard limit!
+        if len(system_prompt) == self.MAX_SYSTEM_PROMPT_CHARS:
+            system_prompt += "... [truncated]"
         messages.append({"role": "system", "content": system_prompt})
         
         # Get relevant memories if enabled (but limit them!)
@@ -253,12 +257,15 @@ class AIHandler:
             # Get guild settings for generation parameters
             settings = await self.get_guild_settings(guild_id)
             
+            # Cap max_tokens to stay within Groq free tier limits!
+            requested_max_tokens = min(settings.get("max_tokens", 1024), 1024)
+            
             # Generate streaming response
             response_parts = []
             async for chunk in self.groq.chat_completion_stream(
                 messages=messages,
                 temperature=settings.get("temperature", 1.02),
-                max_tokens=settings.get("max_tokens", 32768),
+                max_tokens=requested_max_tokens,
                 top_p=settings.get("top_p", 1.0)
             ):
                 response_parts.append(chunk)
@@ -305,12 +312,15 @@ class AIHandler:
             
             settings = await self.get_guild_settings(guild_id)
             
+            # Cap max_tokens for free tier safety
+            requested_max_tokens = min(settings.get("max_tokens", 1024), 1024)
+            
             full_response = ""
             
             async for chunk in self.groq.chat_completion_stream(
                 messages=messages,
                 temperature=settings.get("temperature", 1.02),
-                max_tokens=settings.get("max_tokens", 32768),
+                max_tokens=requested_max_tokens,
                 top_p=settings.get("top_p", 1.0)
             ):
                 full_response += chunk
