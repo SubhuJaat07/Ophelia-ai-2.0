@@ -88,7 +88,7 @@ class MetaCommandParser:
         self,
         response: str,
         guild: discord.Guild,
-        channel: discord.TextMessage,
+        channel: discord.TextChannel,
         author: discord.Member
     ) -> tuple[str, bool]:
         """
@@ -139,7 +139,7 @@ class MetaCommandParser:
         cmd_name: str,
         args: str,
         guild: discord.Guild,
-        channel: discord.TextMessage,
+        channel: discord.TextChannel,
         author: discord.Member
     ) -> str:
         """Execute a single meta-command"""
