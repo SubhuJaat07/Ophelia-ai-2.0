@@ -110,10 +110,10 @@ class OpheliaBot(commands.Bot):
             logger.info("🗣️ Initializing natural language command parser...")
             natural = init_natural_commands(self)
             
-            # Load cogs/commands
+            # Load cogs/commands (utility commands merged into settings!)
             logger.info("📦 Loading commands...")
             await self.load_extension("src.commands.settings")
-            await self.load_extension("src.commands.utility")
+            # Note: UtilityCog merged into SettingsCog to avoid 'CommandAlreadyRegistered' error
             
             self.initialized = True
             logger.info("=" * 50)
