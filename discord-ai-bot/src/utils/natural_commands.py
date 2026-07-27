@@ -744,7 +744,7 @@ class NaturalCommandParser:
                 color=discord.Color.green()
             )
             embed.add_field(name="📍 Channel", value=f"<#{channel.id}>", inline=True)
-            embed.add_field(name("Message Preview", value=content[:100] + ("..." if len(content) > 100 else ""), inline=False))
+            embed.add_field(name="Message Preview", value=content[:100] + ("..." if len(content) > 100 else ""), inline=False)
             embed.set_footer(text=f"Sent by {author.display_name}")
             
             return f"", True, embed
@@ -858,11 +858,15 @@ class NaturalCommandParser:
 natural_command_parser: Optional[NaturalCommandParser] = None
 
 
-def init_natural_parser(bot: commands.Bot) -> NaturalCommandParser:
+def init_natural_commands(bot: commands.Bot) -> NaturalCommandParser:
     """Initialize global natural command parser"""
     global natural_command_parser
     natural_command_parser = NaturalCommandParser(bot)
     return natural_command_parser
+
+
+# Alias for backwards compatibility
+init_natural_parser = init_natural_commands
 
 
 def get_natural_parser() -> NaturalCommandParser:
@@ -870,3 +874,7 @@ def get_natural_parser() -> NaturalCommandParser:
     if natural_command_parser is None:
         raise RuntimeError("Natural command parser not initialized!")
     return natural_command_parser
+
+
+# Alias for consistency
+get_natural_commands = get_natural_parser
