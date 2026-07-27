@@ -15,68 +15,68 @@ logger = logging.getLogger("MetaCommands")
 class MetaCommandParser:
     """Parses and executes meta-commands from AI responses"""
     
-    # Available commands that AI can use
+    # Available commands that AI can use (FIXED: No more quote conflicts!)
     AVAILABLE_COMMANDS = {
         "say": {
             "description": "Kisi channel me message bhejo",
-            "usage": '/cmd say [channel_id] "message"',
-            "example": '/cmd say 123456789 "Hello everyone!"',
+            "usage": "/cmd say [channel_id] 'message'",
+            "example": "/cmd say 123456789 'Hello everyone!'",
             "permissions": ["manage_messages"]
         },
         "react": {
             "description": "Message pe reaction karo",
-            "usage": '/cmd react [message_id] :emoji:',
-            "example": '/cmd react 123456789 😂',
+            "usage": "/cmd react [message_id] :emoji:",
+            "example": "/cmd react 123456789 😂",
             "permissions": ["add_reactions"]
         },
         "embed": {
             "description": "Embed bhejo with title, description, color",
-            "usage": '/cmd embed "title" "description" [color]',
-            "example': '/cmd embed "Announcement" "Server update!" blue',
+            "usage": "/cmd embed 'title' 'description' [color]",
+            "example": "/cmd embed 'Announcement' 'Server update!' blue",
             "permissions": ["embed_links"]
         },
         "nickname": {
             "description": "Apna nickname change karo",
-            "usage": '/cmd nickname "new_nickname"',
-            "example": '/cmd nickname "Cool Bot"',
+            "usage": "/cmd nickname 'new_nickname'",
+            "example": "/cmd nickname 'Cool Bot'",
             "permissions": ["change_nickname"]
         },
         "status": {
             "description": "Bot status change karo (playing, listening, watching)",
-            "usage": '/cmd status [type] "text"',
-            "example": '/cmd status playing "Minecraft"',
+            "usage": "/cmd status [type] 'text'",
+            "example": "/cmd status playing 'Minecraft'",
             "permissions": []  # No special perms needed
         },
         "kick": {
             "description": "User kick karo (mod only)",
-            "usage": '/cmd kick @user [reason]',
-            "example": '/cmd kick @troll Spamming',
+            "usage": "/cmd kick @user [reason]",
+            "example": "/cmd kick @troll Spamming",
             "permissions": ["kick_members"],
             "mod_only": True
         },
         "ban": {
             "description": "User ban karo (admin only)",
-            "usage": '/cmd ban @user [reason]',
-            "example": '/cmd ban @hacker Hacking attempt',
+            "usage": "/cmd ban @user [reason]",
+            "example": "/cmd ban @hacker Hacking attempt",
             "permissions": ["ban_members"],
             "mod_only": True
         },
         "clear": {
             "description": "Messages delete karo",
-            "usage": '/cmd clear [count]',
-            "example": '/cmd clear 50',
+            "usage": "/cmd clear [count]",
+            "example": "/cmd clear 50",
             "permissions": ["manage_messages"]
         },
         "create_channel": {
             "description": "Naya channel banao",
-            "usage": '/cmd create_channel "name" [type]',
-            "example': '/cmd create_channel "general" text',
+            "usage": "/cmd create_channel 'name' [type]",
+            "example": "/cmd create_channel 'general' text",
             "permissions": ["manage_channels"]
         },
         "create_role": {
             "description": "Naya role banao",
-            "usage": '/cmd create_role "name" [color]',
-            "example": '/cmd create_role "VIP" gold',
+            "usage": "/cmd create_role 'name' [color]",
+            "example": "/cmd create_role 'VIP' gold",
             "permissions": ["manage_roles"]
         }
     }
@@ -171,13 +171,15 @@ class MetaCommandParser:
     
     async def _cmd_say(self, args: str, guild, channel, author) -> str:
         """Send message to a specific channel"""
-        # Parse channel ID and message
-        match = re.match(r'(\d+)\s+"(.*)"', args, re.DOTALL)
+        # Parse channel ID and message - support both quotes
+        match = re.match(r"(\d+)\s+'(.*)'", args, re.DOTALL)
+        if not match:
+            match = re.match(r'(\d+)\s+"(.*)"', args, re.DOTALL)
         if not match:
             # Try without quotes
             parts = args.split(maxsplit=1)
             if len(parts) < 2:
-                return "❌ Usage: /cmd say [channel_id] \"message\""
+                return "❌ Usage: /cmd say [channel_id] 'message'"
             channel_id = int(parts[0])
             message = parts[1]
         else:
@@ -209,10 +211,12 @@ class MetaCommandParser:
     
     async def _cmd_embed(self, args: str, guild, channel, author) -> str:
         """Send an embedded message"""
-        # Simple parsing for embed
-        match = re.match(r'"(.*)"\s*"(.*)"(?:\s*(\w+))?', args)
+        # Simple parsing for embed - support both quote types
+        match = re.match(r"'(.*)'\s*'(.*)'(?:\s*(\w+))?", args)
         if not match:
-            return '❌ Usage: /cmd embed "title" "description" [color]'
+            match = re.match(r'"(.*)"\s*"(.*)"(?:\s*(\w+))?', args)
+        if not match:
+            return "❌ Usage: /cmd embed 'title' 'description' [color]"
         
         title = match.group(1)
         description = match.group(2)
@@ -298,9 +302,13 @@ class MetaCommandParser:
     
     async def _cmd_create_channel(self, args: str, guild, channel, author) -> str:
         """Create a new channel"""
-        match = re.match(r'"(.*)"(?:\s*(\w+))?', args)
+        # Support both quote types
+        match = re.match(r"'(.*)'(?:\s*(\w+))?", args)
         if not match:
-            return '❌ Usage: /cmd create_channel "name" [type]'
+            match = r'"(.*)"(?:\s*(\w+))?'
+            match = re.match(match, args)
+        if not match:
+            return "❌ Usage: /cmd create_channel 'name' [type]"
         
         name = match.group(1).lower().replace(" ", "-")
         channel_type = (match.group(2) or "text").lower()
@@ -318,9 +326,12 @@ class MetaCommandParser:
     
     async def _cmd_create_role(self, args: str, guild, channel, author) -> str:
         """Create a new role"""
-        match = re.match(r'"(.*)"(?:\s*(\w+))?', args)
+        # Support both quote types
+        match = re.match(r"'(.*)'(?:\s*(\w+))?", args)
         if not match:
-            return '❌ Usage: /cmd create_role "name" [color]'
+            match = re.match(r'"(.*)"(?:\s*(\w+))?', args)
+        if not match:
+            return "❌ Usage: /cmd create_role 'name' [color]"
         
         name = match.group(1)
         color_name = match.group(2) or "blue"
