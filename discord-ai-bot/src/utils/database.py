@@ -150,7 +150,8 @@ class DatabaseManager:
                 .limit(limit)\
                 .execute()
             
-            messages = (response.data or [])[::-return [{"role": m["role"], "content": m["content"]} for m in messages]
+            messages = (response.data or [])[::-1]
+            return [{"role": m["role"], "content": m["content"]} for m in messages]
         except Exception as e:
             logger.error(f"Error fetching user conversation history: {e}")
             return []
