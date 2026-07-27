@@ -1,0 +1,823 @@
+     1→"""
+     2→Advanced Natural Language Command System for Ophelia AI 2.0
+     3→AI understands DIRECT commands like "avatar dikhao", "timeout do", etc.
+     4→NO /cmd syntax needed - just talk naturally!
+     5→"""
+     6→import discord
+     7→from discord.ext import commands
+     8→import logging
+     9→import re
+    10→import asyncio
+    11→from typing import Optional, Dict, Any, List, Tuple
+    12→from datetime import datetime, timedelta
+    13→
+    14→from config.settings import config, is_owner
+    15→
+    16→logger = logging.getLogger("NaturalCommands")
+    17→
+    18→
+    19→class NaturalCommandParser:
+    20→    """
+    21→    Advanced command parser that understands NATURAL LANGUAGE!
+    22→    User says: "iska avatar dikhao"
+    23→    Bot understands: SHOW_AVATAR command with target user
+    24→    """
+    25→    
+    26→    def __init__(self, bot: commands.Bot):
+    27→        self.bot = bot
+    28→    
+    29→    async def process_message(
+    30→        self,
+    31→        message: str,
+    32→        guild: discord.Guild,
+    33→        channel: discord.TextChannel,
+    34→        author: discord.Member,
+    35→        referenced_message: Optional[discord.Message] = None
+    36→    ) -> Tuple[str, bool, Optional[discord.Embed]]:
+    37→        """
+    38→        Process user message for natural language commands.
+    39→        Returns (response_text, was_command_executed, optional_embed)
+    40→        """
+    41→        
+    42→        msg_lower = message.lower().strip()
+    43→        
+    44→        # Check if this looks like a command (action-oriented)
+    45→        command_result = await self._detect_and_execute(
+    46→            msg_lower, message, guild, channel, author, referenced_message
+    47→        )
+    48→        
+    49→        if command_result:
+    50→            return command_result
+    51→        
+    52→        return None, False, None
+    53→    
+    54→    async def _detect_and_execute(
+    55→        self,
+    56→        msg_lower: str,
+    57→        original_msg: str,
+    58→        guild: discord.Guild,
+    59→        channel: discord.TextChannel,
+    60→        author: discord.Member,
+    61→        referenced_msg: Optional[discord.Message] = None
+    62→    ) -> Optional[Tuple[str, bool, Optional[discord.Embed]]]:
+    63→        """Detect and execute natural language commands"""
+    64→        
+    65→        # Get target user (from mention or referenced message)
+    66→        target_user = self._extract_target_user(original_msg, channel, referenced_msg)
+    67→        
+    68→        # ===== AVATAR & INFO COMMANDS (Everyone can use) =====
+    69→        
+    70→        if self._matches_patterns(msg_lower, ["avatar", "dp", "profile pic", "photo", "display picture", "pfp"]):
+    71→            return await self._cmd_show_avatar(target_user or author, original_msg)
+    72→        
+    73→        if self._matches_patterns(msg_lower, ["info", "baare me", "about", "details", "profile", "who is"]):
+    74→            return await self._cmd_show_user_info(target_user or author)
+    75→        
+    76→        if self._matches_patterns(msg_lower, ["server info", "server details", "server stats", "kitne members", "member count"]):
+    77→            return await self._cmd_show_server_info(guild)
+    78→        
+    79→        if self._matches_patterns(msg_lower, ["my info", "mera info", "mera profile"]):
+    80→            return await self._cmd_show_user_info(author)
+    81→        
+    82→        if self._matches_patterns(msg_lower, ["roles", "konse roles", "what roles"]):
+    83→            target = target_user or author
+    84→            return await self._cmd_show_roles(target)
+    85→        
+    86→        if self._matches_patterns(msg_lower, ["join date", "kab join hua", "when joined"]):
+    87→            target = target_user or author
+    88→            return await self._cmd_show_join_date(target)
+    89→        
+    90→        # ===== MODERATION COMMANDS (Owner/Mod Only) =====
+    91→        
+    92→        if self._matches_patterns(msg_lower, ["timeout", "mute temporarily", "silent mode"]):
+    93→            if not self._check_owner(author):
+    94→                return ("❌ Sirf owners timeout kar sakte hain!", False, None)
+    95→            duration = self._extract_duration(original_msg)
+    96→            reason = self._extract_reason(original_msg)
+    97→            if target_user:
+    98→                return await self._cmd_timeout(target_user, duration, reason, author, guild)
+    99→            return ("❌ Batao kis user ko timeout karna hai? (@mention karo)", False, None)
+   100→        
+   101→        if self._matches_patterns(msg_lower, ["kick", "hatao", "remove", "throw out", "nikalo"]):
+   102→            if not self._check_mod(author, guild):
+   103→                return ("❌ Sirf mods kick kar sakte hain!", False, None)
+   104→            reason = self._extract_reason(original_msg)
+   105→            if target_user:
+   106→                return await self._cmd_kick(target_user, reason, author, guild)
+   107→            return ("❌ Batao kis user ko kick karna hai?", False, None)
+   108→        
+   109→        if self._matches_patterns(msg_lower, ["ban", "permanent ban", "block", "paka band"]):
+   110→            if not self._check_mod(author, guild):
+   111→                return ("❌ Sirf mods ban kar sakte hain!", False, None)
+   112→            reason = self._extract_reason(original_msg)
+   113→            if target_user:
+   114→                return await self._cmd_ban(target_user, reason, author, guild)
+   115→            return ("❌ Batao kis user ko ban karna hai?", False, None)
+   116→        
+   117→        if self._matches_patterns(msg_lower, ["mute", "chupao", "silence", "shut up"]):
+   118→            if not self._check_mod(author, guild):
+   119→                return ("❌ Sirf mods mute kar sakte hain!", False, None)
+   120→            if target_user:
+   121→                return await self._cmd_mute(target_user, author, guild)
+   122→            return ("❌ Batao kis user ko mute karna hai?", False, None)
+   123→        
+   124→        # ===== BOT CONTROL COMMANDS (Owner Only) =====
+   125→        
+   126→        if self._matches_patterns(msg_lower, ["status", "set status", "playing", "listening", "watching", "streaming"]):
+   127→            if not self._check_owner(author):
+   128→                return ("❌ Sirf owners status change kar sakte hain!", False, None)
+   129→            activity_data = self._extract_activity(original_msg)
+   130→            return await self._cmd_set_status(activity_data)
+   131→        
+   132→        if self._matches_patterns(msg_lower, ["nickname", "name change", "naam badlo", "call me", "bolte ho"]):
+   133→            if not self._check_owner(author):
+   134→                return ("❌ Sirf owners nickname change kar sakte hain!", False, None)
+   135→            new_name = self._extract_nickname(original_msg)
+   136→            if new_name:
+   137→                return await self._cmd_set_nickname(new_name, guild)
+   138→            return ("❌ Naya naam batao?", False, None)
+   139→        
+   140→        if self._matches_patterns(msg_lower, ["channel banao", "make channel", "new channel", "naya channel", "create channel"]):
+   141→            if not self._check_owner(author):
+   142→                return ("❌ Sirf channels bana sakte hain owners!", False, None)
+   143→            channel_info = self._extract_channel_info(original_msg)
+   144→            return await self._cmd_create_channel(channel_info, guild)
+   145→        
+   146→        if self._matches_patterns(msg_lower, ["role banao", "make role", "new role", "naya role", "create role"]):
+   147→            if not self._check_owner(author):
+   148→                return ("❌ Sirf roles bana sakte hain owners!", False, None)
+   149→            role_info = self._extract_role_info(original_msg)
+   150→            return await self._cmd_create_role(role_info, guild)
+   151→        
+   152→        # ===== MESSAGING COMMANDS =====
+   153→        
+   154→        if self._matches_patterns(msg_lower, ["bhejo", "send to", "message in", "channel me bhejo", "announce"]):
+   155→            if not self._check_mod(author, guild) and "announce" in msg_lower:
+   156→                pass  # Allow announces for mods
+   157→            send_info = self._extract_send_info(original_msg, guild)
+   158→            if send_info:
+   159→                return await self._cmd_send_message(send_info, author)
+   160→            return ("❌ Kya bhejna hai aur kahan? Specify karo!", False, None)
+   161→        
+   162→        if self._matches_patterns(msg_lower, ["embed", "rich embed", "fancy message", "beautiful message"]):
+   163→            embed_info = self._extract_embed_info(original_msg)
+   164→            if embed_info:
+   165→                return await self._cmd_send_embed(embed_info, channel)
+   166→            return ("❌ Embed ke liye title aur description do!", False, None)
+   167→        
+   168→        # ===== REACTION COMMANDS =====
+   169→        
+   170→        if self._matches_patterns(msg_lower, ["react", "emoji lagao", "reaction do", "emoji do"]):
+   171→            emoji = self._extract_emoji(original_msg)
+   172→            target_msg = referenced_msg
+   173→            if emoji and target_msg:
+   174→                return await self._cmd_add_reaction(emoji, target_msg)
+   175→            return ("❌ Emoji batao aur message pe reply karke bol!", False, None)
+   176→        
+   177→        # ===== UTILITY COMMANDS =====
+   178→        
+   179→        if self._matches_patterns(msg_lower, ["clear", "delete messages", "messages delete", "chat clean"]):
+   180→            if not self._check_mod(author, guild):
+   181→                return ("❌ Sirf mods messages delete kar sakte hain!", False, None)
+   182→            count = self._extract_number(original_msg) or 10
+   183→            return await self._cmd_clear_messages(count, channel)
+   184→        
+   185→        if self._matches_patterns(msg_lower, ["help", "commands", "kya kar sakti hai", "features"]):
+   186→            return await self._cmd_show_help(author)
+   187→        
+   188→        return None
+   189→    
+   190→    def _matches_patterns(self, text: str, patterns: List[str]) -> bool:
+   191→        """Check if text matches any of the given patterns"""
+   192→        for pattern in patterns:
+   193→            if pattern.lower() in text:
+   194→                return True
+   195→        return False
+   196→    
+   197→    def _extract_target_user(
+   198→        self, 
+   199→        message: str, 
+   200→        channel: discord.TextChannel, 
+   201→        referenced_msg: Optional[discord.Message] = None
+   202→    ) -> Optional[discord.Member]:
+   203→        """Extract target user from mentions or referenced message"""
+   204→        # First check for mentions in message
+   205→        mention_pattern = r'<@!?(\d{17,19})>'
+   206→        match = re.search(mention_pattern, message)
+   207→        if match:
+   208→            user_id = int(match.group(1))
+   209→            return channel.guild.get_member(user_id)
+   210→        
+   211→        # Then check referenced message (reply)
+   212→        if referenced_msg:
+   213→            return channel.guild.get_member(referenced_msg.author.id)
+   214→        
+   215→        return None
+   216→    
+   217→    def _extract_duration(self, message: str) -> int:
+   218→        """Extract timeout duration from message in minutes"""
+   219→        # Look for duration patterns
+   220→        patterns = [
+   221→            r'(\d+)\s*min',      # 10 min, 5min
+   222→            r'(\d+)\s*minute',   # 10 minute
+   223→            r'(\d+)\s*hour',     # 1 hour
+   224→            r'(\d+)\s*hr',       # 1hr
+   225→            r'(\d+)\s*day',      # 1 day
+   226→        ]
+   227→        
+   228→        for pattern in patterns:
+   229→            match = re.search(pattern, message.lower())
+   230→            if match:
+   231→                num = int(match.group(1))
+   232→                if 'hour' in pattern or 'hr' in pattern:
+   233→                    return num * 60
+   234→                elif 'day' in pattern:
+   235→                    return num * 1440
+   236→                return num
+   237→        
+   238→        return 10  # Default 10 minutes
+   239→    
+   240→    def _extract_reason(self, message: str) -> str:
+   241→        """Extract reason from message"""
+   242→        # Remove common prefixes to get reason
+   243→        reason = message
+   244→        for prefix in ['timeout', 'kick', 'ban', 'mute', 'do', 'kar', 'karo']:
+   245→            reason = re.sub(prefix, '', reason, flags=re.IGNORECASE)
+   246→        
+   247→        # Remove mentions and numbers (duration)
+   248→        reason = re.sub(r'<@!?\d+>', '', reason)
+   249→        reason = re.sub(r'\d+\s*(min|hour|hr|day|minute)?', '', reason, flags=re.IGNORECASE)
+   250→        
+   251→        return reason.strip() or "No reason provided"
+   252→    
+   253→    def _extract_activity(self, message: str) -> Dict[str, str]:
+   254→        """Extract activity type and name from message"""
+   255→        activity_type = "playing"  # Default
+   256→        
+   257→        if any(word in message.lower() for word in ['listening']):
+   258→            activity_type = "listening"
+   259→        elif any(word in message.lower() for word in ['watching']):
+   260→            activity_type = "watching"
+   261→        elif any(word in message.lower() for word in ['streaming']):
+   262→            activity_type = "streaming"
+   263→        
+   264→        # Extract what they're doing
+   265→        name_match = re.search(r'(?:playing|listening||watching|streaming|status)\s+(.+)', message, re.IGNORECASE)
+   266→        name = name_match.group(1).strip() if name_match else "with Ophelia AI"
+   267→        
+   268→        return {"type": activity_type, "name": name}
+   269→    
+   270→    def _extract_nickname(self, message: str) -> Optional[str]:
+   271→        """Extract new nickname from message"""
+   272→        # Look for quoted string or after keywords
+   273→        quote_match = re.search(r'"([^"]+)"', message)
+   274→        if quote_match:
+   275→            return quote_match.group(1)
+   276→        
+   277→        # Try extracting after keywords
+   278→        patterns = [
+   279→            r'(?:nickname|name|naam|bolte)\s+(?:to|as|)?\s*(.+)',
+   280→            r'(?:call me|bulao|bolo)\s*(.+)',
+   281→        ]
+   282→        for pattern in patterns:
+   283→            match = re.search(pattern, message, re.IGNORECASE)
+   284→            if match:
+   285→                return match.group(1).strip()[:32]  # Discord max 32 chars
+   286→        
+   287→        return None
+   288→    
+   289→    def _extract_channel_info(self, message: str) -> Dict[str, str]:
+   290→        """Extract channel creation info"""
+   291→        name_match = re.search(r'(?:channel)?\s*["\']?(\w[\w\s-]*)["\']?', message, re.IGNORECASE)
+   292→        name = name_match.group(1).strip().lower().replace(" ", "-") if name_match else "general"
+   293→        
+   294→        ch_type = "text"
+   295→        if 'voice' in message.lower():
+   296→            ch_type = "voice"
+   297→        elif 'stage' in message.lower():
+   298→            ch_type = "stage"
+   299→        
+   300→        return {"name": name, "type": ch_type}
+   301→    
+   302→    def _extract_role_info(self, message: str) -> Dict[str, str]:
+   303→        """Extract role creation info"""
+   304→        name_match = re.search(r'(?:role)?\s*["\']?(\w[\w\s]*)["\']?', message, re.IGNORECASE)
+   305→        name = name_match.group(1).strip() if name_match else "New Role"
+   306→        
+   307→        colors = {
+   308→            'red': discord.Color.red(),
+   309→            'blue': discord.Color.blue(),
+   310→            'green': discord.Color.green(),
+   311→            'yellow': discord.Color.gold(),
+   312→            'purple': discord.Color.purple(),
+   313→            'pink': discord.Color.pink(),
+   314→            'orange': discord.Color.orange(),
+   315→            'white': discord.Color.white(),
+   316→            'black': discord.Color.default(),
+   317→            'blurple': discord.Color.blurple(),
+   318→            'gold': discord.Color.gold(),
+   319→        }
+   320→        
+   321→        color = discord.Color.blue()  # Default
+   322→        for color_name, color_val in colors.items():
+   323→            if color_name in message.lower():
+   324→                color = color_val
+   325→                break
+   326→        
+   327→        return {"name": name, "color": color}
+   328→    
+   329→    def _extract_send_info(self, message: str, guild: discord.Guild) -> Optional[Dict]:
+   330→        """Extract message sending info"""
+   331→        # Find channel
+   332→        channel_match = re.search(r'<#(\d{17,19})>|(?:channel|#)(?:\s+me)?\s*(\w+)', message, re.IGNORECASE)
+   333→        
+   334→        target_channel = None
+   335→        if channel_match:
+   336→            if channel_match.group(1):  # Channel mention
+   337→                target_channel = guild.get_channel(int(channel_match.group(1)))
+   338→            else:  # Channel name
+   339→                ch_name = channel_match.group(2).lower()
+   340→                target_channel = discord.utils.get(guild.text_channels, name=ch_name)
+   341→        
+   342→        # Extract message content
+   343→        content_match = re.search(r'["\'](.+)["\']|bhejo\s+(.+)|send\s+(.+)|announce\s+(.+)', message, re.IGNORECASE)
+   344→        content = content_match.group(1) or content_match.group(2) or content_match.group(3) or content_match.group(4)
+   345→        
+   346→        if target_channel and content:
+   347→            return {"channel": target_channel, "content": content.strip()}
+   348→        
+   349→        return None
+   350→    
+   351→    def _extract_embed_info(self, message: str) -> Optional[Dict]:
+   352→        """Extract embed creation info"""
+   353→        # Look for title and description
+   354→        matches = re.findall(r'"([^"]+)"', message)
+   355→        if len(matches) >= 2:
+   356→            return {"title": matches[0], "description": matches[1]}
+   357→        elif len(matches) == 1:
+   358→            return {"title": "Announcement", "description": matches[0]}
+   359→        return None
+   360→    
+   361→    def _extract_emoji(self, message: str) -> Optional[str]:
+   362→        """Extract emoji from message"""
+   363→        # Custom emoji format
+   364→        custom_emoji = re.search(r'<a?:\w+:(\d+)>', message)
+   365→        if custom_emoji:
+   366→            return custom_emoji.group(0)
+   367→        
+   368→        # Common emojis - just return first emoji-like character found
+   369→        emoji_chars = ['😂', '❤️', '🔥', '💀', '✨', '🎉', '👍', '👎', '😢', '😡', '🤔', '💯', '⭐', '🎮', '🎵']
+   370→        for emoji in emoji_chars:
+   371→            if emoji in message:
+   372→                return emoji
+   373→        
+   374→        return None
+   375→    
+   376→    def _extract_number(self, message: str) -> Optional[int]:
+   377→        """Extract number from message"""
+   378→        match = re.search(r'\d+', message)
+   379→        return int(match.group()) if match else None
+   380→    
+   381→    def _check_owner(self, user: discord.Member) -> bool:
+   382→        """Check if user is bot owner"""
+   383→        return is_owner(user.id)
+   384→    
+   385→    def _check_mod(self, user: discord.Member, guild: discord.Guild) -> bool:
+   386→        """Check if user is mod or owner"""
+   387→        if is_owner(user.id):
+   388→            return True
+   389→        return user.guild_permissions.manage_guild or user.guild_permissions.administrator
+   390→    
+   391→    # ==================== COMMAND EXECUTORS ====================
+   392→    
+   393→    async def _cmd_show_avatar(self, user: discord.Member, original_msg: str) -> Tuple[str, bool, Optional[discord.Embed]]:
+   394→        """Show user's avatar"""
+   395→        avatar_url = user.avatar.url if user.avatar else user.default_avatar.url
+   396→        
+   397→        embed = discord.Embed(
+   398→            title=f"📸 {user.display_name}'s Avatar",
+   399→            color=user.color or discord.Color.blurple()
+   400→        )
+   401→        embed.set_image(url=avatar_url)
+   402→        embed.add_field(name="User", value=f"<@{user.id}>", inline=True)
+   403→        embed.add_field(name="Avatar URL", value=f"[Click here]({avatar_url})", inline=True)
+   404→        
+   405→        return f"✅ Yeh raha {user.mention} ka avatar:", True, embed
+   406→    
+   407→    async def _cmd_show_user_info(self, user: discord.Member) -> Tuple[str, bool, Optional[discord.Embed]]:
+   408→        """Show detailed user information"""
+   409→        embed = discord.Embed(
+   410→            title=f"👤 {user.display_name}'s Info",
+   411→            color=user.color or discord.Color.blurple()
+   412→        )
+   413→        embed.set_thumbnail(url=user.avatar.url if user.avatar else user.default_avatar.url)
+   414→        
+   415→        embed.add_field(name="Username", value=str(user), inline=True)
+   416→        embed.add_field(name="Display Name", value=user.display_name, inline=True)
+   417→        embed.add_field(name="User ID", value=f"`{user.id}`", inline=True)
+   418→        embed.add_field(name="Bot?", value="✅ Yes" if user.bot else "❌ No", inline=True)
+   419→        embed.add_field(name="Account Created", value=format(user.created_at, "%d %b %Y"), inline=True)
+   420→        embed.add_field(name="Server Join Date", value=format(user.joined_at, "%d %b %Y") if user.joined_at else "Unknown", inline=True)
+   421→        
+   422→        # Roles
+   423→        roles = [role.name for role in user.roles[1:]]  # Skip @everyone
+   424→        if roles:
+   425→            embed.add_field(name=f"Roles ({len(roles)})", value=", ".join(roles[:10]), inline=False)
+   426→            if len(roles) > 10:
+   427→                embed.add_field(name="", value=f"*...and {len(roles)-10} more*", inline=False)
+   428→        
+   429→        # Top role
+   430→        if user.top_role and user.top_role.name != "@everyone":
+   431→            embed.add_field(name="Top Role", value=f"<@&{user.top_role.id}>", inline=True)
+   432→        
+   433→        # Owner badge
+   434→        if is_owner(user.id):
+   435→            embed.add_field(name="👑 Status", value="**BOT OWNER**", inline=False)
+   436→        
+   437→        return f"✅ Yeh raha {user.mention} ki puri info:", True, embed
+   438→    
+   439→    async def _cmd_show_server_info(self, guild: discord.Guild) -> Tuple[str, bool, Optional[discord.Embed]]:
+   440→        """Show server information"""
+   441→        embed = discord.Embed(
+   442→            title=f"📊 {guild.name} Server Info",
+   443→            color=discord.Color.blurple(),
+   444→            timestamp=datetime.now()
+   445→        )
+   446→        
+   447→        if guild.icon:
+   448→            embed.set_thumbnail(url=guild.icon.url)
+   449→        
+   450→        embed.add_field(name="Server ID", value=f"`{guild.id}`", inline=True)
+   451→        embed.add_field(name="Owner", value=f"<@{guild.owner_id}>", inline=True)
+   452→        embed.add_field(name="Created", value=format(guild.created_at, "%d %b %Y"), inline=True)
+   453→        
+   454→        embed.add_field(name="Members", value=guild.member_count, inline=True)
+   455→        embed.add_field(name="Text Channels", value=len(guild.text_channels), inline=True)
+   456→        embed.add_field(name="Voice Channels", value=len(guild.voice_channels), inline=True)
+   457→        embed.add_field(name="Roles", value=len(guild.roles), inline=True)
+   458→        embed.add_field(name="Emojis", value=len(guild.emojis), inline=True)
+   459→        embed.add_field(name="Boost Level", value=str(guild.premium_tier), inline=True)
+   460→        
+   461→        features = []
+   462→        if guild.features:
+   463→            feature_names = {
+   464→                'COMMUNITY': 'Community',
+   465→                'PARTNERED': 'Partnered',
+   466→                'VERIFIED': 'Verified',
+   467→                'DISCOVERABLE': 'Discoverable',
+   468→                'ANIMATED_ICON': 'Animated Icon',
+   469→                'BANNER': 'Banner',
+   470→                'VIP_REGIONS': 'VIP Regions',
+   471→            }
+   472→            for f in guild.features:
+   473→                if f in feature_names:
+   474→                    features.append(feature_names[f])
+   475→        
+   476→        if features:
+   477→            embed.add_field(name="Features", value=", ".join(features), inline=False)
+   478→        
+   479→        return f"✅ Server ki full info:", True, embed
+   480→    
+   481→    async def _cmd_show_roles(self, user: discord.Member) -> Tuple[str, bool, Optional[discord.Embed]]:
+   482→        """Show user's roles"""
+   483→        roles = [role for role in user.roles if role.name != "@everyone"]
+   484→        
+   485→        if not roles:
+   486→            return f"{user.mention} ke paas koi special role nahi hai 😅", True, None
+   487→        
+   488→        embed = discord.Embed(
+   489→            title=f"🎭 {user.display_name}'s Roles",
+   490→            color=user.color or discord.Color.blurple(),
+   491→            description=f"Total **{len(roles)} roles**"
+   492→        )
+   493→        
+   494→        role_list = []
+   495→        for i, role in enumerate(sorted(roles, key=lambda r: r.position, reverse=True)):
+   496→            role_list.append(f"`{i+1}.` <@&{role.id}>")
+   497→        
+   498→        embed.description += "\n".join(role_list[:20])
+   499→        
+   500→        return f"✅ Yeh hain {user.mention} ke roles:", True, embed
+   501→    
+   502→    async def _cmd_show_join_date(self, user: discord.Member) -> Tuple[str, bool, Optional[discord.Embed]]:
+   503→        """Show when user joined server"""
+   504→        if not user.joined_at:
+   505→            return f"❌ Join date available nahi hai", True, None
+   506→        
+   507→        days_since = (datetime.now(user.joined_at.tzinfo) - user.joined_at).days
+   508→        
+   509→        embed = discord.Embed(
+   510→            title="📅 Join Date",
+   511→            color=discord.Color.green()
+   512→        )
+   513→        embed.add_field(name="User", value=user.mention, inline=True)
+   514→        embed.add_field(name="Join Date", value=format(user.joined_at, "%d %B %Y at %I:%M %p"), inline=True)
+   515→        embed.add_field(name="Days in Server", value=f"**{days_since} days**", inline=True)
+   516→        
+   517→        return f"✅ {user.mention} ko server join hua:", True, embed
+   518→    
+   519→    async def _cmd_timeout(
+   520→        self, 
+   521→        user: discord.Member, 
+   522→        duration_minutes: int, 
+   523→        reason: str,
+   524→        moderator: discord.Member,
+   525→        guild: discord.Guild
+   526→    ) -> Tuple[str, bool, Optional[discord.Embed]]:
+   527→        """Timeout a user"""
+   528→        try:
+   529→            duration = timedelta(minutes=duration_minutes)
+   530→            await user.timeout(duration, reason=f"Via AI by {moderator}: {reason}")
+   531→            
+   532→            embed = discord.Embed(
+   533→                title="⏰ User Timed Out!",
+   534→                color=discord.Color.orange()
+   535→            )
+   536→            embed.add_field(name="User", value=user.mention, inline=True)
+   537→            embed.add_field(name="Duration", value=f"**{duration_minutes} minutes**", inline=True)
+   538→            embed.add_field(name="Reason", value=reason, inline=True)
+   539→            embed.add_field(name="By", value=moderator.mention, inline=True)
+   540→            embed.set_footer(text="Timeout automatically expires!")
+   541→            
+   542→            return f"✅ {user.mention} ko **{duration_minutes} minutes** ke liye timeout kar diya!", True, embed
+   543→            
+   544→        except Exception as e:
+   545→            return f"❌ Timeout nahi ho paya: `{e}`", True, None
+   546→    
+   547→    async def _cmd_kick(
+   548→        self, 
+   549→        user: discord.Member, 
+   550→        reason: str,
+   551→        moderator: discord.Member,
+   552→        guild: discord.Guild
+   553→    ) -> Tuple[str, bool, Optional[discord.Embed]]:
+   554→        """Kick a user"""
+   555→        try:
+   556→            await user.kick(reason=f"Via AI by {moderator}: {reason}")
+   557→            
+   558→            embed = discord.Embed(
+   559→                title="👢 User Kicked!",
+   560→                color=discord.Color.red()
+   561→            )
+   562→            embed.add_field(name="User", value=user.mention, inline=True)
+   563→            embed.add_field(name="Reason", value=reason, inline=True)
+   564→            embed.add_field(name="Kicked By", value=moderator.mention, inline=True)
+   565→            
+   566→            return f"✅ {user.mention} ko kick kar diya!", True, embed
+   567→            
+   568→        except Exception as e:
+   569→            return f"❌ Kick nahi ho paya: `{e}`", True, None
+   570→    
+   571→    async def _cmd_ban(
+   572→        self, 
+   573→        user: discord.Member, 
+   574→        reason: str,
+   575→        moderator: discord.Member,
+   576→        guild: discord.Guild
+   577→    ) -> Tuple[str, bool, Optional[discord.Embed]]:
+   578→        """Ban a user"""
+   579→        try:
+   580→            await user.ban(reason=f"Via AI by {moderator}: {reason}", delete_message_days=0)
+   581→            
+   582→            embed = discord.Embed(
+   583→                title="🚫 User Banned!",
+   584→                color=discord.Color.dark_red()
+   585→            )
+   586→            embed.add_field(name="User", value=user.mention, inline=True)
+   587→            embed.add_field(name="Reason", value=reason, inline=True)
+   588→            embed.add_field(name="Banned By", value=moderator.mention, inline=True)
+   589→            
+   590→            return f"✅ {user.mention} ko permanently ban kar diya!", True, embed
+   591→            
+   592→        except Exception as e:
+   593→            return f"❌ Ban nahi ho paya: `{e}`", True, None
+   594→    
+   595→    async def _cmd_mute(
+   596→        self, 
+   597→        user: discord.Member, 
+   598→        moderator: discord.Member,
+   599→        guild: discord.Guild
+   600→    ) -> Tuple[str, bool, Optional[discord.Embed]]:
+   601→        """Mute a user (using timeout for 5 min or mute role)"""
+   602→        try:
+   603→            # Use timeout for 5 minutes as mute
+   604→            await user.timeout(timedelta(minutes=5), reason=f"Muted via AI by {moderator}")
+   605→            
+   606→            embed = discord.Embed(
+   607→                title="🔇 User Muted!",
+   608→                color=discord.Color.orange()
+   609→            )
+   610→            embed.add_field(name="User", value=user.mention, inline=True)
+   611→            embed.add_field(name="Duration", value="5 minutes", inline=True)
+   612→            embed.add_field(name="Muted By", value=moderator.mention, inline=True)
+   613→            
+   614→            return f"✅ {user.mention} ko mute kar diya (5 min)!", True, embed
+   615→            
+   616→        except Exception as e:
+   617→            return f"❌ Mute nahi ho paya: `{e}`", True, None
+   618→    
+   619→    async def _cmd_set_status(self, activity: Dict[str, str]) -> Tuple[str, bool, Optional[discord.Embed]]:
+   620→        """Set bot status/activity"""
+   621→        try:
+   622→            type_map = {
+   623→                "playing": discord.ActivityType.playing,
+   624→                "listening": discord.ActivityType.listening,
+   625→                "watching": discord.ActivityType.watching,
+   626→                "streaming": discord.ActivityType.streaming
+   627→            }
+   628→            
+   629→            activity_type = type_map.get(activity["type"], discord.ActivityType.playing)
+   630→            act = discord.Activity(type=activity_type, name=activity["name"])
+   631→            await self.bot.change_presence(activity=act)
+   632→            
+   633→            return f"✅ Status set: **{activity['type']}** *{activity['name']}*", True, None
+   634→            
+   635→        except Exception as e:
+   636→            return f"❌ Status set nahi ho paya: `{e}`", True, None
+   637→    
+   638→    async def _cmd_set_nickname(self, new_name: str, guild: discord.Guild) -> Tuple[str, bool, Optional[discord.Embed]]:
+   639→        """Change bot's nickname in server"""
+   640→        try:
+   641→            await guild.me.edit(nickname=new_name)
+   642→            return f"✅ Mera ab naam **{new_name}** hai! 😊", True, None
+   643→        except Exception as e:
+   644→            return f"❌ Nickname change nahi ho paya: `{e}`", True, None
+   645→    
+   646→    async def _cmd_create_channel(self, info: Dict[str, str], guild: discord.Guild) -> Tuple[str, bool, Optional[discord.Embed]]:
+   647→        """Create a new channel"""
+   648→        try:
+   649→            type_map = {
+   650→                "text": discord.ChannelType.text,
+   651→                "voice": discord.ChannelType.voice,
+   652→                "stage": discord.ChannelType.stage
+   653→            }
+   654→            
+   655→            ch_type = type_map.get(info["type"], discord.ChannelType.text)
+   656→            new_channel = await guild.create_channel(name=info["name"], type=ch_type)
+   657→            
+   658→            embed = discord.Embed(
+   659→                title="✅ Channel Created!",
+   660→                color=discord.Color.green()
+   661→            )
+   662→            embed.add_field(name="Name", value=f"#{new_channel.name}", inline=True)
+   663→            embed.add_field(name="Type", value=info["type"].title(), inline=True)
+   664→            embed.add_field(name="ID", value=f"`{new_channel.id}`", inline=True)
+   665→            
+   666→            return f"✅ Channel **#{new_channel.name}** bana diya!", True, embed
+   667→            
+   668→        except Exception as e:
+   669→            return f"❌ Channel nahi bana: `{e}`", True, None
+   670→    
+   671→    async def _cmd_create_role(self, info: Dict[str, str], guild: discord.Guild) -> Tuple[str, bool, Optional[discord.Embed]]:
+   672→        """Create a new role"""
+   673→        try:
+   674→            new_role = await guild.create_role(name=info["name"], color=info["color"])
+   675→            
+   676→            embed = discord.Embed(
+   677→                title="✅ Role Created!",
+   678→                color=info["color"]
+   679→            )
+   680→            embed.add_field(name="Name", value=f"@{new_role.name}", inline=True)
+   681→            embed.add_field(name="Color", value=info["color"].value if hasattr(info['color'], 'value') else "Default", inline=True)
+   682→            embed.add_field(name="ID", value=f"`{new_role.id}`", inline=True)
+   683→            
+   684→            return f"✅ Role **@{new_role.name}** bana diya!", True, embed
+   685→            
+   686→        except Exception as e:
+   687→            return f"❌ Role nahi bana: `{e}`", True, None
+   688→    
+   689→    async def _cmd_send_message(self, info: Dict, author: discord.Member) -> Tuple[str, bool, Optional[discord.Embed]]:
+   690→        """Send message to a channel"""
+   691→        try:
+   692→            channel = info["channel"]
+   693→            content = info["content"]
+   694→            
+   695→            sent_msg = await channel.send(content)
+   696→            
+   697→            embed = discord.Embed(
+   698→                title="✅ Message Sent!",
+   699→                color=discord.Color.green()
+   700→            )
+   701→            embed.add_field(name="Channel", value=f"<#{channel.id}>", inline=True)
+   702→            embed.add_field(name="Content", value=content[:100] + ("..." if len(content) > 100 else ""), inline=False)
+   703→            
+   704→            return f"✅ Message <#{channel.id}> me bhej diya!", True, embed
+   705→            
+   706→        except Exception as e:
+   707→            return f"❌ Message nahi bhej paya: `{e}`", True, None
+   708→    
+   709→    async def _cmd_send_embed(self, info: Dict, channel: discord.TextChannel) -> Tuple[str, bool, Optional[discord.Embed]]:
+   710→        """Send an embed message"""
+   711→        try:
+   712→            embed = discord.Embed(
+   713→                title=info["title"],
+   714→                description=info["description"],
+   715→                color=discord.Color.blurple(),
+   716→                timestamp=datetime.now()
+   717→            )
+   718→            embed.set_footer(text="🤖 Generated by Ophelia AI 2.0")
+   719→            
+   720→            await channel.send(embed=embed)
+   721→            
+   722→            return f"✅ Embed bhej diya!", True, None
+   723→            
+   724→        except Exception as e:
+   725→            return f"❌ Embed nahi bhej paya: `{e}`", True, None
+   726→    
+   727→    async def _cmd_add_reaction(self, emoji: str, message: discord.Message) -> Tuple[str, bool, Optional[discord.Embed]]:
+   728→        """Add reaction to a message"""
+   729→        try:
+   730→            await message.add_reaction(emoji)
+   731→            return f"✅ Reaction {emoji} add kar diya!", True, None
+   732→        except Exception as e:
+   733→            return f"❌ Reaction add nahi ho paya: `{e}`", True, None
+   734→    
+   735→    async def _cmd_clear_messages(self, count: int, channel: discord.TextChannel) -> Tuple[str, bool, Optional[discord.Embed]]:
+   736→        """Delete messages from channel"""
+   737→        try:
+   738→            count = min(count, 100)  # Max 100
+   739→            deleted = await channel.purge(limit=count)
+   740→            
+   741→            embed = discord.Embed(
+   742→                title="🧹 Messages Deleted!",
+   743→                color=discord.Color.orange()
+   744→            )
+   745→            embed.add_field(name="Count", value=f"**{len(deleted)} messages**", inline=True)
+   746→            embed.add_field(name="Channel", value=f"<#{channel.id}>", inline=True)
+   747→            
+   748→            return f"✅ **{len(deleted)} messages** delete kiye!", True, embed
+   749→            
+   750→        except Exception as e:
+   751→            return f"❌ Messages delete nahi ho paye: `{e}`", True, None
+   752→    
+   753→    async def _cmd_show_help(self, user: discord.Member) -> Tuple[str, bool, Optional[discord.Embed]]:
+   754→        """Show help for natural language commands"""
+   755→        owner_mode = is_owner(user.id)
+   756→        
+   757→        embed = discord.Embed(
+   758→            title="🤖 Ophelia AI 2.0 - Natural Commands",
+   759→            description="Sirf **bolna** hai, samajh jaati hoon! 🧠",
+   760→            color=discord.Color.blurple()
+   761→        )
+   762→        
+   763→        # Everyone can use these
+   764→        embed.add_field(
+   765→            name="👀 Info Commands (Sab use karein)",
+   766→            value=(
+   767→                "`avatar dikhao` / `dp dikhao`\n"
+   768→                "`iske baare me batao`\n"
+   769→                "`server info dikhao`\n"
+   770→                "`mera info`\n"
+   771→                "`roles dikhao`\n"
+   772→                "`join date kab hai?`"
+   773→            ),
+   774→            inline=False
+   775→        )
+   776→        
+   777→        if owner_mode:
+   778→            embed.add_field(
+   779→                name="👑 Owner Commands (Full Power)",
+   780→                value=(
+   781→                    "`isko timeout do [time]`\n"
+   782→                    "`isko kick/ban/mute karo`\n"
+   783→                    "`status set karo playing [game]`\n"
+   784→                    "`nickname change karo [name]`\n"
+   785→                    "`channel/role banao [name]`\n"
+   786→                    "`#channel me [msg] bhejo`\n"
+   787→                    "`embed banao [title] [desc]`\n"
+   788→                    "`[count] messages delete karo`"
+   789→                ),
+   790→                inline=False
+   791→            )
+   792→        else:
+   793→            embed.add_field(
+   794→                name="⚡ Mod Commands",
+   795→                value=(
+   796→                    "`isko timeout/kick/ban karo`\n"
+   797→                    "`messages delete karo`"
+   798→                ),
+   799→                inline=False
+   800→            )
+   801→        
+   802→        embed.set_footer(text="Directly bolo, koi /cmd syntax nahi chahiye! 😊")
+   803→        
+   804→        return "✅ Yeh rahi meri command list:", True, embed
+   805→
+   806→
+   807→# Global instance
+   808→natural_parser: Optional[NaturalCommandParser] = None
+   809→
+   810→
+   811→def init_natural_commands(bot: commands.Bot) -> NaturalCommandParser:
+   812→    """Initialize natural command system"""
+   813→    global natural_parser
+   814→    natural_parser = NaturalCommandParser(bot)
+   815→    return natural_parser
+   816→
+   817→
+   818→def get_natural_parser() -> NaturalCommandParser:
+   819→    """Get natural command parser instance"""
+   820→    if natural_parser is None:
+   821→        raise RuntimeError("Natural command parser not initialized!")
+   822→    return natural_parser
+   823→

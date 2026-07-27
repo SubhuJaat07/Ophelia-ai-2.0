@@ -191,54 +191,28 @@ class MessageHandler:
     async def _send_response(self, original_message: discord.Message, response: str):
         """
         Send AI response using Discord's reply feature.
-        Handles long messages, embeds when needed.
+        - Normal chat: PLAIN TEXT (no embeds)
+        - Commands: Already handled with embeds by natural_commands
         """
         max_length = 1900
         
-        should_embed = self._should_use_embed(response)
-        
+        # For NORMAL AI CHAT: Always use plain text (no embeds!)
         if len(response) <= max_length:
-            if should_embed:
-                embed = discord.Embed(
-                    description=response,
-                    color=discord.Color.blurple()
-                )
-                embed.set_footer(text=f"🤖 Ophelia AI 2.0 • Replying to {original_message.author.display_name}")
-                embed.set_thumbnail(url=self.bot.user.avatar.url if self.bot.user.avatar else None)
-                await original_message.reply(embed=embed, mention_author=False)
-            else:
-                await original_message.reply(response, mention_author=False)
+            await original_message.reply(response, mention_author=False)
         else:
             chunks = self._split_response(response, max_length)
             
             for i, chunk in enumerate(chunks):
                 if i == 0:
-                    if should_embed:
-                        embed = discord.Embed(description=chunk, color=discord.Color.blurple())
-                        embed.set_footer(text=f"🤖 Ophelia AI ({i+1}/{len(chunks)})")
-                        await original_message.reply(embed=embed, mention_author=False)
-                    else:
-                        await original_message.reply(chunk, mention_author=False)
+                    await original_message.reply(chunk, mention_author=False)
                 else:
-                    if should_embed:
-                        embed = discord.Embed(description=chunk, color=discord.Color.blurple())
-                        embed.set_footer(text=f"🤖 Ophelia AI ({i+1}/{len(chunks)})")
-                        await original_message.channel.send(embed=embed)
-                    else:
-                        await original_message.channel.send(chunk)
+                    await original_message.channel.send(chunk)
                 
                 if i < len(chunks) - 1:
                     await asyncio.sleep(0.5)
     
     def _should_use_embed(self, response: str) -> bool:
-        """Determine if response should be sent as embed"""
-        if "```" in response:
-            return True
-        
-        lines = response.split("\n")
-        if any(len(line) > 100 for line in lines):
-            return True
-        
+        """Always return False now - commands handle their own embeds, chat is plain text"""
         return False
     
     def _split_response(self, response: str, max_length: int) -> list[str]:

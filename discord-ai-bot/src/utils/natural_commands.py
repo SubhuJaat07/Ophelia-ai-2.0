@@ -62,8 +62,8 @@ class NaturalCommandParser:
     ) -> Optional[Tuple[str, bool, Optional[discord.Embed]]]:
         """Detect and execute natural language commands"""
         
-        # Get target user (from mention or referenced message)
-        target_user = self._extract_target_user(original_msg, channel, referenced_msg)
+        # Get target user (from mention, name, or referenced message) - IMPROVED!
+        target_user = await self._extract_target_user(original_msg, channel, guild, referenced_msg)
         
         # ===== AVATAR & INFO COMMANDS (Everyone can use) =====
         
@@ -87,39 +87,43 @@ class NaturalCommandParser:
             target = target_user or author
             return await self._cmd_show_join_date(target)
         
+        # ===== OWNER INFO COMMAND =====
+        if self._matches_patterns(msg_lower, ["owner", "owners", "kon owner", "who is owner", "malik kaun hai"]):
+            return await self._cmd_show_owners(guild)
+        
         # ===== MODERATION COMMANDS (Owner/Mod Only) =====
         
         if self._matches_patterns(msg_lower, ["timeout", "mute temporarily", "silent mode"]):
             if not self._check_owner(author):
                 return ("❌ Sirf owners timeout kar sakte hain!", False, None)
             duration = self._extract_duration(original_msg)
-            reason = self._extract_reason(original_msg)
+            reason = self._extract_reason(original_msg) or "Server rules violation"
             if target_user:
                 return await self._cmd_timeout(target_user, duration, reason, author, guild)
-            return ("❌ Batao kis user ko timeout karna hai? (@mention karo)", False, None)
+            return ("❌ Batao kis user ko timeout karna hai? (@mention karo ya naam batao)", False, None)
         
         if self._matches_patterns(msg_lower, ["kick", "hatao", "remove", "throw out", "nikalo"]):
             if not self._check_mod(author, guild):
                 return ("❌ Sirf mods kick kar sakte hain!", False, None)
-            reason = self._extract_reason(original_msg)
+            reason = self._extract_reason(original_msg) or "Server rules violation"
             if target_user:
                 return await self._cmd_kick(target_user, reason, author, guild)
-            return ("❌ Batao kis user ko kick karna hai?", False, None)
+            return ("❌ Batao kis user ko kick karna hai? (@mention karo ya naam batao)", False, None)
         
         if self._matches_patterns(msg_lower, ["ban", "permanent ban", "block", "paka band"]):
             if not self._check_mod(author, guild):
                 return ("❌ Sirf mods ban kar sakte hain!", False, None)
-            reason = self._extract_reason(original_msg)
+            reason = self._extract_reason(original_msg) or "Server rules violation"
             if target_user:
                 return await self._cmd_ban(target_user, reason, author, guild)
-            return ("❌ Batao kis user ko ban karna hai?", False, None)
+            return ("❌ Batao kis user ko ban karna hai? (@mention karo ya naam batao)", False, None)
         
         if self._matches_patterns(msg_lower, ["mute", "chupao", "silence", "shut up"]):
             if not self._check_mod(author, guild):
                 return ("❌ Sirf mods mute kar sakte hain!", False, None)
             if target_user:
                 return await self._cmd_mute(target_user, author, guild)
-            return ("❌ Batao kis user ko mute karna hai?", False, None)
+            return ("❌ Batao kis user ko mute karna hai? (@mention karo ya naam batao)", False, None)
         
         # ===== BOT CONTROL COMMANDS (Owner Only) =====
         
@@ -194,35 +198,51 @@ class NaturalCommandParser:
                 return True
         return False
     
-    def _extract_target_user(
+    async def _extract_target_user(
         self, 
         message: str, 
         channel: discord.TextChannel, 
+        guild: discord.Guild,
         referenced_msg: Optional[discord.Message] = None
     ) -> Optional[discord.Member]:
-        """Extract target user from mentions or referenced message"""
-        # First check for mentions in message
+        """Extract target user from mentions, username, or referenced message - IMPROVED!"""
+        
+        # First check for mentions in message (most reliable)
         mention_pattern = r'<@!?(\d{17,19})>'
         match = re.search(mention_pattern, message)
         if match:
             user_id = int(match.group(1))
-            return channel.guild.get_member(user_id)
+            member = channel.guild.get_member(user_id)
+            if member:
+                return member
         
         # Then check referenced message (reply)
         if referenced_msg:
             return channel.guild.get_member(referenced_msg.author.id)
         
+        # NEW: Try to find user by NAME/USERNAME from the message
+        # Remove common words and try to match a username
+        cleaned_msg = re.sub(r'<@!?\d+>', '', message)  # Remove mentions
+        cleaned_msg = re.sub(r'(kick|ban|timeout|mute|isko|iska|usko|use|inhe|inhone|user|ko|ka|ke|liye|karo|kar|do|to|me|se|hai|please|hey|ophelia|@everyone|@here)', '', cleaned_msg, flags=re.IGNORECASE)
+        cleaned_msg = cleaned_msg.strip()
+        
+        if cleaned_msg and len(cleaned_msg) > 2:
+            # Search for member by display name or username
+            for member in guild.members:
+                if cleaned_msg.lower() in member.display_name.lower() or cleaned_msg.lower() in member.name.lower():
+                    logger.info(f"🔍 Found user '{cleaned_msg}' → {member} ({member.id})")
+                    return member
+        
         return None
     
     def _extract_duration(self, message: str) -> int:
         """Extract timeout duration from message in minutes"""
-        # Look for duration patterns
         patterns = [
-            r'(\d+)\s*min',      # 10 min, 5min
-            r'(\d+)\s*minute',   # 10 minute
-            r'(\d+)\s*hour',     # 1 hour
-            r'(\d+)\s*hr',       # 1hr
-            r'(\d+)\s*day',      # 1 day
+            r'(\d+)\s*min',
+            r'(\d+)\s*minute',
+            r'(\d+)\s*hour',
+            r'(\d+)\s*hr',
+            r'(\d+)\s*day',
         ]
         
         for pattern in patterns:
@@ -237,9 +257,8 @@ class NaturalCommandParser:
         
         return 10  # Default 10 minutes
     
-    def _extract_reason(self, message: str) -> str:
-        """Extract reason from message"""
-        # Remove common prefixes to get reason
+    def _extract_reason(self, message: str) -> Optional[str]:
+        """Extract reason from message - returns None if no clear reason"""
         reason = message
         for prefix in ['timeout', 'kick', 'ban', 'mute', 'do', 'kar', 'karo']:
             reason = re.sub(prefix, '', reason, flags=re.IGNORECASE)
@@ -248,7 +267,13 @@ class NaturalCommandParser:
         reason = re.sub(r'<@!?\d+>', '', reason)
         reason = re.sub(r'\d+\s*(min|hour|hr|day|minute)?', '', reason, flags=re.IGNORECASE)
         
-        return reason.strip() or "No reason provided"
+        reason = reason.strip()
+        
+        # Only return reason if it looks like actual content (not just random words)
+        if len(reason) < 3 or reason.lower() in ['isco', 'iska', 'usko', 'use', 'inhe', 'ko', 'se']:
+            return None  # No valid reason found
+        
+        return reason
     
     def _extract_activity(self, message: str) -> Dict[str, str]:
         """Extract activity type and name from message"""
@@ -261,7 +286,6 @@ class NaturalCommandParser:
         elif any(word in message.lower() for word in ['streaming']):
             activity_type = "streaming"
         
-        # Extract what they're doing
         name_match = re.search(r'(?:playing|listening||watching|streaming|status)\s+(.+)', message, re.IGNORECASE)
         name = name_match.group(1).strip() if name_match else "with Ophelia AI"
         
@@ -269,12 +293,10 @@ class NaturalCommandParser:
     
     def _extract_nickname(self, message: str) -> Optional[str]:
         """Extract new nickname from message"""
-        # Look for quoted string or after keywords
         quote_match = re.search(r'"([^"]+)"', message)
         if quote_match:
             return quote_match.group(1)
         
-        # Try extracting after keywords
         patterns = [
             r'(?:nickname|name|naam|bolte)\s+(?:to|as|)?\s*(.+)',
             r'(?:call me|bulao|bolo)\s*(.+)',
@@ -282,7 +304,7 @@ class NaturalCommandParser:
         for pattern in patterns:
             match = re.search(pattern, message, re.IGNORECASE)
             if match:
-                return match.group(1).strip()[:32]  # Discord max 32 chars
+                return match.group(1).strip()[:32]
         
         return None
     
@@ -318,7 +340,7 @@ class NaturalCommandParser:
             'gold': discord.Color.gold(),
         }
         
-        color = discord.Color.blue()  # Default
+        color = discord.Color.blue()
         for color_name, color_val in colors.items():
             if color_name in message.lower():
                 color = color_val
@@ -328,18 +350,16 @@ class NaturalCommandParser:
     
     def _extract_send_info(self, message: str, guild: discord.Guild) -> Optional[Dict]:
         """Extract message sending info"""
-        # Find channel
         channel_match = re.search(r'<#(\d{17,19})>|(?:channel|#)(?:\s+me)?\s*(\w+)', message, re.IGNORECASE)
         
         target_channel = None
         if channel_match:
-            if channel_match.group(1):  # Channel mention
+            if channel_match.group(1):
                 target_channel = guild.get_channel(int(channel_match.group(1)))
-            else:  # Channel name
+            else:
                 ch_name = channel_match.group(2).lower()
                 target_channel = discord.utils.get(guild.text_channels, name=ch_name)
         
-        # Extract message content
         content_match = re.search(r'["\'](.+)["\']|bhejo\s+(.+)|send\s+(.+)|announce\s+(.+)', message, re.IGNORECASE)
         content = content_match.group(1) or content_match.group(2) or content_match.group(3) or content_match.group(4)
         
@@ -350,7 +370,6 @@ class NaturalCommandParser:
     
     def _extract_embed_info(self, message: str) -> Optional[Dict]:
         """Extract embed creation info"""
-        # Look for title and description
         matches = re.findall(r'"([^"]+)"', message)
         if len(matches) >= 2:
             return {"title": matches[0], "description": matches[1]}
@@ -360,12 +379,10 @@ class NaturalCommandParser:
     
     def _extract_emoji(self, message: str) -> Optional[str]:
         """Extract emoji from message"""
-        # Custom emoji format
         custom_emoji = re.search(r'<a?:\w+:(\d+)>', message)
         if custom_emoji:
             return custom_emoji.group(0)
         
-        # Common emojis - just return first emoji-like character found
         emoji_chars = ['😂', '❤️', '🔥', '💀', '✨', '🎉', '👍', '👎', '😢', '😡', '🤔', '💯', '⭐', '🎮', '🎵']
         for emoji in emoji_chars:
             if emoji in message:
@@ -391,55 +408,50 @@ class NaturalCommandParser:
     # ==================== COMMAND EXECUTORS ====================
     
     async def _cmd_show_avatar(self, user: discord.Member, original_msg: str) -> Tuple[str, bool, Optional[discord.Embed]]:
-        """Show user's avatar"""
+        """Show user's avatar - SEND AS PLAIN IMAGE, NOT EMBED!"""
         avatar_url = user.avatar.url if user.avatar else user.default_avatar.url
         
-        embed = discord.Embed(
-            title=f"📸 {user.display_name}'s Avatar",
-            color=user.color or discord.Color.blurple()
-        )
-        embed.set_image(url=avatar_url)
-        embed.add_field(name="User", value=f"<@{user.id}>", inline=True)
-        embed.add_field(name="Avatar URL", value=f"[Click here]({avatar_url})", inline=True)
-        
-        return f"✅ Yeh raha {user.mention} ka avatar:", True, embed
+        # Return PLAIN TEXT with image URL - let Discord preview it naturally
+        return f"📸 **{user.display_name}** ka avatar:\n{avatar_url}", True, None
     
     async def _cmd_show_user_info(self, user: discord.Member) -> Tuple[str, bool, Optional[discord.Embed]]:
-        """Show detailed user information"""
+        """Show detailed user information - NICE EMBED STYLE!"""
         embed = discord.Embed(
-            title=f"👤 {user.display_name}'s Info",
+            title=f"╔══════════════════════════╗\n║  👤 USER INFORMATION     ║\n╚══════════════════════════╝",
+            description=f"**{user.display_name}** ki puri jaankari:",
             color=user.color or discord.Color.blurple()
         )
         embed.set_thumbnail(url=user.avatar.url if user.avatar else user.default_avatar.url)
         
-        embed.add_field(name="Username", value=str(user), inline=True)
-        embed.add_field(name="Display Name", value=user.display_name, inline=True)
-        embed.add_field(name="User ID", value=f"`{user.id}`", inline=True)
-        embed.add_field(name="Bot?", value="✅ Yes" if user.bot else "❌ No", inline=True)
-        embed.add_field(name="Account Created", value=format(user.created_at, "%d %b %Y"), inline=True)
-        embed.add_field(name="Server Join Date", value=format(user.joined_at, "%d %b %Y") if user.joined_at else "Unknown", inline=True)
+        embed.add_field(name="👤 Username", value=f"`{user}`", inline=True)
+        embed.add_field(name="📛 Display Name", value=user.display_name, inline=True)
+        embed.add_field(name="🆔 User ID", value=f"`{user.id}`", inline=True)
+        embed.add_field(name="🤖 Bot?", value="✅ Yes" if user.bot else "❌ No", inline=True)
+        embed.add_field(name="📅 Account Created", value=format(user.created_at, "%d %b %Y"), inline=True)
+        embed.add_field(name="🏠 Server Join Date", value=format(user.joined_at, "%d %b %Y") if user.joined_at else "Unknown", inline=True)
         
         # Roles
-        roles = [role.name for role in user.roles[1:]]  # Skip @everyone
+        roles = [role.name for role in user.roles[1:]]
         if roles:
-            embed.add_field(name=f"Roles ({len(roles)})", value=", ".join(roles[:10]), inline=False)
+            embed.add_field(name=f"🎭 Roles ({len(roles)})", value=", ".join(roles[:10]), inline=False)
             if len(roles) > 10:
                 embed.add_field(name="", value=f"*...and {len(roles)-10} more*", inline=False)
         
         # Top role
         if user.top_role and user.top_role.name != "@everyone":
-            embed.add_field(name="Top Role", value=f"<@&{user.top_role.id}>", inline=True)
+            embed.add_field(name="⭐ Top Role", value=f"<@&{user.top_role.id}>", inline=True)
         
         # Owner badge
         if is_owner(user.id):
-            embed.add_field(name="👑 Status", value="**BOT OWNER**", inline=False)
+            embed.add_field(name="👑 Status", value="**BOT OWNER - FULL ACCESS**", inline=False)
         
-        return f"✅ Yeh raha {user.mention} ki puri info:", True, embed
+        return f"", True, embed  # Empty text since embed has all info
     
     async def _cmd_show_server_info(self, guild: discord.Guild) -> Tuple[str, bool, Optional[discord.Embed]]:
-        """Show server information"""
+        """Show server information - ANNOUNCEMENT STYLE!"""
         embed = discord.Embed(
-            title=f"📊 {guild.name} Server Info",
+            title="╔══════════════════════════════╗\n║  📊 SERVER INFORMATION      ║\n╚══════════════════════════════╝",
+            description=f"**{guild.name}** server ki stats:",
             color=discord.Color.blurple(),
             timestamp=datetime.now()
         )
@@ -447,16 +459,16 @@ class NaturalCommandParser:
         if guild.icon:
             embed.set_thumbnail(url=guild.icon.url)
         
-        embed.add_field(name="Server ID", value=f"`{guild.id}`", inline=True)
-        embed.add_field(name="Owner", value=f"<@{guild.owner_id}>", inline=True)
-        embed.add_field(name="Created", value=format(guild.created_at, "%d %b %Y"), inline=True)
+        embed.add_field(name="🆔 Server ID", value=f"`{guild.id}`", inline=True)
+        embed.add_field(name="👑 Owner", value=f"<@{guild.owner_id}>", inline=True)
+        embed.add_field(name="📅 Created", value=format(guild.created_at, "%d %b %Y"), inline=True)
         
-        embed.add_field(name="Members", value=guild.member_count, inline=True)
-        embed.add_field(name="Text Channels", value=len(guild.text_channels), inline=True)
-        embed.add_field(name="Voice Channels", value=len(guild.voice_channels), inline=True)
-        embed.add_field(name="Roles", value=len(guild.roles), inline=True)
-        embed.add_field(name="Emojis", value=len(guild.emojis), inline=True)
-        embed.add_field(name="Boost Level", value=str(guild.premium_tier), inline=True)
+        embed.add_field(name="👥 Members", value=f"**{guild.member_count}**", inline=True)
+        embed.add_field(name="💬 Text Channels", value=len(guild.text_channels), inline=True)
+        embed.add_field(name="🎙️ Voice Channels", value=len(guild.voice_channels), inline=True)
+        embed.add_field(name="🎭 Roles", value=len(guild.roles), inline=True)
+        embed.add_field(name="😀 Emojis", value=len(guild.emojis), inline=True)
+        embed.add_field(name="💎 Boost Level", value=str(guild.premium_tier), inline=True)
         
         features = []
         if guild.features:
@@ -474,9 +486,32 @@ class NaturalCommandParser:
                     features.append(feature_names[f])
         
         if features:
-            embed.add_field(name="Features", value=", ".join(features), inline=False)
+            embed.add_field(name="✨ Features", value=", ".join(features), inline=False)
         
-        return f"✅ Server ki full info:", True, embed
+        return f"", True, embed
+    
+    async def _cmd_show_owners(self, guild: discord.Guild) -> Tuple[str, bool, Optional[discord.Embed]]:
+        """Show bot owners - IMPORTANT FIX!"""
+        owner_ids = config.owner_ids
+        
+        embed = discord.Embed(
+            title="╔══════════════════════════╗\n║  👑 BOT OWNERS           ║\n╚══════════════════════════╝",
+            description="**Full access** to bot controls (kick/ban/settings/all)",
+            color=discord.Color.gold()
+        )
+        
+        owner_list = []
+        for owner_id in owner_ids:
+            member = guild.get_member(owner_id)
+            if member:
+                owner_list.append(f"👑 **{member.display_name}** (<@{owner_id}>)")
+            else:
+                owner_list.append(f"👑 Unknown Owner (`{owner_id}`)")
+        
+        embed.description += "\n\n" + "\n".join(owner_list)
+        embed.set_footer(text="Only owners can use moderation & control commands")
+        
+        return f"", True, embed
     
     async def _cmd_show_roles(self, user: discord.Member) -> Tuple[str, bool, Optional[discord.Embed]]:
         """Show user's roles"""
@@ -486,18 +521,18 @@ class NaturalCommandParser:
             return f"{user.mention} ke paas koi special role nahi hai 😅", True, None
         
         embed = discord.Embed(
-            title=f"🎭 {user.display_name}'s Roles",
-            color=user.color or discord.Color.blurple(),
-            description=f"Total **{len(roles)} roles**"
+            title=f"╔══════════════════════════╗\n║  🎭 {user.display_name.upper()}'S ROLES ║\n╚══════════════════════════╝",
+            description=f"Total **{len(roles)} roles**",
+            color=user.color or discord.Color.blurple()
         )
         
         role_list = []
         for i, role in enumerate(sorted(roles, key=lambda r: r.position, reverse=True)):
             role_list.append(f"`{i+1}.` <@&{role.id}>")
         
-        embed.description += "\n".join(role_list[:20])
+        embed.description += "\n" + "\n".join(role_list[:20])
         
-        return f"✅ Yeh hain {user.mention} ke roles:", True, embed
+        return f"", True, embed
     
     async def _cmd_show_join_date(self, user: discord.Member) -> Tuple[str, bool, Optional[discord.Embed]]:
         """Show when user joined server"""
@@ -507,14 +542,14 @@ class NaturalCommandParser:
         days_since = (datetime.now(user.joined_at.tzinfo) - user.joined_at).days
         
         embed = discord.Embed(
-            title="📅 Join Date",
+            title="╔══════════════════════════╗\n║  📅 JOIN DATE             ║\n╚══════════════════════════╝",
             color=discord.Color.green()
         )
         embed.add_field(name="User", value=user.mention, inline=True)
         embed.add_field(name="Join Date", value=format(user.joined_at, "%d %B %Y at %I:%M %p"), inline=True)
         embed.add_field(name="Days in Server", value=f"**{days_since} days**", inline=True)
         
-        return f"✅ {user.mention} ko server join hua:", True, embed
+        return f"", True, embed
     
     async def _cmd_timeout(
         self, 
@@ -524,22 +559,23 @@ class NaturalCommandParser:
         moderator: discord.Member,
         guild: discord.Guild
     ) -> Tuple[str, bool, Optional[discord.Embed]]:
-        """Timeout a user"""
+        """Timeout a user - NICE EMBED STYLE!"""
         try:
             duration = timedelta(minutes=duration_minutes)
             await user.timeout(duration, reason=f"Via AI by {moderator}: {reason}")
             
             embed = discord.Embed(
-                title="⏰ User Timed Out!",
+                title="╔═════════════════════════════════╗\n║  ⏰  USER TIMED OUT!              ║\n╚═════════════════════════════════╝",
+                description=f"**{user.display_name}** ko timeout kar diya gaya!",
                 color=discord.Color.orange()
             )
-            embed.add_field(name="User", value=user.mention, inline=True)
-            embed.add_field(name="Duration", value=f"**{duration_minutes} minutes**", inline=True)
-            embed.add_field(name="Reason", value=reason, inline=True)
-            embed.add_field(name="By", value=moderator.mention, inline=True)
-            embed.set_footer(text="Timeout automatically expires!")
+            embed.add_field(name="👤 User", value=user.mention, inline=True)
+            embed.add_field(name="⏱️ Duration", value=f"**{duration_minutes} minutes**", inline=True)
+            embed.add_field(name="📝 Reason", value=reason or "Server rules violation", inline=True)
+            embed.add_field(name="🔨 By Moderator", value=moderator.mention, inline=True)
+            embed.set_footer(text="⚡ Timeout automatically expires after duration!")
             
-            return f"✅ {user.mention} ko **{duration_minutes} minutes** ke liye timeout kar diya!", True, embed
+            return f"", True, embed
             
         except Exception as e:
             return f"❌ Timeout nahi ho paya: `{e}`", True, None
@@ -551,19 +587,22 @@ class NaturalCommandParser:
         moderator: discord.Member,
         guild: discord.Guild
     ) -> Tuple[str, bool, Optional[discord.Embed]]:
-        """Kick a user"""
+        """Kick a user - ANNOUNCEMENT STYLE EMBED!"""
         try:
             await user.kick(reason=f"Via AI by {moderator}: {reason}")
             
             embed = discord.Embed(
-                title="👢 User Kicked!",
+                title="╔═════════════════════════════════╗\n║  👢  USER KICKED!                 ║\n╚═════════════════════════════════╝",
+                description=f"**{user.display_name}** ko server se kick kar diya gaya!",
                 color=discord.Color.red()
             )
-            embed.add_field(name="User", value=user.mention, inline=True)
-            embed.add_field(name="Reason", value=reason, inline=True)
-            embed.add_field(name="Kicked By", value=moderator.mention, inline=True)
+            embed.add_field(name="👤 Kicked User", value=f"{user.mention} (`{user.id}`)", inline=True)
+            embed.add_field(name="📝 Reason", value=reason or "Server rules violation", inline=True)
+            embed.add_field(name="🔨 Kicked By", value=moderator.mention, inline=True)
+            embed.add_field(name="⏰ Time", value=datetime.now().strftime("%I:%M %p | %d %b %Y"), inline=True)
+            embed.set_footer(text="🤖 Ophelia AI 2.0 • Moderation Action")
             
-            return f"✅ {user.mention} ko kick kar diya!", True, embed
+            return f"", True, embed
             
         except Exception as e:
             return f"❌ Kick nahi ho paya: `{e}`", True, None
@@ -575,19 +614,22 @@ class NaturalCommandParser:
         moderator: discord.Member,
         guild: discord.Guild
     ) -> Tuple[str, bool, Optional[discord.Embed]]:
-        """Ban a user"""
+        """Ban a user - ANNOUNCEMENT STYLE EMBED!"""
         try:
             await user.ban(reason=f"Via AI by {moderator}: {reason}", delete_message_days=0)
             
             embed = discord.Embed(
-                title="🚫 User Banned!",
+                title="╔═════════════════════════════════╗\n║  🚫  USER BANNED!                 ║\n╚═════════════════════════════════╝",
+                description=f"**{user.display_name}** ko permanently ban kar diya gaya!",
                 color=discord.Color.dark_red()
             )
-            embed.add_field(name="User", value=user.mention, inline=True)
-            embed.add_field(name="Reason", value=reason, inline=True)
-            embed.add_field(name="Banned By", value=moderator.mention, inline=True)
+            embed.add_field(name="🚫 Banned User", value=f"{user.mention} (`{user.id}`)", inline=True)
+            embed.add_field(name="📝 Reason", value=reason or "Server rules violation", inline=True)
+            embed.add_field(name="🔨 Banned By", value=moderator.mention, inline=True)
+            embed.add_field(name="⏰ Time", value=datetime.now().strftime("%I:%M %p | %d %b %Y"), inline=True)
+            embed.set_footer(text="🤖 Ophelia AI 2.0 • Permanent Ban")
             
-            return f"✅ {user.mention} ko permanently ban kar diya!", True, embed
+            return f"", True, embed
             
         except Exception as e:
             return f"❌ Ban nahi ho paya: `{e}`", True, None
@@ -598,20 +640,21 @@ class NaturalCommandParser:
         moderator: discord.Member,
         guild: discord.Guild
     ) -> Tuple[str, bool, Optional[discord.Embed]]:
-        """Mute a user (using timeout for 5 min or mute role)"""
+        """Mute a user - NICE EMBED STYLE!"""
         try:
-            # Use timeout for 5 minutes as mute
             await user.timeout(timedelta(minutes=5), reason=f"Muted via AI by {moderator}")
             
             embed = discord.Embed(
-                title="🔇 User Muted!",
+                title="╔═════════════════════════════════╗\n║  🔇  USER MUTED!                  ║\n╚═════════════════════════════════╝",
+                description=f"**{user.display_name}** ko mute kar diya gaya!",
                 color=discord.Color.orange()
             )
-            embed.add_field(name="User", value=user.mention, inline=True)
-            embed.add_field(name="Duration", value="5 minutes", inline=True)
-            embed.add_field(name="Muted By", value=moderator.mention, inline=True)
+            embed.add_field(name="🔇 Muted User", value=user.mention, inline=True)
+            embed.add_field(name="⏱️ Duration", value="5 minutes", inline=True)
+            embed.add_field(name="🔨 Muted By", value=moderator.mention, inline=True)
+            embed.set_footer(text="🤖 Auto-unmute after 5 minutes")
             
-            return f"✅ {user.mention} ko mute kar diya (5 min)!", True, embed
+            return f"", True, embed
             
         except Exception as e:
             return f"❌ Mute nahi ho paya: `{e}`", True, None
@@ -656,14 +699,15 @@ class NaturalCommandParser:
             new_channel = await guild.create_channel(name=info["name"], type=ch_type)
             
             embed = discord.Embed(
-                title="✅ Channel Created!",
+                title="╔═════════════════════════════════╗\n║  ✅  CHANNEL CREATED!              ║\n╚═════════════════════════════════╝",
+                description=f"Naya channel **#{new_channel.name}** bana diya gaya!",
                 color=discord.Color.green()
             )
-            embed.add_field(name="Name", value=f"#{new_channel.name}", inline=True)
-            embed.add_field(name="Type", value=info["type"].title(), inline=True)
-            embed.add_field(name="ID", value=f"`{new_channel.id}`", inline=True)
+            embed.add_field(name="📝 Name", value=f"#{new_channel.name}", inline=True)
+            embed.add_field(name="📋 Type", value=info["type"].title(), inline=True)
+            embed.add_field(name="🆔 ID", value=f"`{new_channel.id}`", inline=True)
             
-            return f"✅ Channel **#{new_channel.name}** bana diya!", True, embed
+            return f"", True, embed
             
         except Exception as e:
             return f"❌ Channel nahi bana: `{e}`", True, None
@@ -674,14 +718,15 @@ class NaturalCommandParser:
             new_role = await guild.create_role(name=info["name"], color=info["color"])
             
             embed = discord.Embed(
-                title="✅ Role Created!",
+                title="╔═════════════════════════════════╗\n║  ✅  ROLE CREATED!                 ║\n╚═════════════════════════════════╝",
+                description=f"Naya role **@{new_role.name}** bana diya gaya!",
                 color=info["color"]
             )
-            embed.add_field(name="Name", value=f"@{new_role.name}", inline=True)
-            embed.add_field(name="Color", value=info["color"].value if hasattr(info['color'], 'value') else "Default", inline=True)
-            embed.add_field(name="ID", value=f"`{new_role.id}`", inline=True)
+            embed.add_field(name="📝 Name", value=f"@{new_role.name}", inline=True)
+            embed.add_field(name="🎨 Color", value=str(info["color"]), inline=True)
+            embed.add_field(name="🆔 ID", value=f"`{new_role.id}`", inline=True)
             
-            return f"✅ Role **@{new_role.name}** bana diya!", True, embed
+            return f"", True, embed
             
         except Exception as e:
             return f"❌ Role nahi bana: `{e}`", True, None
@@ -695,34 +740,37 @@ class NaturalCommandParser:
             sent_msg = await channel.send(content)
             
             embed = discord.Embed(
-                title="✅ Message Sent!",
+                title="╔═════════════════════════════════╗\n║  ✅  MESSAGE SENT!                 ║\n╚═════════════════════════════════╝",
                 color=discord.Color.green()
             )
-            embed.add_field(name="Channel", value=f"<#{channel.id}>", inline=True)
-            embed.add_field(name="Content", value=content[:100] + ("..." if len(content) > 100 else ""), inline=False)
+            embed.add_field(name="📍 Channel", value=f"<#{channel.id}>", inline=True)
+            embed.add_field(name("Message Preview", value=content[:100] + ("..." if len(content) > 100 else ""), inline=False))
+            embed.set_footer(text=f"Sent by {author.display_name}")
             
-            return f"✅ Message <#{channel.id}> me bhej diya!", True, embed
+            return f"", True, embed
             
         except Exception as e:
             return f"❌ Message nahi bhej paya: `{e}`", True, None
     
     async def _cmd_send_embed(self, info: Dict, channel: discord.TextChannel) -> Tuple[str, bool, Optional[discord.Embed]]:
-        """Send an embed message"""
-        try:
-            embed = discord.Embed(
-                title=info["title"],
-                description=info["description"],
-                color=discord.Color.blurple(),
-                timestamp=datetime.now()
-            )
-            embed.set_footer(text="🤖 Generated by Ophelia AI 2.0")
-            
-            await channel.send(embed=embed)
-            
-            return f"✅ Embed bhej diya!", True, None
-            
-        except Exception as e:
-            return f"❌ Embed nahi bhej paya: `{e}`", True, None
+        """Send an embedded message"""
+        colors = {
+            "blue": discord.Color.blue(), "red": discord.Color.red(),
+            "green": discord.Color.green(), "purple": discord.Color.purple(),
+            "gold": discord.Color.gold(), "blurple": discord.Color.blurple()
+        }
+        color = discord.Color.blurple()
+        
+        embed = discord.Embed(
+            title=info["title"],
+            description=info["description"],
+            color=color
+        )
+        embed.set_footer(text="🤖 Ophelia AI 2.0 • Embed Generated")
+        
+        await channel.send(embed=embed)
+        
+        return f"✅ Embed bhej diya #{channel.name} me!", True, None
     
     async def _cmd_add_reaction(self, emoji: str, message: discord.Message) -> Tuple[str, bool, Optional[discord.Embed]]:
         """Add reaction to a message"""
@@ -733,90 +781,92 @@ class NaturalCommandParser:
             return f"❌ Reaction add nahi ho paya: `{e}`", True, None
     
     async def _cmd_clear_messages(self, count: int, channel: discord.TextChannel) -> Tuple[str, bool, Optional[discord.Embed]]:
-        """Delete messages from channel"""
+        """Delete messages"""
         try:
-            count = min(count, 100)  # Max 100
             deleted = await channel.purge(limit=count)
             
             embed = discord.Embed(
-                title="🧹 Messages Deleted!",
-                color=discord.Color.orange()
+                title="╔═════════════════════════════════╗\n║  🗑️  MESSAGES CLEARED!              ║\n╚═════════════════════════════════╝",
+                description=f"**{len(deleted)}** messages delete kar diye!",
+                color=discord.Color.dark_blue()
             )
-            embed.add_field(name="Count", value=f"**{len(deleted)} messages**", inline=True)
-            embed.add_field(name="Channel", value=f"<#{channel.id}>", inline=True)
+            embed.add_field(name="🗑️ Deleted Count", value=f"**{len(deleted)}** messages", inline=True)
+            embed.add_field(name="📍 Channel", value=f"<#{channel.id}>", inline=True)
             
-            return f"✅ **{len(deleted)} messages** delete kiye!", True, embed
+            return f"", True, embed
             
         except Exception as e:
-            return f"❌ Messages delete nahi ho paye: `{e}`", True, None
+            return f"❌ Messages delete nahi hue: `{e}`", True, None
     
-    async def _cmd_show_help(self, user: discord.Member) -> Tuple[str, bool, Optional[discord.Embed]]:
-        """Show help for natural language commands"""
-        owner_mode = is_owner(user.id)
+    async def _cmd_show_help(self, author: discord.Member) -> Tuple[str, bool, Optional[discord.Embed]]:
+        """Show help with available commands"""
+        is_own = is_owner(author.id)
         
         embed = discord.Embed(
-            title="🤖 Ophelia AI 2.0 - Natural Commands",
-            description="Sirf **bolna** hai, samajh jaati hoon! 🧠",
+            title="╔════════════════════════════════════════════════╗\n║  🤖 OPHELIA AI 2.0 - COMMAND LIST                   ║\n╚════════════════════════════════════════════════╝",
+            description="**Natural Language Commands** — Sirf bolno, kaam ho jayega!",
             color=discord.Color.blurple()
         )
         
-        # Everyone can use these
+        # Everyone commands
         embed.add_field(
-            name="👀 Info Commands (Sab use karein)",
+            name="👥 EVERYONE CAN USE",
             value=(
-                "`avatar dikhao` / `dp dikhao`\n"
-                "`iske baare me batao`\n"
-                "`server info dikhao`\n"
-                "`mera info`\n"
-                "`roles dikhao`\n"
-                "`join date kab hai?`"
+                "`avatar dikhao` — User's profile pic\n"
+                "`info batao` — User/server info\n"
+                "`server info` — Full server stats\n"
+                "`owner kon hai` — Show bot owners\n"
+                "`help` — Ye list dikhao"
             ),
             inline=False
         )
         
-        if owner_mode:
+        # Mod/Owner commands
+        if is_own or author.guild_permissions.manage_guild:
             embed.add_field(
-                name="👑 Owner Commands (Full Power)",
+                name="🔨 MODERATION (Owners/Mods)",
                 value=(
-                    "`isko timeout do [time]`\n"
-                    "`isko kick/ban/mute karo`\n"
-                    "`status set karo playing [game]`\n"
-                    "`nickname change karo [name]`\n"
-                    "`channel/role banao [name]`\n"
-                    "`#channel me [msg] bhejo`\n"
-                    "`embed banao [title] [desc]`\n"
-                    "`[count] messages delete karo`"
-                ),
-                inline=False
-            )
-        else:
-            embed.add_field(
-                name="⚡ Mod Commands",
-                value=(
-                    "`isko timeout/kick/ban karo`\n"
-                    "`messages delete karo`"
+                    "`isko kick karo` — Kick user\n"
+                    "`iska ban kar do` — Ban user\n"
+                    "`timeout do 10 min` — Timeout user\n"
+                    "`mute karo` — Mute for 5 min\n"
+                    "`50 clear karo` — Delete messages"
                 ),
                 inline=False
             )
         
-        embed.set_footer(text="Directly bolo, koi /cmd syntax nahi chahiye! 😊")
+        # Owner only
+        if is_own:
+            embed.add_field(
+                name="👑 OWNER ONLY",
+                value=(
+                    "`status set karo playing X` — Bot status\n"
+                    "`nickname change karo X` — Bot name\n"
+                    "`channel banao X` — New channel\n"
+                    "`role banao X` — New role\n"
+                    "`#channel me bhejo X` — Send message"
+                ),
+                inline=False
+            )
         
-        return "✅ Yeh rahi meri command list:", True, embed
+        embed.set_footer(text="💡 Tip: @Ophelia [command] — Natural language works!")
+        
+        return f"", True, embed
 
 
 # Global instance
-natural_parser: Optional[NaturalCommandParser] = None
+natural_command_parser: Optional[NaturalCommandParser] = None
 
 
-def init_natural_commands(bot: commands.Bot) -> NaturalCommandParser:
-    """Initialize natural command system"""
-    global natural_parser
-    natural_parser = NaturalCommandParser(bot)
-    return natural_parser
+def init_natural_parser(bot: commands.Bot) -> NaturalCommandParser:
+    """Initialize global natural command parser"""
+    global natural_command_parser
+    natural_command_parser = NaturalCommandParser(bot)
+    return natural_command_parser
 
 
 def get_natural_parser() -> NaturalCommandParser:
-    """Get natural command parser instance"""
-    if natural_parser is None:
+    """Get global parser instance"""
+    if natural_command_parser is None:
         raise RuntimeError("Natural command parser not initialized!")
-    return natural_parser
+    return natural_command_parser
