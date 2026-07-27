@@ -280,7 +280,19 @@ class AIHandler:
             
         except Exception as e:
             logger.error(f"Error generating response: {e}")
-            return f"Arre yaar, kuch technical issue aa gaya 😅 Error: {str(e)[:100]}"
+            error_msg = str(e)
+            
+            # Ophelia-style error messages
+            if "413" in error_msg or "too large" in error_msg.lower():
+                return "Arre yaar, itna lamba message mat bhojo! 🤯 Meri processing power limit hai 😅 Thoda short karke do?"
+            elif "403" in error_msg or "permission" in error_msg.lower():
+                return "Bhai permission issue aa gaya 😐 Admin se puch ke dekh, mujhe block toh nahi kiya na? 🥺"
+            elif "rate" in error_msg.lower() or "limit" in error_msg.lower():
+                return "Thoda ruk ja bhai! ⏳ Bahut zyada requests aa rhi hain. 2-3 sec baar try kar! ⚡"
+            elif "timeout" in error_msg.lower():
+                return "Server thoda slow hai abhi 🐌 Dobara try kar? Quick hoga!"
+            else:
+                return f"Kuch technical issue aa gaya 😅 `{error_msg[:80]}` - Try again bro!"
     
     async def generate_response_stream(
         self,
@@ -324,7 +336,7 @@ class AIHandler:
             
         except Exception as e:
             logger.error(f"Error in stream generation: {e}")
-            yield f"😅 Kuch gadbad ho gayi bhai: {str(e)[:100]}"
+            yield f"😅 Yaar kuch gadbad ho gayi: {str(e)[:60]}... Dobara try karo bro!"
     
     async def _save_message(
         self,
