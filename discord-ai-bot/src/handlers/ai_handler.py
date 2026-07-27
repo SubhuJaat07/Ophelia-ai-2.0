@@ -69,31 +69,44 @@ class AIHandler:
         
         return system_prompt
     
+    # Groq API limits - stay well under the max!
+    MAX_TOTAL_CHARS = 80000  # ~20k tokens (safe limit)
+    MAX_MESSAGES = 15  # Reduced from 30 to prevent 413 errors
+    MAX_MESSAGE_LENGTH = 2000  # Truncate individual long messages
+    
     async def get_conversation_context(
         self,
         guild_id: int,
         channel_id: int,
         user_id: int,
-        max_messages: int = 30
+        max_messages: int = None  # Use default from class
     ) -> List[Dict[str, str]]:
         """
         Build conversation context including recent messages and relevant memories.
+        Includes smart truncation to prevent 413 (Request too large) errors.
         Returns list of message dicts for the API.
         """
         self._init_clients()
         
+        if max_messages is None:
+            max_messages = self.MAX_MESSAGES
+            
         messages = []
         
-        # Add system prompt
+        # Add system prompt (with length limit!)
         system_prompt = await self.build_system_prompt(guild_id)
+        system_prompt = system_prompt[:self.MAX_MESSAGE_LENGTH]  # Truncate if too long
         messages.append({"role": "system", "content": system_prompt})
         
-        # Get relevant memories if enabled
+        # Get relevant memories if enabled (but limit them!)
         settings = await self.get_guild_settings(guild_id)
         if settings.get("memory_enabled", True):
-            memories = await self._get_relevant_memories(guild_id, user_id)
+            memories = await self._get_relevant_memories(guild_id, user_id, limit=5)  # Reduced from 10
             if memories:
                 memory_context = self._format_memories(memories)
+                # Limit memory context size
+                if len(memory_context) > 1000:
+                    memory_context = memory_context[:1000] + "... [truncated]"
                 messages.append({
                     "role": "system",
                     "content": f"**What you remember about this server/user:**\n{memory_context}"
@@ -111,16 +124,74 @@ class AIHandler:
                 self.cache.set_conversation(channel_id, conv_history)
         
         if conv_history:
-            # Add conversation history (respecting max_tokens roughly)
-            messages.extend(conv_history[-max_messages:])
+            # Take last N messages and truncate each if needed
+            recent_messages = conv_history[-max_messages:]
+            for msg in recent_messages:
+                content = msg.get("content", "")
+                # Truncate long messages
+                if len(content) > self.MAX_MESSAGE_LENGTH:
+                    content = content[:self.MAX_MESSAGE_LENGTH] + "... [truncated]"
+                messages.append({
+                    "role": msg.get("role", "user"),
+                    "content": content
+                })
+        
+        # FINAL SAFETY CHECK: Ensure total payload isn't too large
+        messages = self._ensure_payload_limit(messages)
         
         return messages
+    
+    def _ensure_payload_limit(self, messages: List[Dict], max_chars: int = None) -> List[Dict]:
+        """
+        Ensure total message payload doesn't exceed Groq's limit.
+        Aggressively trims if needed to prevent 413 errors.
+        """
+        if max_chars is None:
+            max_chars = self.MAX_TOTAL_CHARS
+        
+        # Calculate current size
+        total_size = sum(len(m.get("content", "")) for m in messages)
+        
+        # If within limit, return as-is
+        if total_size <= max_chars:
+            return messages
+        
+        # Need to trim! Keep system prompt, trim history
+        logger.warning(f"⚠️ Payload too large ({total_size} chars), trimming...")
+        
+        system_msgs = [m for m in messages if m.get("role") == "system"]
+        other_msgs = [m for m in messages if m.get("role") != "system"]
+        
+        available_space = max_chars - sum(len(m.get("content", "")) for m in system_msgs)
+        
+        if available_space <= 0:
+            # Even system prompts are too big, truncate them
+            logger.error("❌ System prompts too large, aggressive truncation needed!")
+            return [{"role": "system", "content": "You are Ophelia AI, a helpful Discord bot."}]
+        
+        # Trim from the end (keep most recent)
+        trimmed_msgs = []
+        current_size = 0
+        
+        # Reverse to process oldest first, keep newest
+        for msg in reversed(other_msgs):
+            content = msg.get("content", "")
+            if current_size + len(content) <= available_space:
+                trimmed_msgs.insert(0, msg)  # Insert at beginning to maintain order
+                current_size += len(content)
+            else:
+                break  # Stop when we'd exceed limit
+        
+        final_messages = system_msgs + trimmed_msgs
+        logger.info(f"✅ Trimmed payload from {total_size} to {sum(len(m.get('content','')) for m in final_messages)} chars")
+        
+        return final_messages
     
     async def _get_relevant_memories(
         self,
         guild_id: int,
         user_id: int,
-        limit: int = 10
+        limit: int = 5  # Reduced from 10 to save space
     ) -> List[Dict]:
         """Get relevant memories for context"""
         try:
@@ -141,14 +212,14 @@ class AIHandler:
             return []
     
     def _format_memories(self, memories: List[Dict]) -> str:
-        """Format memories for inclusion in prompt"""
+        """Format memories for inclusion in prompt (compact!)"""
         formatted = []
-        for mem in memories[:10]:  # Limit to avoid token overflow
-            content = mem.get("content", "")[:200]  # Truncate long memories
+        for mem in memories[:5]:  # Max 5 memories now
+            content = mem.get("content", "")[:150]  # Shorter truncation
             mem_type = mem.get("memory_type", "general")
             formatted.append(f"- [{mem_type}] {content}")
         
-        return "\n".join(formatted) if formatted else "No significant memories yet."
+        return "\n".join(formatted) if formatted else ""
     
     async def generate_response(
         self,
