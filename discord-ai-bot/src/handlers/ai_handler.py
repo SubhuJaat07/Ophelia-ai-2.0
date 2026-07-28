@@ -711,15 +711,17 @@ class AIHandler:
         display_name: str = "Unknown",
         force_task_type: TaskType = None,
         guild: object = None,  # 🆕 discord.Guild (for permissions, etc.)
-        bot_member: object = None  # 🆕 Bot's member object
+        bot_member: object = None,  # 🆕 Bot's member object
+        mentioned_users: list = None  # 🆕 Users mentioned in message!
     ) -> str:
         """
         Generate AI response with FULL INTELLIGENCE!
         - User Recognition 👤
-- Emotional Intelligence 😊
-- Channel Context 📺
-- Available Data for AI 🧠
-"""
+        - Emotional Intelligence 😊
+        - Channel Context 📺
+        - Available Data for AI 🧠
+        - Mention Awareness (@users) 🎯
+        """
         self._init_clients()
         
         try:
@@ -884,7 +886,16 @@ class AIHandler:
                 )
                 messages[0]["content"] = mood_aware_prompt[:self.MAX_SYSTEM_PROMPT_CHARS]
             
-            messages.append({"role": "user", "content": user_message})
+            # 🆕 Add mention context if users were mentioned!
+            final_user_message = user_message
+            if mentioned_users:
+                mentions_info = "\n\n".join([f"👤 @{u['name']} (ID: {u['id']}) was mentioned!" for u in mentioned_users])
+                if any(word in user_message.lower() for word in ["kick", "ban", "mute", "timeout", "warn", "nikal", "bahar"]):
+                    final_user_message = f"{user_message}\n\n⚠️ **TARGET USERS:**\n{mentions_info}\n\nIf this is a moderation command, these are the targets!"
+                else:
+                    final_user_message = f"{user_message}\n\n[These users were mentioned: {', '.join([u['name'] for u in mentioned_users])}]"
+            
+            messages.append({"role": "user", "content": final_user_message})
             
             settings = await self.get_guild_settings(guild_id)
             requested_max_tokens = min(settings.get("max_tokens", 1024), 1024)

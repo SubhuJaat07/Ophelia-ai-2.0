@@ -1,6 +1,13 @@
 """
-Advanced Message Handler for Ophelia AI 2.0
-Processes incoming messages with Natural Language Command support
+🚀 Message Handler for Ophelia AI 2.0 - AI-FIRST Architecture!
+
+NEW FLOW (v4.0):
+1. User sends message
+2. AI analyzes intent with FULL context (mentions, channel, history)
+3. AI decides: Command? Chat? Question?
+4. Execute action OR respond naturally
+
+NO MORE PATTERN MATCHING - AI IS THE BRAIN NOW! 🧠
 """
 import discord
 from discord.ext import commands
@@ -113,63 +120,49 @@ class MessageHandler:
             
             # Show typing indicator
             async with message.channel.typing():
-                # ===== FIRST: Try Natural Language Commands =====
-                try:
-                    natural_parser = get_natural_parser()
-                    cmd_response, was_cmd, cmd_embed = await natural_parser.process_message(
-                        message=message.content,
-                        guild=message.guild,
-                        channel=message.channel,
-                        author=message.author,
-                        referenced_message=message.reference.message_id if message.reference else None
-                    )
-                    
-                    # If referenced message exists, fetch it
-                    ref_msg = None
-                    if message.reference:
-                        try:
-                            ref_msg = await message.channel.fetch_message(message.reference.message_id)
-                            cmd_response, was_cmd, cmd_embed = await natural_parser.process_message(
-                                message=message.content,
-                                guild=message.guild,
-                                channel=message.channel,
-                                author=message.author,
-                                referenced_msg=ref_msg
-                            )
-                        except:
-                            pass
-                    
-                    if was_cmd and cmd_response:
-                        # Command was executed!
-                        logger.info(f"⚡ Natural command executed by {message.author}")
-                        
-                        if cmd_embed:
-                            await message.reply(cmd_response, embed=cmd_embed, mention_author=False)
-                        else:
-                            await message.reply(cmd_response, mention_author=False)
-                        
-                        self.processing_messages.discard(msg_key)
-                        return
-                        
-                except Exception as e:
-                    logger.debug(f"Not a natural command: {e}")
-                
-                # ===== THEN: Normal AI Chat Response =====
+                # 🚀 NEW AI-FIRST APPROACH: AI decides everything!
                 ai = get_ai_handler()
                 
                 # Get user info for USER RECOGNITION! 👤
                 username = str(message.author.name)
                 display_name = message.author.display_name if message.guild else str(message.author)
                 
+                # 🆕 EXTRACT MENTIONS - So AI knows WHO to kick/ban/etc!
+                mentioned_users = []
+                if message.mentioned_users:
+                    mentioned_users = [
+                        {"id": str(u.id), "name": u.display_name, "mention": u.mention}
+                        for u in message.mentioned_users
+                        if u.id != self.bot.user.id  # Exclude bot itself
+                    ]
+                elif message.mentions:
+                    mentioned_users = [
+                        {"id": str(u.id), "name": u.display_name, "mention": u.mention}
+                        for u in message.mentions
+                        if u.id != self.bot.user.id  # Exclude bot itself
+                    ]
+                
+                # 🆕 Build context-rich message for AI
+                clean_message = self._clean_message_content(message)
+                
+                # Add mention context to message if someone was mentioned
+                if mentioned_users and not any(word in clean_message.lower() for word in ["kick", "ban", "mute", "timeout", "warn"]):
+                    # Regular message with mention - AI will decide what to do
+                    context_info = f"\n\n[Context: You can see {len(mentioned_users)} mentioned user(s): {', '.join([u['name'] for u in mentioned_users])}]"
+                else:
+                    context_info = ""
+                
+                # 🧠 SEND TO AI WITH FULL CONTEXT!
                 response = await ai.generate_response(
                     guild_id=message.guild.id if message.guild else 0,
                     channel_id=message.channel.id,
                     user_id=message.author.id,
-                    user_message=self._clean_message_content(message),
-                    username=username,  # NOW SHE KNOWS YOUR NAME!
-                    display_name=display_name,  # AND DISPLAY NAME!
-                    guild=message.guild,  # 🆕 Pass guild for permissions data
-                    bot_member=message.guild.me if message.guild else None  # 🆕 Pass bot member
+                    user_message=clean_message + context_info,
+                    username=username,
+                    display_name=display_name,
+                    guild=message.guild,
+                    bot_member=message.guild.me if message.guild else None,
+                    mentioned_users=mentioned_users  # 🆕 Pass who was mentioned!
                 )
                 
                 # Send response
