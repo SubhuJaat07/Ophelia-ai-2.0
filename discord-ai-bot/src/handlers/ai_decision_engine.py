@@ -35,7 +35,7 @@ class AIDecisionEngine:
     CAPABILITIES_MANIFEST = """
 📋 **OPHELIA'S CAPABILITIES** (Ye sab kar sakti hu!)
 
-**👥 USER COMMANDS (Moderation):**
+**👥 USER COMMANDS (Moderation - OWNERS ONLY):**
 • **Kick** - Kisi ko server se bahar karo (need: @mention or name)
 • **Ban** - Kisi ko permanently block karo (need: @mention or name)  
 • **Mute** - Kisi ko chup karao (need: @mention or name)
@@ -47,6 +47,7 @@ class AIDecisionEngine:
 • **Channel Context** - Recent channel messages dikhao (kya ho rha)
 • **My Stats** - Apna data dikhao (msg count, level, etc)
 • **Server Info** - Server ki info dikhao
+• **👑 Owners List** - Bot owners kaun hai (names + IDs)!
 
 **💬 CHAT & PERSONALITY:**
 • **Normal Chat** - Natural conversation (mood-based replies)
@@ -64,6 +65,12 @@ class AIDecisionEngine:
 • **Change Settings** - Modify bot behavior
 • **Set Personality** - Adjust response style
 • **Manage Memory** - Control what's remembered
+
+**👑 OWNER INFO (When asked "owners kaun hai"):**
+• I KNOW who my owners are! (Names + IDs available)
+• Owners have FULL ACCESS to all commands
+• When someone asks about owners, show the list PROUDLY!
+• Example response: "👑 Mere owners hain: **Subhu**, **Aryan**, **Kavya** - Inko sab power hai!"
 """
     
     # ==================== AVAILABLE DATA MANIFEST ====================
@@ -79,6 +86,11 @@ class AIDecisionEngine:
 • topics_discussed: What they like talking about
 • mood_history: Their recent emotional states
 • inside_jokes: Shared moments between us
+
+**👑 OWNER DATA (IMPORTANT!):**
+• owners_list: Complete list of bot owners with NAMES + IDs!
+• Owners have FULL ACCESS - kick/ban/settings everything!
+• I can show this when asked "owners kaun hai" or "who are owners"
 
 **📺 CHANNEL DATA:**
 • recent_messages: Last 50 messages from this channel
@@ -123,6 +135,13 @@ class AIDecisionEngine:
 • "what happened here" (English)
 • "discussion kya thi" (Hindi)
 • "recent messages dikhao" (Hinglish)
+
+*Info - Owners:*
+• "owners kaun hai" (Hindi)
+• "who are the owners" (English)
+• "malik kaun hai" (Hindi)
+• "who made this bot" (English)
+• "kon hai jo sab control karta" (Hinglish)
 
 *Chat - Mood based:*
 • "I'm sad" → Empathetic response

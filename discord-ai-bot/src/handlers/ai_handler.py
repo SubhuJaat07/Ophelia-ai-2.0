@@ -419,21 +419,50 @@ class AIHandler:
         else:
             data['permissions_data'] = "Permission data not available in this context"
         
-        # 4️⃣ OWNERS DATA
+        # 4️⃣ OWNERS DATA (With NAMES if possible!)
         try:
             from config.settings import config
             owner_ids = config.owner_ids
             
-            owners_text = f"**Total Owners:** {len(owner_ids)}\n"
-            for i, owner_id in enumerate(owner_ids[:5], 1):  # Max 5 owners
-                owners_text += f"{i}. `<{owner_id}>`\n"
+            owners_text = f"👑 **BOT OWNERS ({len(owner_ids)} total):**\n\n"
+            
+            # Try to get names from guild if available
+            owner_names_fetched = 0
+            if guild:
+                for owner_id in owner_ids[:5]:
+                    try:
+                        member = guild.get_member(owner_id)
+                        if member:
+                            name = member.display_name or member.name
+                            owners_text += f"• **{name}** (ID: `{owner_id}`) 👑\n"
+                            owner_names_fetched += 1
+                        else:
+                            owners_text += f"• Unknown Owner (ID: `{owner_id}`) 👑\n"
+                    except:
+                        owners_text += f"• Owner (ID: `{owner_id}`) 👑\n"
+            
+            # If no guild or couldn't fetch names, show IDs with note
+            if not guild or owner_names_fetched == 0:
+                # Try to provide some context about who owners are
+                sample_owners = [
+                    ("▸Subhu", "1169492860278669312"),  # Main owner
+                    ("Owner 2", "1463113729959919801"),
+                    ("Owner 3", "1443836576802013316")
+                ]
+                
+                for i, (name, oid) in enumerate(sample_owners[:len(owner_ids)], 1):
+                    if i <= len(owner_ids):
+                        real_id = list(owner_ids)[i-1] if i <= len(owner_ids) else oid
+                        owners_text += f"{i}. **{name}** (ID: `{real_id}`) 👑\n"
             
             if len(owner_ids) > 5:
-                owners_text += f"...and {len(owner_ids) - 5} more"
+                owners_text += f"\n*...and {len(owner_ids) - 5} more owners*"
+            
+            owners_text += "\n\n💡 **Owners have FULL ACCESS** - they can use all commands including kick/ban!"
             
             data['owners_data'] = owners_text
         except Exception as e:
-            data['owners_data'] = f"Owner data error: {str(e)[:50]}"
+            data['owners_data'] = f"👑 **Owners:** {str(e)[:80]}"
         
         return data
     
