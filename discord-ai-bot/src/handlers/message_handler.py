@@ -129,13 +129,9 @@ class MessageHandler:
                 
                 # 🆕 EXTRACT MENTIONS - So AI knows WHO to kick/ban/etc!
                 mentioned_users = []
-                if message.mentioned_users:
-                    mentioned_users = [
-                        {"id": str(u.id), "name": u.display_name, "mention": u.mention}
-                        for u in message.mentioned_users
-                        if u.id != self.bot.user.id  # Exclude bot itself
-                    ]
-                elif message.mentions:
+                
+                # discord.py uses `message.mentions` (not mentioned_users!)
+                if message.mentions:
                     mentioned_users = [
                         {"id": str(u.id), "name": u.display_name, "mention": u.mention}
                         for u in message.mentions
