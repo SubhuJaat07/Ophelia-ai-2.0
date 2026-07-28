@@ -269,6 +269,114 @@ class AIHandler:
     MAX_MESSAGE_LENGTH = 800
     MAX_SYSTEM_PROMPT_CHARS = 1800  # Increased slightly for user context
     
+    # Channel Context Settings
+    MAX_CHANNEL_CONTEXT_MSGS = 50  # Last 50 messages from channel
+    CHANNEL_CONTEXT_KEYWORDS = ["kya hua", "kya chal rha", "what happened", "context", 
+                                "kon sahi", "who won", "fight", "ladai", "argument",
+                                "discussion", "baat", "recent", "pichle msgs", "summary",
+                                "batao kya hua", "update do", "kya ho rha", "tell me"]
+    
+    def store_channel_message(
+        self,
+        channel_id: int,
+        author_name: str,
+        content: str,
+        is_bot: bool = False,
+        timestamp: str = None
+    ):
+        """
+        Store channel messages for CONTEXT AWARENESS!
+        This lets Ophelia know what's happening in the server!
+        """
+        self._init_clients()
+        
+        if not timestamp:
+            timestamp = datetime.now().isoformat()
+        
+        # Get existing channel history or create new
+        cache_key = f"channel_history:{channel_id}"
+        history = self.cache.get_user_context(channel_id)  # Reusing user_context for channel
+        
+        if not history:
+            history = {
+                "messages": [],
+                "participants": set(),
+                "topics": [],
+                "conflict_detected": False
+            }
+        
+        # Add new message
+        msg_entry = {
+            "author": author_name,
+            "content": content[:200],  # Truncate long messages
+            "is_bot": is_bot,
+            "timestamp": timestamp
+        }
+        
+        if isinstance(history, dict):
+            history["messages"].append(msg_entry)
+            
+            # Keep only last MAX_CHANNEL_CONTEXT_MSGS messages
+            if len(history["messages"]) > self.MAX_CHANNEL_CONTEXT_MSGS:
+                history["messages"] = history["messages"][-self.MAX_CHANNEL_CONTEXT_MSGS:]
+            
+            # Track participants
+            if not is_bot:
+                history.setdefault("participants", set()).add(author_name)
+            
+            # Detect conflicts/fights automatically
+            conflict_words = ["fight", "ladai", "stupid", "idiot", "hate", "shut up", 
+                            "mad", "wrong", "sahi nahi", "galat hai", "😡", "😠"]
+            if any(word in content.lower() for word in conflict_words):
+                history["conflict_detected"] = True
+            
+            # Save to cache (persists to disk!)
+            self.cache.set_user_context(channel_id, history)
+    
+    def get_channel_context_summary(self, channel_id: int, query: str = "") -> Optional[str]:
+        """
+        Get summary of what's happening in the channel.
+        Returns formatted context string or None if no context available.
+        """
+        self._init_clients()
+        
+        cache_key = f"channel_history:{channel_id}"
+        history = self.cache.get_user_context(channel_id)
+        
+        if not history or not isinstance(history, dict):
+            return None
+        
+        messages = history.get("messages", [])
+        
+        if len(messages) < 5:  # Not enough context
+            return None
+        
+        # Build context summary
+        participants = list(history.get("participants", set()))[-10:]  # Last 10 participants
+        conflict_detected = history.get("conflict_detected", False)
+        
+        # Get last 20 messages for detailed context
+        recent_msgs = messages[-20:]
+        
+        summary = f"""
+**📺 CHANNEL CONTEXT (What's been happening here):**
+
+**👥 Active Participants:** {', '.join(participants[:8])}
+**💬 Recent Messages ({len(recent_msgs)} of {len(messages)} total):**
+
+"""
+        
+        # Format recent messages
+        for msg in recent_msgs:
+            prefix = "🤖" if msg.get("is_bot") else "👤"
+            time_short = msg.get("timestamp", "")[11:16] if msg.get("timestamp") else ""
+            summary += f"{time_short} {prefix} **{msg['author']}:** {msg['content']}\n"
+        
+        if conflict_detected:
+            summary += "\n⚠️ **Note:** Some conflict/heated discussion detected recently!"
+        
+        return summary
+    
     async def get_conversation_context(
         self,
         guild_id: int,
@@ -277,12 +385,15 @@ class AIHandler:
         username: str = "Unknown",
         display_name: str = "Unknown",
         max_messages: int = None,
-        task_type: TaskType = TaskType.CHAT
+        task_type: TaskType = TaskType.CHAT,
+        user_query: str = ""  # NEW: User's message to detect context requests!
     ) -> List[Dict[str, str]]:
         """
-        Build conversation context with USER AWARENESS!
-        Now Ophelia KNOWS who she's talking to!
-        """
+        Build conversation context with FULL AWARENESS!
+        - User Recognition 👤
+- Channel Context 📺
+- Emotional Intelligence 😊
+"""
         self._init_clients()
         
         if max_messages is None:
@@ -302,6 +413,21 @@ class AIHandler:
         if len(system_prompt) == self.MAX_SYSTEM_PROMPT_CHARS:
             system_prompt += "... [truncated]"
         messages.append({"role": "system", "content": system_prompt})
+        
+        # 🆕 CHANNEL CONTEXT - Check if user wants to know about recent chat!
+        should_include_channel_context = (
+            user_query and 
+            any(keyword in user_query.lower() for keyword in self.CHANNEL_CONTEXT_KEYWORDS)
+        )
+        
+        if should_include_channel_context:
+            channel_context = self.get_channel_context_summary(channel_id, user_query)
+            if channel_context:
+                messages.append({
+                    "role": "system", 
+                    "content": channel_context[:1500]  # Limit size
+                })
+                logger.info(f"📺 Included channel context for query: {user_query[:30]}...")
         
         # Get relevant memories (if enabled) - from PERSISTENT storage!
         settings = await self.get_guild_settings(guild_id)
@@ -471,9 +597,11 @@ class AIHandler:
             else:
                 task_type = self.groq.detect_task_type(user_message)
             
-            # Build context WITH USER PROFILE & MOOD!
+            # Build context WITH USER PROFILE, MOOD & CHANNEL CONTEXT!
             messages = await self.get_conversation_context(
-                guild_id, channel_id, user_id, username, display_name, task_type=task_type
+                guild_id, channel_id, user_id, username, display_name, 
+                task_type=task_type,
+                user_query=user_message  # 🆕 Pass query for channel context detection!
             )
             
             # Override the system prompt to include current mood

@@ -195,6 +195,9 @@ class NaturalCommandParser:
         if self._matches_patterns(msg_lower, ["my profile", "mera profile", "kya jaanti ho mujhse", "what do you know about me", "mujhe kya pata hai"]):
             return await self._cmd_show_user_profile(author)
         
+        if self._matches_patterns(msg_lower, ["channel context", "kya chal rha", "recent chat", "kya ho rha hai", "channel summary", "update do"]):
+            return await self._cmd_show_channel_context(channel)
+        
         return None
     
     def _matches_patterns(self, text: str, patterns: List[str]) -> bool:
@@ -1051,6 +1054,82 @@ class NaturalCommandParser:
         except Exception as e:
             logger.error(f"Error showing profile: {e}")
             return f"❌ Profile load nahi hua: `{str(e)[:80]}`", True, None
+    
+    async def _cmd_show_channel_context(self, channel: discord.TextChannel) -> Tuple[str, bool, Optional[discord.Embed]]:
+        """Show what Ophelia knows about recent channel activity!"""
+        try:
+            from src.utils.cache import get_cache
+            from src.handlers.ai_handler import get_ai_handler
+            cache = get_cache()
+            ai = get_ai_handler()
+            
+            # Get channel history
+            cache_key = f"channel_history:{channel.id}"
+            history = cache.get_user_context(channel.id)
+            
+            if not history or not isinstance(history, dict):
+                embed = discord.Embed(
+                    title="📺 CHANNEL CONTEXT",
+                    description="Abhi tak koi context nahi hai! 😅\nThoda chat karo, main track karne lagungi!",
+                    color=discord.Color.orange()
+                )
+                embed.add_field(name="💡 Tip:", value="Jab messages aayenge, main unhe store karungi!", inline=False)
+                return f"", True, embed
+            
+            messages = history.get("messages", [])
+            participants = list(history.get("participants", set()))
+            conflict_detected = history.get("conflict_detected", False)
+            
+            embed = discord.Embed(
+                title=f"📺 #{channel.name} CONTEXT",
+                description=f"**Total Messages Tracked:** {len(messages)}",
+                color=discord.Color.blue()
+            )
+            
+            # Participants
+            if participants:
+                embed.add_field(name="👥 Active Participants", value=", ".join(participants[:15]), inline=False)
+            
+            # Last 10 messages preview
+            recent_msgs = messages[-10:]
+            if recent_msgs:
+                msg_preview = ""
+                for msg in recent_msgs:
+                    prefix = "🤖" if msg.get("is_bot") else "💬"
+                    time_short = msg.get("timestamp", "")[11:16] if msg.get("timestamp") else ""
+                    author = msg.get("author", "Unknown")[:20]
+                    content = msg.get("content", "")[:50]
+                    msg_preview += f"{time_short} {prefix} **{author}:** {content}\n"
+                
+                embed.add_field(name="💬 Recent Messages (Last 10)", value=msg_preview, inline=False)
+            
+            # Conflict detection
+            if conflict_detected:
+                embed.add_field(
+                    name="⚠️ ALERT", 
+                    value="Kuch heated discussion/fight detect hui recently!",
+                    inline=False,
+                    color=discord.Color.red()
+                )
+            
+            # Stats
+            bot_msgs = sum(1 for m in messages if m.get("is_bot"))
+            human_msgs = len(messages) - bot_msgs
+            
+            stats_text = (
+                f"**Human Messages:** {human_msgs}\n"
+                f"**Bot Messages:** {bot_msgs}\n"
+                f"**Tracking Since:** Now (persists across restarts!)"
+            )
+            embed.add_field(name="📊 Stats", value=stats_text, inline=True)
+            
+            embed.set_footer(text="💡 Ask me 'kya hua' & I'll use this context!")
+            
+            return f"", True, embed
+            
+        except Exception as e:
+            logger.error(f"Error showing channel context: {e}")
+            return f"❌ Context load nahi hua: `{str(e)[:80]}`", True, None
 
 
 # Global instance

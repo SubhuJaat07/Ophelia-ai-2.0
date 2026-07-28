@@ -79,6 +79,20 @@ class MessageHandler:
     async def handle_message(self, message: discord.Message):
         """Main message handler with natural command processing"""
         try:
+            # 🆕 STORE CHANNEL MESSAGE FOR CONTEXT AWARENESS!
+            # This lets Ophelia know what's happening in the server!
+            try:
+                ai_handler_instance = get_ai_handler()
+                ai_handler_instance.store_channel_message(
+                    channel_id=message.channel.id,
+                    author_name=message.author.display_name or str(message.author.name),
+                    content=self._clean_message_content(message)[:200],
+                    is_bot=message.author.bot,
+                    timestamp=message.created_at.isoformat()
+                )
+            except Exception as e:
+                logger.debug(f"Channel context storage skipped: {e}")
+            
             # Quick check if we should respond
             should_respond, reason = await self.should_respond(message)
             
