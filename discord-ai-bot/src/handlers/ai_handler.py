@@ -1,5 +1,5 @@
 """
-AI Response Handler - SUPER SMART UPGRADE v3.0
+AI Response Handler - SUPER SMART UPGRADE v4.0 🚀
 🧠 Features:
 - User Recognition (Knows WHO is talking!)
 - User Profiling (Remembers preferences)
@@ -7,6 +7,9 @@ AI Response Handler - SUPER SMART UPGRADE v3.0
 - Emotional Intelligence (Reads mood)
 - Multi-model smart routing
 - Persistent memory integration
+- ✨ NEW: AI-DRIVEN DECISION ENGINE (No more pattern matching!)
+  → AI decides what to do based on intent, not fixed commands!
+  → Works in ANY language (Hindi/English/Hinglish)!
 """
 import logging
 import re
@@ -21,6 +24,7 @@ from config.settings import (
 from src.utils.database import get_db
 from src.utils.cache import get_cache
 from src.utils.groq_client import get_groq_client, TaskType
+from src.handlers.ai_decision_engine import get_decision_engine
 
 logger = logging.getLogger("AIHandler")
 
@@ -233,8 +237,9 @@ class AIHandler:
         return context
     
     async def build_system_prompt(self, guild_id: int, user_profile: Dict = None, mood: str = "neutral", 
-                                  channel_context: str = None, available_data: Dict = None) -> str:
-        """Build UNIQUE system prompt with personality + USER CONTEXT + AVAILABLE DATA!"""
+                                  channel_context: str = None, available_data: Dict = None,
+                                  user_message: str = None) -> str:
+        """Build UNIQUE system prompt with personality + USER CONTEXT + AI DECISION ENGINE!"""
         settings = await self.get_guild_settings(guild_id)
         
         personality_key = settings.get("personality", "fun")
@@ -247,6 +252,32 @@ class AIHandler:
             personality=personality_prompt,
             custom_instructions=f"\n\n**Server-Specific Instructions:**\n{custom_instructions}" if custom_instructions else ""
         )
+        
+        # 🆕🚀 ADD AI DECISION ENGINE - CAPABILITIES + INTENT UNDERSTANDING!
+        if user_message:
+            decision_engine = get_decision_engine()
+            
+            # Get channel context for decision making
+            channel_messages = None
+            if hasattr(self, '_last_channel_id') and self._last_channel_id:
+                channel_messages = self.get_channel_context_summary(self._last_channel_id, user_message)
+            
+            decision_context = decision_engine.build_decision_context(
+                user_message=user_message,
+                user_profile=user_profile or {},
+                channel_context=channel_messages,
+                current_mood=mood
+            )
+            
+            # Add decision context (truncated to fit token limits)
+            if len(decision_context) > 1500:
+                decision_context = decision_context[:1500] + "\n... [truncated]"
+            
+            system_prompt += f"""
+
+**🧠 AI DECISION ENGINE (You are SMART - Decide what to do!):**
+{decision_context}
+"""
         
         # ADD USER CONTEXT IF AVAILABLE - THIS IS THE SECRET SAUCE!
         if user_profile:
@@ -841,9 +872,16 @@ class AIHandler:
                 guild_id, channel_id, user_id, username, display_name, task_type=task_type
             )
             
-            # Add mood awareness
+            # Add mood awareness + AI DECISION ENGINE
             if messages and messages[0].get("role") == "system":
-                mood_aware_prompt = await self.build_system_prompt(guild_id, user_profile, current_mood)
+                # Store channel_id for decision engine
+                self._last_channel_id = channel_id
+                
+                # 🚀 NEW: Pass user_message to activate Decision Engine!
+                mood_aware_prompt = await self.build_system_prompt(
+                    guild_id, user_profile, current_mood, 
+                    user_message=user_message  # This activates AI decision making!
+                )
                 messages[0]["content"] = mood_aware_prompt[:self.MAX_SYSTEM_PROMPT_CHARS]
             
             messages.append({"role": "user", "content": user_message})
