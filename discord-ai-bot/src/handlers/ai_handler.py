@@ -40,6 +40,14 @@ class AIHandler:
         self.db = None
         self.cache = None
         self.groq = None
+        
+        # Keywords that trigger channel context awareness
+        self.CHANNEL_CONTEXT_KEYWORDS = [
+            "kya hua", "kya chal rha", "kya ho rha", "what happened", 
+            "kon sahi", "who won", "kya kiya", "kya bola",
+            "recent msgs", "recent messages", "channel context",
+            "kya discussion", "discussion me kya", "baat kya thi"
+        ]
     
     def _init_clients(self):
         """Lazy initialization of clients"""

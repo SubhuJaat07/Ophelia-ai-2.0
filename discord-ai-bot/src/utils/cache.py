@@ -118,12 +118,25 @@ class PersistentCacheManager:
         except Exception as e:
             logger.error(f"Error saving memories: {e}")
     
+    def _convert_sets_to_lists(self, obj):
+        """Recursively convert sets to lists for JSON serialization"""
+        if isinstance(obj, set):
+            return list(obj)
+        elif isinstance(obj, dict):
+            return {k: self._convert_sets_to_lists(v) for k, v in obj.items()}
+        elif isinstance(obj, list):
+            return [self._convert_sets_to_lists(item) for item in obj]
+        return obj
+    
     def _save_user_prefs_to_disk(self):
         """Save user preferences to JSON file"""
         try:
             all_prefs = dict(self._persistent_user_prefs)
             for key in self.user_context_cache:
                 all_prefs[key] = self.user_context_cache[key]
+            
+            # Convert any sets to lists before JSON serialization
+            all_prefs = self._convert_sets_to_lists(all_prefs)
             
             with open(USER_PREFERENCES_FILE, 'w', encoding='utf-8') as f:
                 json.dump(all_prefs, f, ensure_ascii=False, indent=2)
