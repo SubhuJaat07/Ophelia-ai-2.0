@@ -224,8 +224,9 @@ class AIHandler:
         
         return context
     
-    async def build_system_prompt(self, guild_id: int, user_profile: Dict = None, mood: str = "neutral") -> str:
-        """Build UNIQUE system prompt with personality + USER CONTEXT!"""
+    async def build_system_prompt(self, guild_id: int, user_profile: Dict = None, mood: str = "neutral", 
+                                  channel_context: str = None, available_data: Dict = None) -> str:
+        """Build UNIQUE system prompt with personality + USER CONTEXT + AVAILABLE DATA!"""
         settings = await self.get_guild_settings(guild_id)
         
         personality_key = settings.get("personality", "fun")
@@ -261,20 +262,141 @@ class AIHandler:
 5. If new user - be welcoming, don't assume familiarity
 """
         
+        # 🆕 ADD AVAILABLE DATA FOR AI TO USE WHEN USERS ASK QUESTIONS!
+        if available_data:
+            system_prompt += f"""
+
+**📊 DATA YOU HAVE ACCESS TO (Use when users ask!):**
+
+👤 **USER PROFILE DATA (When they ask about themselves):**
+{available_data.get('user_profile_data', 'Not available')}
+
+📺 **CHANNEL CONTEXT (When they ask 'kya chal rha', 'what happened'):**
+{available_data.get('channel_context_data', 'Not available')}
+
+🔐 **YOUR PERMISSIONS (When they ask about permissions):**
+{available_data.get('permissions_data', 'Not available')}
+
+👑 **BOT OWNERS (When they ask about owners):**
+{available_data.get('owners_data', 'Not available')}
+
+**🎯 HOW TO USE THIS DATA:**
+- User asks about THEMSELVES → Use USER PROFILE data
+- User asks what's happening → Use CHANNEL CONTEXT  
+- User asks your permissions → Use PERMISSIONS data
+- User asks who's boss → Use OWNERS data
+- Respond NATURALLY in any language - don't sound robotic!
+- Format info nicely with emojis and structure
+"""
+        
+        # Add channel context if provided separately
+        if channel_context and not available_data:
+            system_prompt += f"""
+
+**📺 RECENT CHANNEL ACTIVITY:**
+{channel_context}
+"""
+        
         return system_prompt
     
     # Token limits for Groq free tier
     MAX_TOTAL_CHARS = 6000  # ~2,000 tokens (safe for free tier)
     MAX_MESSAGES = 8
     MAX_MESSAGE_LENGTH = 800
-    MAX_SYSTEM_PROMPT_CHARS = 1800  # Increased slightly for user context
+    MAX_SYSTEM_PROMPT_CHARS = 2200  # Increased for available data
     
     # Channel Context Settings
     MAX_CHANNEL_CONTEXT_MSGS = 50  # Last 50 messages from channel
-    CHANNEL_CONTEXT_KEYWORDS = ["kya hua", "kya chal rha", "what happened", "context", 
-                                "kon sahi", "who won", "fight", "ladai", "argument",
-                                "discussion", "baat", "recent", "pichle msgs", "summary",
-                                "batao kya hua", "update do", "kya ho rha", "tell me"]
+    
+    def gather_available_data(
+        self,
+        user_profile: Dict,
+        channel_id: int,
+        guild: object = None,  # discord.Guild object (optional)
+        bot_member: object = None  # Bot's member object (optional)
+    ) -> Dict[str, str]:
+        """
+        Gather ALL available data that AI can use when users ask questions!
+        This is what makes Ophelia SMART - she has data ready!
+        """
+        self._init_clients()
+        
+        data = {}
+        
+        # 1️⃣ USER PROFILE DATA
+        if user_profile:
+            relationship = user_profile.get("relationship_level", "new")
+            msg_count = user_profile.get("message_count", 0)
+            topics = user_profile.get("topics_discussed", [])[-8:]
+            mood_history = user_profile.get("mood_history", [])[-5:]
+            first_seen = user_profile.get("first_seen", "Unknown")
+            display_name = user_profile.get("display_name", "Unknown")
+            
+            # Format moods with emojis
+            mood_emojis = {"happy": "😊", "sad": "😢", "angry": "😠", "excited": "🎉",
+                         "bored": "😐", "confused": "❓", "sarcastic": "😏", "neutral": "😌"}
+            recent_moods = " ".join([mood_emojis.get(m.get("mood", "neutral"), m.get("mood", "?")) 
+                                   for m in mood_history])
+            
+            user_data = f"""
+**Name:** {display_name}
+**Relationship:** {relationship} ({'New' if msg_count < 30 else 'Casual' if msg_count < 60 else 'Friend' if msg_count < 100 else 'Bestie!'})
+**Messages Sent:** {msg_count}
+**First Seen:** {first_seen[:10]}
+**Topics They Like:** {', '.join(topics) if topics else 'Not enough data'}
+**Recent Moods:** {recent_moods or 'Neutral'}
+**Status:** {'Very Active!' if msg_count > 50 else 'Getting to know them...' if msg_count > 10 else 'New user!'}"""
+            
+            data['user_profile_data'] = user_data
+        
+        # 2️⃣ CHANNEL CONTEXT DATA
+        channel_context_summary = self.get_channel_context_summary(channel_id)
+        if channel_context_summary:
+            # Shorten it for the prompt
+            data['channel_context_data'] = channel_context_summary[:800] + "..." if len(channel_context_summary) > 800 else channel_context_summary
+        else:
+            data['channel_context_data'] = "No channel context tracked yet. Messages will be stored as they come!"
+        
+        # 3️⃣ PERMISSIONS DATA (if guild provided)
+        if bot_member:
+            perms = bot_member.guild_permissions
+            perms_list = []
+            
+            if perms.administrator:
+                perms_list.append("✅ Administrator (FULL ACCESS)")
+            else:
+                if perms.kick_members: perms_list.append("✅ Kick Members")
+                if perms.ban_members: perms_list.append("✅ Ban Members")
+                if perms.moderate_members: perms_list.append("✅ Timeout Members")
+                if perms.manage_messages: perms_list.append("✅ Manage Messages")
+                if perms.manage_roles: perms_list.append("✅ Manage Roles")
+                if perms.add_reactions: perms_list.append("✅ Add Reactions")
+                if perms.connect: perms_list.append("✅ Connect Voice")
+            
+            if not perms_list:
+                perms_list.append("❌ Limited permissions")
+            
+            data['permissions_data'] = "\n".join(perms_list)
+        else:
+            data['permissions_data'] = "Permission data not available in this context"
+        
+        # 4️⃣ OWNERS DATA
+        try:
+            from config.settings import config
+            owner_ids = config.owner_ids
+            
+            owners_text = f"**Total Owners:** {len(owner_ids)}\n"
+            for i, owner_id in enumerate(owner_ids[:5], 1):  # Max 5 owners
+                owners_text += f"{i}. `<{owner_id}>`\n"
+            
+            if len(owner_ids) > 5:
+                owners_text += f"...and {len(owner_ids) - 5} more"
+            
+            data['owners_data'] = owners_text
+        except Exception as e:
+            data['owners_data'] = f"Owner data error: {str(e)[:50]}"
+        
+        return data
     
     def store_channel_message(
         self,
@@ -548,12 +670,17 @@ class AIHandler:
         user_message: str,
         username: str = "Unknown",
         display_name: str = "Unknown",
-        force_task_type: TaskType = None
+        force_task_type: TaskType = None,
+        guild: object = None,  # 🆕 discord.Guild (for permissions, etc.)
+        bot_member: object = None  # 🆕 Bot's member object
     ) -> str:
         """
-        Generate AI response with FULL USER AWARENESS!
-        Now Ophelia knows WHO is talking and HOW they feel!
-        """
+        Generate AI response with FULL INTELLIGENCE!
+        - User Recognition 👤
+- Emotional Intelligence 😊
+- Channel Context 📺
+- Available Data for AI 🧠
+"""
         self._init_clients()
         
         try:
@@ -597,18 +724,29 @@ class AIHandler:
             else:
                 task_type = self.groq.detect_task_type(user_message)
             
-            # Build context WITH USER PROFILE, MOOD & CHANNEL CONTEXT!
+            # 🆕 GATHER ALL AVAILABLE DATA FOR AI!
+            available_data = self.gather_available_data(
+                user_profile=user_profile,
+                channel_id=channel_id,
+                guild=guild,
+                bot_member=bot_member
+            )
+            
+            # Build context WITH EVERYTHING!
             messages = await self.get_conversation_context(
                 guild_id, channel_id, user_id, username, display_name, 
                 task_type=task_type,
-                user_query=user_message  # 🆕 Pass query for channel context detection!
+                user_query=user_message
             )
             
-            # Override the system prompt to include current mood
+            # Override system prompt to include MOOD + AVAILABLE DATA!
             if messages and messages[0].get("role") == "system":
-                mood_aware_prompt = await self.build_system_prompt(guild_id, user_profile, current_mood)
-                mood_aware_prompt = mood_aware_prompt[:self.MAX_SYSTEM_PROMPT_CHARS]
-                messages[0]["content"] = mood_aware_prompt
+                full_prompt = await self.build_system_prompt(
+                    guild_id, user_profile, current_mood,
+                    available_data=available_data  # 🆕 THIS IS THE MAGIC!
+                )
+                full_prompt = full_prompt[:self.MAX_SYSTEM_PROMPT_CHARS]
+                messages[0]["content"] = full_prompt
             
             # Add current user message
             messages.append({"role": "user", "content": user_message})

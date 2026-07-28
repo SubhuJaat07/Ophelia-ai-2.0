@@ -167,7 +167,9 @@ class MessageHandler:
                     user_id=message.author.id,
                     user_message=self._clean_message_content(message),
                     username=username,  # NOW SHE KNOWS YOUR NAME!
-                    display_name=display_name  # AND DISPLAY NAME!
+                    display_name=display_name,  # AND DISPLAY NAME!
+                    guild=message.guild,  # 🆕 Pass guild for permissions data
+                    bot_member=message.guild.me if message.guild else None  # 🆕 Pass bot member
                 )
                 
                 # Send response

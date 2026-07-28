@@ -60,39 +60,24 @@ class NaturalCommandParser:
         author: discord.Member,
         referenced_msg: Optional[discord.Message] = None
     ) -> Optional[Tuple[str, bool, Optional[discord.Embed]]]:
-        """Detect and execute natural language commands"""
+        """
+        Detect and execute commands - AI-FIRST APPROACH!
         
-        # Get target user (from mention, name, or referenced message) - IMPROVED!
+        ⚡ ACTION COMMANDS (Fixed - Need execution):
+        - kick/ban/mute/timeout → Actually perform action!
+        - clear messages → Delete!
+        - status/nickname/channel/role → Modify!
+        
+        🧠 INFO COMMANDS (AI Handles - Natural language):
+        - profile/info/avatar/context/permissions → AI decides!
+        """
+        
+        # Get target user (from mention, name, or referenced message)
         target_user = await self._extract_target_user(original_msg, channel, guild, referenced_msg)
         
-        # ===== AVATAR & INFO COMMANDS (Everyone can use) =====
+        # ===== ⚡ ACTION COMMANDS (FIXED - These NEED execution!) =====
         
-        if self._matches_patterns(msg_lower, ["avatar", "dp", "profile pic", "photo", "display picture", "pfp"]):
-            return await self._cmd_show_avatar(target_user or author, original_msg)
-        
-        if self._matches_patterns(msg_lower, ["info", "baare me", "about", "details", "profile", "who is"]):
-            return await self._cmd_show_user_info(target_user or author)
-        
-        if self._matches_patterns(msg_lower, ["server info", "server details", "server stats", "kitne members", "member count"]):
-            return await self._cmd_show_server_info(guild)
-        
-        if self._matches_patterns(msg_lower, ["my info", "mera info", "mera profile"]):
-            return await self._cmd_show_user_info(author)
-        
-        if self._matches_patterns(msg_lower, ["roles", "konse roles", "what roles"]):
-            target = target_user or author
-            return await self._cmd_show_roles(target)
-        
-        if self._matches_patterns(msg_lower, ["join date", "kab join hua", "when joined"]):
-            target = target_user or author
-            return await self._cmd_show_join_date(target)
-        
-        # ===== OWNER INFO COMMAND =====
-        if self._matches_patterns(msg_lower, ["owner", "owners", "kon owner", "who is owner", "malik kaun hai"]):
-            return await self._cmd_show_owners(guild)
-        
-        # ===== MODERATION COMMANDS (Owner/Mod Only) =====
-        
+        # MODERATION ACTIONS - Must be fixed!
         if self._matches_patterns(msg_lower, ["timeout", "mute temporarily", "silent mode"]):
             if not self._check_owner(author):
                 return ("❌ Sirf owners timeout kar sakte hain!", False, None)
@@ -125,8 +110,7 @@ class NaturalCommandParser:
                 return await self._cmd_mute(target_user, author, guild)
             return ("❌ Batao kis user ko mute karna hai? (@mention karo ya naam batao)", False, None)
         
-        # ===== BOT CONTROL COMMANDS (Owner Only) =====
-        
+        # BOT CONTROL ACTIONS - Must be fixed!
         if self._matches_patterns(msg_lower, ["status", "set status", "playing", "listening", "watching", "streaming"]):
             if not self._check_owner(author):
                 return ("❌ Sirf owners status change kar sakte hain!", False, None)
@@ -153,24 +137,21 @@ class NaturalCommandParser:
             role_info = self._extract_role_info(original_msg)
             return await self._cmd_create_role(role_info, guild)
         
-        # ===== MESSAGING COMMANDS =====
+        # MESSAGE CLEARING - Must be fixed!
+        if self._matches_patterns(msg_lower, ["clear", "delete messages", "messages delete", "chat clean"]):
+            if not self._check_mod(author, guild):
+                return ("❌ Sirf mods messages delete kar sakte hain!", False, None)
+            count = self._extract_number(original_msg) or 10
+            return await self._cmd_clear_messages(count, channel)
         
+        # MESSAGING - Must be fixed!
         if self._matches_patterns(msg_lower, ["bhejo", "send to", "message in", "channel me bhejo", "announce"]):
-            if not self._check_mod(author, guild) and "announce" in msg_lower:
-                pass  # Allow announces for mods
             send_info = self._extract_send_info(original_msg, guild)
             if send_info:
                 return await self._cmd_send_message(send_info, author)
             return ("❌ Kya bhejna hai aur kahan? Specify karo!", False, None)
         
-        if self._matches_patterns(msg_lower, ["embed", "rich embed", "fancy message", "beautiful message"]):
-            embed_info = self._extract_embed_info(original_msg)
-            if embed_info:
-                return await self._cmd_send_embed(embed_info, channel)
-            return ("❌ Embed ke liye title aur description do!", False, None)
-        
-        # ===== REACTION COMMANDS =====
-        
+        # REACTIONS - Must be fixed!
         if self._matches_patterns(msg_lower, ["react", "emoji lagao", "reaction do", "emoji do"]):
             emoji = self._extract_emoji(original_msg)
             target_msg = referenced_msg
@@ -178,26 +159,19 @@ class NaturalCommandParser:
                 return await self._cmd_add_reaction(emoji, target_msg)
             return ("❌ Emoji batao aur message pe reply karke bol!", False, None)
         
-        # ===== UTILITY COMMANDS =====
+        # EMBED CREATION - Can be AI handled but keeping for now
+        if self._matches_patterns(msg_lower, ["embed", "rich embed", "fancy message", "beautiful message"]):
+            embed_info = self._extract_embed_info(original_msg)
+            if embed_info:
+                return await self._cmd_send_embed(embed_info, channel)
+            return ("❌ Embed ke liye title aur description do!", False, None)
         
-        if self._matches_patterns(msg_lower, ["clear", "delete messages", "messages delete", "chat clean"]):
-            if not self._check_mod(author, guild):
-                return ("❌ Sirf mods messages delete kar sakte hain!", False, None)
-            count = self._extract_number(original_msg) or 10
-            return await self._cmd_clear_messages(count, channel)
-        
+        # HELP COMMAND - Fixed for structure
         if self._matches_patterns(msg_lower, ["help", "commands", "kya kar sakti hai", "features"]):
             return await self._cmd_show_help(author)
         
-        if self._matches_patterns(msg_lower, ["my permissions", "meri permissions", "bot permissions", "debug permissions", "check perms"]):
-            return await self._cmd_debug_permissions(guild)
-        
-        if self._matches_patterns(msg_lower, ["my profile", "mera profile", "kya jaanti ho mujhse", "what do you know about me", "mujhe kya pata hai"]):
-            return await self._cmd_show_user_profile(author)
-        
-        if self._matches_patterns(msg_lower, ["channel context", "kya chal rha", "recent chat", "kya ho rha hai", "channel summary", "update do"]):
-            return await self._cmd_show_channel_context(channel)
-        
+        # ===== 🧠 EVERYTHING ELSE → LET AI HANDLE IT! =====
+        # No pattern matched → Return None → Message goes to AI with full context!
         return None
     
     def _matches_patterns(self, text: str, patterns: List[str]) -> bool:
