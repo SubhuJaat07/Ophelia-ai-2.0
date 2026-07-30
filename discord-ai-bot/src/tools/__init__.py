@@ -10,6 +10,7 @@ Tools Categories:
 💬 Messaging: Send, reply, react  
 👥 Members: Lookup users, get info
 🏠 Server: Info, channels list
+⚡ ACTIONS: Create channel, kick, timeout (REAL Discord API!)
 
 Usage:
     from src.tools import get_tool_executor
@@ -27,7 +28,10 @@ from .discord_tools import (
     GetMemberTool,
     GetServerInfoTool,
     ListChannelsTool,
-    GetChannelInfoTool
+    GetChannelInfoTool,
+    CreateChannelTool,      # 🆕 REAL Channel Creation!
+    KickUserTool,          # 🆕 REAL Kick Action!
+    TimeoutUserTool        # 🆕 REAL Timeout Action!
 )
 
 __all__ = [
@@ -41,5 +45,8 @@ __all__ = [
     'GetMemberTool',
     'GetServerInfoTool',
     'ListChannelsTool',
-    'GetChannelInfoTool'
+    'GetChannelInfoTool',
+    'CreateChannelTool',      # 🆕
+    'KickUserTool',          # 🆕
+    'TimeoutUserTool'        # 🆕
 ]

@@ -810,6 +810,275 @@ Returns channel name, type, topic, member count, permissions, and more."""
 
 
 # ============================================================
+# 🆕 CREATE CHANNEL TOOL - ACTUALLY CREATES CHANNELS!
+# ============================================================
+class CreateChannelTool(DiscordTool):
+    """
+    Create a new text or voice channel in the server!
+    This is a REAL action - not fake! 🛠️
+    """
+    
+    name = "create_channel"
+    description = """Create a new channel in the Discord server.
+Can create text channels or voice channels. Requires appropriate permissions.
+This ACTUALLY creates the channel - it's not fake!"""
+    
+    parameters = [
+        ToolParameter(
+            name="name",
+            param_type="string",
+            description="Name of the channel to create (e.g., 'peace', 'gaming', 'memes')",
+            required=True
+        ),
+        ToolParameter(
+            name="channel_type",
+            param_type="string",
+            description="Type of channel to create",
+            required=False,
+            default="text",
+            enum=["text", "voice"]
+        ),
+        ToolParameter(
+            name="category_id",
+            param_type="string",
+            description="Category ID to put channel in (optional)",
+            required=False,
+            default=None
+        ),
+        ToolParameter(
+            name="topic",
+            param_type="string",
+            description="Topic/description for text channels (optional)",
+            required=False,
+            default=None
+        )
+    ]
+    
+    permission_level = ToolPermissionLevel.MODERATOR  # Mods+ can create channels
+    
+    async def execute(self, args: Dict[str, Any], context: Dict[str, Any]) -> ToolResult:
+        try:
+            name = args["name"].strip().lower().replace(" ", "-")
+            channel_type = args.get("channel_type", "text")
+            category_id = args.get("category_id")
+            topic = args.get("topic")
+            
+            guild = context.get("guild")
+            if not guild:
+                return ToolResult(success=False, content="❌ No guild available")
+            
+            # Check bot permissions
+            me = guild.me
+            if not me.guild_permissions.manage_channels:
+                return ToolResult(
+                    success=False, 
+                    content="❌ Mere paas channel banane ka permission nahi hai! 😅"
+                )
+            
+            # Get category if specified
+            category = None
+            if category_id:
+                category = guild.get_channel(int(category_id))
+            
+            # Create the channel based on type
+            if channel_type == "voice":
+                channel = await guild.create_voice_channel(
+                    name=name,
+                    category=category
+                )
+            else:
+                channel = await guild.create_text_channel(
+                    name=name,
+                    topic=topic,
+                    category=category
+                )
+            
+            # SUCCESS! Return REAL info
+            return ToolResult(
+                success=True,
+                content=f"✅ **Channel '{channel.name}' successfully created!**\n"
+                        f"📺 Type: {channel_type}\n"
+                        f"🆔 ID: `{channel.id}`\n"
+                        f"🔗 {channel.mention}",
+                data={
+                    "channel_id": str(channel.id),
+                    "channel_name": channel.name,
+                    "channel_type": channel_type,
+                    "mention": channel.mention
+                }
+            )
+            
+        except discord.Forbidden:
+            return ToolResult(
+                success=False,
+                content="❌ Permission denied! Server owner/mod se permission le lo pehle!"
+            )
+        except Exception as e:
+            logger.error(f"Create channel failed: {e}")
+            return ToolResult(success=False, content=f"❌ Channel creation failed: {str(e)[:150]}")
+
+
+# ============================================================
+# 🆕 KICK USER TOOL - ACTUALLY KICKS USERS!
+# ============================================================
+class KickUserTool(DiscordTool):
+    """
+    Kick a user from the server - REAL moderation action!
+    Only owners and moderators can use this.
+    """
+    
+    name = "kick_user"
+    description = """Kick a member from the Discord server.
+This is a REAL moderation action - the user will be removed from the server.
+Only use when explicitly asked by an owner or moderator."""
+    
+    parameters = [
+        ToolParameter(
+            name="user_id",
+            param_type="string",
+            description="ID of the user to kick",
+            required=True
+        ),
+        ToolParameter(
+            name="reason",
+            param_type="string",
+            description="Reason for kick (shown in audit log)",
+            required=False,
+            default="Kicked by Ophelia"
+        )
+    ]
+    
+    permission_level = ToolPermissionLevel.MODERATOR  # Mods+ only
+    
+    async def execute(self, args: Dict[str, Any], context: Dict[str, Any]) -> ToolResult:
+        try:
+            user_id = args["user_id"]
+            reason = args.get("reason", "Kicked by Ophelia")
+            
+            guild = context.get("guild")
+            if not guild:
+                return ToolResult(success=False, content="❌ No guild available")
+            
+            # Get member
+            member = guild.get_member(int(user_id))
+            if not member:
+                return ToolResult(success=False, content=f"❌ User `{user_id}` not found in server")
+            
+            # Check if trying to kick owner/higher role
+            if member.id == guild.owner_id:
+                return ToolResult(success=False, content="❌ Owner ko kick nahi kar sakte bhai! 😂")
+            
+            if member.top_role >= guild.me.top_role:
+                return ToolResult(
+                    success=False, 
+                    content=f"❌ {member.display_name} ki role meri se equal/higher hai, kick nahi kar sakti!"
+                )
+            
+            # Actually kick!
+            await member.kick(reason=reason)
+            
+            return ToolResult(
+                success=True,
+                content=f"✅ **{member.display_name}** ko kick kar diya!\n"
+                        f"📝 Reason: {reason}",
+                data={"kicked_user": member.display_name, "user_id": user_id}
+            )
+            
+        except discord.Forbidden:
+            return ToolResult(
+                success=False,
+                content="❌ Permission denied! Kick permission chahiye!"
+            )
+        except Exception as e:
+            logger.error(f"Kick failed: {e}")
+            return ToolResult(success=False, content=f"❌ Kick failed: {str(e)[:150]}")
+
+
+# ============================================================
+# 🆕 TIMEOUT USER TOOL - ACTUALLY TIMEOUT USERS!
+# ============================================================
+class TimeoutUserTool(DiscordTool):
+    """
+    Timeout (mute) a user - REAL moderation action!
+    """
+    
+    name = "timeout_user"
+    description = """Timeout/mute a member in the Discord server for a specific duration.
+The user won't be able to send messages until timeout expires.
+Duration is in minutes (max 1 week = 10080 minutes)."""
+    
+    parameters = [
+        ToolParameter(
+            name="user_id",
+            param_type="string",
+            description="ID of the user to timeout",
+            required=True
+        ),
+        ToolParameter(
+            name="duration_minutes",
+            param_type="integer",
+            description="Timeout duration in minutes (1-10080, default=10)",
+            required=False,
+            default=10
+        ),
+        ToolParameter(
+            name="reason",
+            param_type="string",
+            description="Reason for timeout",
+            required=False,
+            default="Timed out by Ophelia"
+        )
+    ]
+    
+    permission_level = ToolPermissionLevel.MODERATOR
+    
+    async def execute(self, args: Dict[str, Any], context: Dict[str, Any]) -> ToolResult:
+        try:
+            user_id = args["user_id"]
+            duration = min(max(args.get("duration_minutes", 10), 1), 10080)  # Clamp 1-10080 mins
+            reason = args.get("reason", "Timed out by Ophelia")
+            
+            guild = context.get("guild")
+            if not guild:
+                return ToolResult(success=False, content="❌ No guild available")
+            
+            member = guild.get_member(int(user_id))
+            if not member:
+                return ToolResult(success=False, content=f"❌ User `{user_id}` not found in server")
+            
+            if member.id == guild.owner_id:
+                return ToolResult(success=False, content="❌ Owner ko timeout nahi kar sakte!")
+            
+            # Calculate timeout datetime
+            timeout_until = datetime.utcnow() + timedelta(minutes=duration)
+            
+            # Apply timeout
+            await member.timeout(timeout_until, reason=reason)
+            
+            duration_text = f"{duration} min" if duration < 60 else f"{duration//60} hours"
+            
+            return ToolResult(
+                success=True,
+                content=f"⏰ **{member.display_name}** ko {duration_text} ke liye timeout diya!\n"
+                        f"📝 Reason: {reason}",
+                data={
+                    "timed_out_user": member.display_name,
+                    "duration_minutes": duration,
+                    "until": timeout_until.isoformat()
+                }
+            )
+            
+        except discord.Forbidden:
+            return ToolResult(
+                success=False,
+                content="❌ Permission denied! Timeout/Moderate permission chahiye!"
+            )
+        except Exception as e:
+            logger.error(f"Timeout failed: {e}")
+            return ToolResult(success=False, content=f"❌ Timeout failed: {str(e)[:150]}")
+
+
+# ============================================================
 # 📋 EXPORT ALL TOOLS LIST
 # ============================================================
 
@@ -821,7 +1090,10 @@ ALL_DISCORD_TOOLS = [
     GetMemberTool,
     GetServerInfoTool,
     ListChannelsTool,
-    GetChannelInfoTool
+    GetChannelInfoTool,
+    CreateChannelTool,      # 🆕 Actually CREATE channels!
+    KickUserTool,          # 🆕 Actually KICK users!
+    TimeoutUserTool,       # 🆕 Actually TIMEOUT users!
 ]
 
 def get_all_tools(bot=None) -> List[DiscordTool]:

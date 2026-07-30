@@ -1054,6 +1054,9 @@ class AIHandler:
                     else:
                         final_response = "Hmm, kuch gadbad hai. Phir se try karo? 🤔"
             
+            # 🔧 CLEAN RESPONSE - Remove any raw function call leaks!
+            final_response = self._clean_ai_response(final_response)
+            
             # Save assistant response
             await self._save_message(guild_id, channel_id, user_id, "assistant", final_response)
             
@@ -1083,6 +1086,35 @@ class AIHandler:
                 bot_member=bot_member,
                 mentioned_users=mentioned_users
             )
+    
+    def _clean_ai_response(self, response: str) -> str:
+        """
+        Clean AI response - remove raw function calls, weird formatting.
+        Prevents leaks like <function=get_channel_info[...]> 
+        """
+        if not response:
+            return response
+        
+        # Remove raw function call syntax
+        import re
+        
+        # Pattern: <function=name[params]> or <function=name{params}>
+        response = re.sub(r'<function=\w+[\[\{].*?[\]\}]>', '', response, flags=re.DOTALL)
+        
+        # Pattern: function_name(params) at start of line (AI trying to write code)
+        response = re.sub(r'^\s*\w+\([^)]*\)\s*$', '', response, flags=re.MULTILINE)
+        
+        # Clean up multiple newlines
+        response = re.sub(r'\n{3,}', '\n\n', response)
+        
+        # Strip leading/trailing whitespace
+        response = response.strip()
+        
+        # If response is now empty after cleaning, return a fallback
+        if not response:
+            return "Hmm, kuch gadbad hai! Phir se try karo? 🤔"
+        
+        return response
     
     def _check_owner(self, user_id) -> bool:
         """Check if user is bot owner"""
