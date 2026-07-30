@@ -443,9 +443,9 @@ class AIHandlerV2:
     # ==========================================
     
     def _get_user_profile(self, user_id, username, display_name):
-        """Get or create user profile"""
-        cache_key = f"user:{user_id}"
-        profile = self.cache.get(cache_key)
+        """Get or create user profile using correct cache methods"""
+        # Use get_user_context (not .get()!)
+        profile = self.cache.get_user_context(user_id)
         
         if not profile:
             profile = {
@@ -460,7 +460,7 @@ class AIHandlerV2:
                 "last_interactions": [],
                 "mood_history": []
             }
-            self.cache.set(cache_key, profile)
+            self.cache.set_user_context(user_id, profile)
         
         # Update basic info
         profile["display_name"] = display_name
