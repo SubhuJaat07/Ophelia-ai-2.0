@@ -16,7 +16,7 @@ import asyncio
 from typing import Optional
 
 from config.settings import DEFAULT_GUILD_SETTINGS, is_owner
-from src.handlers.ai_handler import get_ai_handler
+from src.handlers.ai_handler_v2 import get_ai_handler_v2  # 🆕 Use V2!
 from src.utils.cache import get_cache
 from src.utils.natural_commands import get_natural_parser
 
@@ -43,7 +43,7 @@ class MessageHandler:
         if not message.guild:
             return True, "dm_message"
         
-        ai = get_ai_handler()
+        ai = get_ai_handler_v2()
         settings = await ai.get_guild_settings(message.guild.id)
         
         # Check if AI is enabled for this guild
@@ -121,7 +121,7 @@ class MessageHandler:
             # Show typing indicator
             async with message.channel.typing():
                 # 🚀 NEW AI-FIRST APPROACH: AI decides everything!
-                ai = get_ai_handler()
+                ai = get_ai_handler_v2()
                 
                 # Get user info for USER RECOGNITION! 👤
                 username = str(message.author.name)
