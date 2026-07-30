@@ -1,0 +1,502 @@
+     1→     1→     1→"""
+     2→     2→     2→AI Response Handler - SUPER SMART UPGRADE v4.0 🚀
+     3→     3→     3→🧠 Features:
+     4→     4→     4→- User Recognition (Knows WHO is talking!)
+     5→     5→     5→- User Profiling (Remembers preferences)
+     6→     6→     6→- Context Awareness (Follows conversation flow)
+     7→     7→     7→- Emotional Intelligence (Reads mood)
+     8→     8→     8→- Multi-model smart routing
+     9→     9→     9→- Persistent memory integration
+    10→    10→    10→- ✨ NEW: AI-DRIVEN DECISION ENGINE (No more pattern matching!)
+    11→    11→    11→  → AI decides what to do based on intent, not fixed commands!
+    12→    12→    12→  → Works in ANY language (Hindi/English/Hinglish)!
+    13→    13→    13→"""
+    14→    14→    14→import logging
+    15→    15→    15→import re
+    16→    16→    16→from typing import List, Dict, Optional, Any
+    17→    17→    17→from datetime import datetime
+    18→    18→    18→
+    19→    19→    19→from config.settings import (
+    20→    20→    20→    DEFAULT_GUILD_SETTINGS,
+    21→    21→    21→    SYSTEM_PROMPTS,
+    22→    22→    22→    BASE_SYSTEM_PROMPT
+    23→    23→    23→)
+    24→    24→    24→from src.utils.database import get_db
+    25→    25→    25→from src.utils.cache import get_cache
+    26→    26→    26→from src.utils.groq_client import get_groq_client, TaskType
+    27→    27→    27→from src.handlers.ai_decision_engine import get_decision_engine
+    28→    28→    28→
+    29→    29→    29→logger = logging.getLogger("AIHandler")
+    30→    30→    30→
+    31→    31→    31→
+    32→    32→    32→class AIHandler:
+    33→    33→    33→    """
+    34→    34→    34→    SUPER SMART AI Handler with:
+    35→    35→    35→    ✅ User Recognition (knows who's talking!)
+    36→    36→    36→    ✅ User Profiling (remembers each user)
+    37→    37→    37→    ✅ Context Awareness (follows flow)
+    38→    38→    38→    ✅ Emotional Intelligence (reads mood)
+    39→    39→    39→    ✅ Multi-model smart routing
+    40→    40→    40→    ✅ Persistent memory support
+    41→    41→    41→    """
+    42→    42→    42→    
+    43→    43→    43→    def __init__(self):
+    44→    44→    44→        self.db = None
+    45→    45→    45→        self.cache = None
+    46→    46→    46→        self.groq = None
+    47→    47→    47→        
+    48→    48→    48→        # Keywords that trigger channel context awareness
+    49→    49→    49→        self.CHANNEL_CONTEXT_KEYWORDS = [
+    50→    50→    50→            "kya hua", "kya chal rha", "kya ho rha", "what happened", 
+    51→    51→    51→            "kon sahi", "who won", "kya kiya", "kya bola",
+    52→    52→    52→            "recent msgs", "recent messages", "channel context",
+    53→    53→    53→            "kya discussion", "discussion me kya", "baat kya thi"
+    54→    54→    54→        ]
+    55→    55→    55→    
+    56→    56→    56→    def _init_clients(self):
+    57→    57→    57→        """Lazy initialization of clients"""
+    58→    58→    58→        if not self.db:
+    59→    59→    59→            self.db = get_db()
+    60→    60→    60→        if not self.cache:
+    61→    61→    61→            self.cache = get_cache()
+    62→    62→    62→        if not self.groq:
+    63→    63→    63→            self.groq = get_groq_client()
+    64→    64→    64→    
+    65→    65→    65→    async def get_guild_settings(self, guild_id: int) -> Dict[str, Any]:
+    66→    66→    66→        """Get guild settings from cache or database"""
+    67→    67→    67→        self._init_clients()
+    68→    68→    68→        
+    69→    69→    69→        settings = self.cache.get_guild_settings(guild_id)
+    70→    70→    70→        if settings:
+    71→    71→    71→            return settings
+    72→    72→    72→        
+    73→    73→    73→        settings = await self.db.get_guild_settings(guild_id)
+    74→    74→    74→        if settings:
+    75→    75→    75→            self.cache.set_guild_settings(guild_id, settings)
+    76→    76→    76→            return settings
+    77→    77→    77→        
+    78→    78→    78→        return DEFAULT_GUILD_SETTINGS.copy()
+    79→    79→    79→    
+    80→    80→    80→    # ==================== USER RECOGNITION SYSTEM 🧠 ====================
+    81→    81→    81→    
+    82→    82→    82→    def _get_user_profile(self, user_id: int, username: str, display_name: str) -> Dict[str, Any]:
+    83→    83→    83→        """
+    84→    84→    84→        Get or create user profile - THIS IS THE MAGIC!
+    85→    85→    85→        Ophelia REMEMBERS who you are!
+    86→    86→    86→        """
+    87→    87→    87→        self._init_clients()
+    88→    88→    88→        
+    89→    89→    89→        # Try to get existing profile from cache/disk
+    90→    90→    90→        profile = self.cache.get_user_context(user_id)
+    91→    91→    91→        
+    92→    92→    92→        if not profile:
+    93→    93→    93→            # Create new profile for first-time users!
+    94→    94→    94→            profile = {
+    95→    95→    95→                "user_id": user_id,
+    96→    96→    96→                "username": username,
+    97→    97→    97→                "display_name": display_name,
+    98→    98→    98→                "first_seen": datetime.now().isoformat(),
+    99→    99→    99→                "message_count": 0,
+   100→   100→   100→                "preferences": {},
+   101→   101→   101→                "personality_notes": [],
+   102→   102→   102→                "mood_history": [],
+   103→   103→   103→                "last_interactions": [],
+   104→   104→   104→                "relationship_level": "new",  # new, casual, friend, bestie
+   105→   105→   105→                "nicknames_given": [],  # Names Ophelia calls this user
+   106→   106→   106→                "topics_discussed": [],
+   107→   107→   107→                "inside_jokes": []  # Shared jokes/moments
+   108→   108→   108→            }
+   109→   109→   109→            logger.info(f"🆕 New user profile created for {display_name} ({user_id})")
+   110→   110→   110→        else:
+   111→   111→   111→            # Update existing profile
+   112→   112→   112→            profile["username"] = username
+   113→   113→   113→            profile["display_name"] = display_name
+   114→   114→   114→            profile["message_count"] = profile.get("message_count", 0) + 1
+   115→   115→   115→            
+   116→   116→   116→            # Auto-upgrade relationship based on message count
+   117→   117→   117→            msg_count = profile["message_count"]
+   118→   118→   118→            if msg_count > 100 and profile["relationship_level"] != "bestie":
+   119→   119→   119→                profile["relationship_level"] = "bestie"
+   120→   120→   120→            elif msg_count > 30 and profile["relationship_level"] == "new":
+   121→   121→   121→                profile["relationship_level"] = "casual"
+   122→   122→   122→            elif msg_count > 60 and profile["relationship_level"] == "casual":
+   123→   123→   123→                profile["relationship_level"] = "friend"
+   124→   124→   124→        
+   125→   125→   125→        # Save updated profile
+   126→   126→   126→        self.cache.set_user_context(user_id, profile)
+   127→   127→   127→        
+   128→   128→   128→        return profile
+   129→   129→   129→    
+   130→   130→   130→    def _detect_mood(self, message: str) -> str:
+   131→   131→   131→        """
+   132→   132→   132→        Detect user's mood from message - EMOTIONAL INTELLIGENCE!
+   133→   133→   133→        Returns: happy, sad, angry, excited, bored, confused, neutral, sarcastic
+   134→   134→   134→        """
+   135→   135→   135→        msg_lower = message.lower()
+   136→   136→   136→        
+   137→   137→   137→        # Happy indicators
+   138→   138→   138→        happy_words = ["😂", "😁", "😄", "haha", "lol", "lmao", "nice", "great", "amazing", 
+   139→   139→   139→                      "love", "best", "fire", "lit", "awesome", "happy", "excited", "yay",
+   140→   140→   140→                      "❤️", "💕", "💖", "🔥", "✨", "🎉"]
+   141→   141→   141→        if any(word in msg_lower for word in happy_words):
+   142→   142→   142→            return "happy"
+   143→   143→   143→        
+   144→   144→   144→        # Sad indicators  
+   145→   145→   145→        sad_words = ["😢", "😞", "😔", "sad", "depressed", "cry", "crying", "hurt",
+   146→   146→   146→                    "pain", "alone", "lonely", "miss", "gone", "leave", "bye 😢"]
+   147→   147→   147→        if any(word in msg_lower for word in sad_words):
+   148→   148→   148→            return "sad"
+   149→   149→   149→        
+   150→   150→   150→        # Angry indicators
+   151→   151→   151→        angry_words = ["😡", "😠", "angry", "mad", "hate", "stupid", "dumb", "idiot",
+   152→   152→   152→                      "annoying", "frustrated", "wtf", "damn", "hell", "freaking"]
+   153→   153→   153→        if any(word in msg_lower for word in angry_words):
+   154→   154→   154→            return "angry"
+   155→   155→   155→        
+   156→   156→   156→        # Excited indicators
+   157→   157→   157→        excited_words = ["!!!", "???", "omg", "oh my god", "wow", "can't believe",
+   158→   158→   158→                        "finally", "let's go", "yesss", "yessss", "omggg"]
+   159→   159→   159→        if any(word in msg_lower for word in excited_words):
+   160→   160→   160→            return "excited"
+   161→   161→   161→        
+   162→   162→   162→        # Bored indicators
+   163→   163→   163→        bored_words = ["bored", "boring", "nothing to do", "meh", "whatever", "ok",
+   164→   164→   164→                      "fine", "k", "hmm", "sigh", "ugh"]
+   165→   165→   165→        if any(word in msg_lower for word in bored_words):
+   166→   166→   166→            return "bored"
+   167→   167→   167→        
+   168→   168→   168→        # Confused indicators
+   169→   169→   169→        confused_words = ["?", "what", "how", "why", "don't understand", "confused",
+   170→   170→   170→                        "explain", "help", "idk", "i don't know", "kaise", "kyun"]
+   171→   171→   171→        if any(word in msg_lower for word in confused_words):
+   172→   172→   172→            return "confused"
+   173→   173→   173→        
+   174→   174→   174→        # Sarcastic indicators (tricky!)
+   175→   175→   175→        sarcastic_patterns = [r"oh really", r"wow.*so.*interesting", r"great.*job",
+   176→   176→   176→                            r"thanks.*a lot", r"brilliant", r"sure.*jan", r"ha.*ha"]
+   177→   177→   177→        if any(re.search(pattern, msg_lower) for pattern in sarcastic_patterns):
+   178→   178→   178→            return "sarcastic"
+   179→   179→   179→        
+   180→   180→   180→        return "neutral"
+   181→   181→   181→    
+   182→   182→   182→    def _get_mood_response_style(self, mood: str) -> Dict[str, str]:
+   183→   183→   183→        """Get response style based on detected mood"""
+   184→   184→   184→        styles = {
+   185→   185→   185→            "happy": {"emoji": "😊", "tone": "match their energy!", "style": "enthusiastic"},
+   186→   186→   186→            "sad": {"emoji": "🤗", "tone": "be supportive and caring", "style": "comforting"},
+   187→   187→   187→            "angry": {"emoji": "😌", "tone": "stay calm, don't escalate", "style": "calming"},
+   188→   188→   188→            "excited": {"emoji": "🎉", "tone": "match excitement!", "style": "energetic"},
+   189→   189→   189→            "bored": {"emoji": "⚡", "tone": "suggest something fun", "style": "engaging"},
+   190→   190→   190→            "confused": {"emoji": "💡", "tone": "explain clearly, be helpful", "style": "helpful"},
+   191→   191→   191→            "sarcastic": {"emoji": "😏", "tone": "play along with sarcasm", "style": "witty"},
+   192→   192→   192→            "neutral": {"emoji": "✨", "tone": "normal friendly chat", "style": "casual"}
+   193→   193→   193→        }
+   194→   194→   194→        return styles.get(mood, styles["neutral"])
+   195→   195→   195→    
+   196→   196→   196→    def _format_user_context_for_ai(self, profile: Dict, mood: str) -> str:
+   197→   197→   197→        """
+   198→   198→   198→        Format user info for AI context injection.
+   199→   199→   199→        THIS IS WHAT MAKES OPHELIA KNOW WHO YOU ARE!
+   200→   200→   200→        """
+   201→   201→   201→        relationship = profile.get("relationship_level", "new")
+   202→   202→   202→        msg_count = profile.get("message_count", 0)
+   203→   203→   203→        display_name = profile.get("display_name", "Unknown")
+   204→   204→   204→        topics = profile.get("topics_discussed", [])[-5:]  # Last 5 topics
+   205→   205→   205→        nicknames = profile.get("nicknames_given", [])
+   206→   206→   206→        
+   207→   207→   207→        # Relationship-based greeting style
+   208→   208→   208→        relationship_styles = {
+   209→   209→   209→            "new": f"{display_name} is a NEW user - be welcoming but not overly familiar!",
+   210→   210→   210→            "casual": f"You know {display_name} casually - friendly but respectful!",
+   211→   211→   211→            "friend": f"{display_name} is your FRIEND - can be more personal and fun!",
+   212→   212→   212→            "bestie": f"{display_name} is your BESTIE - inside jokes, teasing, maximum personality!"
+   213→   213→   213→        }
+   214→   214→   214→        
+   215→   215→   215→        context = f"""
+   216→   216→   216→**👤 USER INFO (You know who this is!):**
+   217→   217→   217→- Name: {display_name}
+   218→   218→   218→- Messages from them: {msg_count}
+   219→   219→   219→- Relationship: {relationship} → {relationship_styles.get(relationship, '')}
+   220→   220→   220→- Current Mood: {mood} → Respond accordingly!
+   221→   221→   221→
+   222→   222→   222→**📝 What you know about {display_name}:**
+   223→   223→   223→"""
+   224→   224→   224→        
+   225→   225→   225→        if topics:
+   226→   226→   226→            context += f"- Topics they like: {', '.join(topics)}\n"
+   227→   227→   227→        if nicknames:
+   228→   228→   228→            context += f"- You call them: {nicknames[-1]}\n"
+   229→   229→   229→        
+   230→   230→   230→        # Add recent interaction summary
+   231→   231→   231→        last_msgs = profile.get("last_interactions", [])[-3:]
+   232→   232→   232→        if last_msgs:
+   233→   233→   233→            context += "\n**Recent convos:**\n"
+   234→   234→   234→            for interaction in last_msgs:
+   235→   235→   235→                context += f"- {interaction}\n"
+   236→   236→   236→        
+   237→   237→   237→        return context
+   238→   238→   238→    
+   239→   239→   239→    async def build_system_prompt(self, guild_id: int, user_profile: Dict = None, mood: str = "neutral", 
+   240→   240→   240→                                  channel_context: str = None, available_data: Dict = None,
+   241→   241→   241→                                  user_message: str = None) -> str:
+   242→   242→   242→        """Build UNIQUE system prompt with personality + USER CONTEXT + AI DECISION ENGINE!"""
+   243→   243→   243→        settings = await self.get_guild_settings(guild_id)
+   244→   244→   244→        
+   245→   245→   245→        personality_key = settings.get("personality", "fun")
+   246→   246→   246→        personality_prompt = SYSTEM_PROMPTS.get(personality_key, SYSTEM_PROMPTS["fun"])
+   247→   247→   247→        
+   248→   248→   248→        custom_instructions = settings.get("custom_instructions", "")
+   249→   249→   249→        
+   250→   250→   250→        # Build user-aware system prompt
+   251→   251→   251→        system_prompt = BASE_SYSTEM_PROMPT.format(
+   252→   252→   252→            personality=personality_prompt,
+   253→   253→   253→            custom_instructions=f"\n\n**Server-Specific Instructions:**\n{custom_instructions}" if custom_instructions else ""
+   254→   254→   254→        )
+   255→   255→   255→        
+   256→   256→   256→        # 🆕🚀 ADD AI DECISION ENGINE - CAPABILITIES + INTENT UNDERSTANDING!
+   257→   257→   257→        if user_message:
+   258→   258→   258→            decision_engine = get_decision_engine()
+   259→   259→   259→            
+   260→   260→   260→            # Get channel context for decision making
+   261→   261→   261→            channel_messages = None
+   262→   262→   262→            if hasattr(self, '_last_channel_id') and self._last_channel_id:
+   263→   263→   263→                channel_messages = self.get_channel_context_summary(self._last_channel_id, user_message)
+   264→   264→   264→            
+   265→   265→   265→            decision_context = decision_engine.build_decision_context(
+   266→   266→   266→                user_message=user_message,
+   267→   267→   267→                user_profile=user_profile or {},
+   268→   268→   268→                channel_context=channel_messages,
+   269→   269→   269→                current_mood=mood
+   270→   270→   270→            )
+   271→   271→   271→            
+   272→   272→   272→            # Add decision context (truncated to fit token limits)
+   273→   273→   273→            if len(decision_context) > 1500:
+   274→   274→   274→                decision_context = decision_context[:1500] + "\n... [truncated]"
+   275→   275→   275→            
+   276→   276→   276→            system_prompt += f"""
+   277→   277→   277→
+   278→   278→   278→**🧠 AI DECISION ENGINE (You are SMART - Decide what to do!):**
+   279→   279→   279→{decision_context}
+   280→   280→   280→"""
+   281→   281→   281→        
+   282→   282→   282→        # ADD USER CONTEXT IF AVAILABLE - THIS IS THE SECRET SAUCE!
+   283→   283→   283→        if user_profile:
+   284→   284→   284→            user_context = self._format_user_context_for_ai(user_profile, mood)
+   285→   285→   285→            mood_style = self._get_mood_response_style(mood)
+   286→   286→   286→            
+   287→   287→   287→            system_prompt += f"""
+   288→   288→   288→
+   289→   289→   289→**🧠 CURRENT USER CONTEXT (CRITICAL - Use This!):**
+   290→   290→   290→{user_context}
+   291→   291→   291→
+   292→   292→   292→**😊 MOOD RESPONSE GUIDE:**
+   293→   293→   293→- User seems {mood} → {mood_style['emoji']} {mood_style['tone']}
+   294→   294→   294→- Style: {mood_style['style']}
+   295→   295→   295→
+   296→   296→   296→**⚠️ IMPORTANT RULES FOR THIS USER:**
+   297→   297→   297→1. Remember their name - USE IT naturally in responses!
+   298→   298→   298→2. Reference past conversations if relevant ("Pehle bola tha na...")
+   299→   299→   299→3. Match their energy level
+   300→   300→   300→4. If bestie/friend level - can tease, use inside jokes
+   301→   301→   301→5. If new user - be welcoming, don't assume familiarity
+   302→   302→   302→"""
+   303→   303→   303→        
+   304→   304→   304→        # 🆕 ADD AVAILABLE DATA FOR AI TO USE WHEN USERS ASK QUESTIONS!
+   305→   305→   305→        if available_data:
+   306→   306→   306→            system_prompt += f"""
+   307→   307→   307→
+   308→   308→   308→**📊 DATA YOU HAVE ACCESS TO (Use when users ask!):**
+   309→   309→   309→
+   310→   310→   310→👤 **USER PROFILE DATA (When they ask about themselves):**
+   311→   311→   311→{available_data.get('user_profile_data', 'Not available')}
+   312→   312→   312→
+   313→   313→   313→📺 **CHANNEL CONTEXT (When they ask 'kya chal rha', 'what happened'):**
+   314→   314→   314→{available_data.get('channel_context_data', 'Not available')}
+   315→   315→   315→
+   316→   316→   316→🔐 **YOUR PERMISSIONS (When they ask about permissions):**
+   317→   317→   317→{available_data.get('permissions_data', 'Not available')}
+   318→   318→   318→
+   319→   319→   319→👑 **BOT OWNERS (When they ask about owners):**
+   320→   320→   320→{available_data.get('owners_data', 'Not available')}
+   321→   321→   321→
+   322→   322→   322→**🎯 HOW TO USE THIS DATA:**
+   323→   323→   323→- User asks about THEMSELVES → Use USER PROFILE data
+   324→   324→   324→- User asks what's happening → Use CHANNEL CONTEXT  
+   325→   325→   325→- User asks your permissions → Use PERMISSIONS data
+   326→   326→   326→- User asks who's boss → Use OWNERS data
+   327→   327→   327→- Respond NATURALLY in any language - don't sound robotic!
+   328→   328→   328→- Format info nicely with emojis and structure
+   329→   329→   329→"""
+   330→   330→   330→        
+   331→   331→   331→        # Add channel context if provided separately
+   332→   332→   332→        if channel_context and not available_data:
+   333→   333→   333→            system_prompt += f"""
+   334→   334→   334→
+   335→   335→   335→**📺 RECENT CHANNEL ACTIVITY:**
+   336→   336→   336→{channel_context}
+   337→   337→   337→"""
+   338→   338→   338→        
+   339→   339→   339→        return system_prompt
+   340→   340→   340→    
+   341→   341→   341→    # Token limits for Groq free tier
+   342→   342→   342→    MAX_TOTAL_CHARS = 6000  # ~2,000 tokens (safe for free tier)
+   343→   343→   343→    MAX_MESSAGES = 8
+   344→   344→   344→    MAX_MESSAGE_LENGTH = 800
+   345→   345→   345→    MAX_SYSTEM_PROMPT_CHARS = 2200  # Increased for available data
+   346→   346→   346→    
+   347→   347→   347→    # Channel Context Settings
+   348→   348→   348→    MAX_CHANNEL_CONTEXT_MSGS = 50  # Last 50 messages from channel
+   349→   349→   349→    
+   350→   350→   350→    def gather_available_data(
+   351→   351→   351→        self,
+   352→   352→   352→        user_profile: Dict,
+   353→   353→   353→        channel_id: int,
+   354→   354→   354→        guild: object = None,  # discord.Guild object (optional)
+   355→   355→   355→        bot_member: object = None  # Bot's member object (optional)
+   356→   356→   356→    ) -> Dict[str, str]:
+   357→   357→   357→        """
+   358→   358→   358→        Gather ALL available data that AI can use when users ask questions!
+   359→   359→   359→        This is what makes Ophelia SMART - she has data ready!
+   360→   360→   360→        """
+   361→   361→   361→        self._init_clients()
+   362→   362→   362→        
+   363→   363→   363→        data = {}
+   364→   364→   364→        
+   365→   365→   365→        # 1️⃣ USER PROFILE DATA
+   366→   366→   366→        if user_profile:
+   367→   367→   367→            relationship = user_profile.get("relationship_level", "new")
+   368→   368→   368→            msg_count = user_profile.get("message_count", 0)
+   369→   369→   369→            topics = user_profile.get("topics_discussed", [])[-8:]
+   370→   370→   370→            mood_history = user_profile.get("mood_history", [])[-5:]
+   371→   371→   371→            first_seen = user_profile.get("first_seen", "Unknown")
+   372→   372→   372→            display_name = user_profile.get("display_name", "Unknown")
+   373→   373→   373→            
+   374→   374→   374→            # Format moods with emojis
+   375→   375→   375→            mood_emojis = {"happy": "😊", "sad": "😢", "angry": "😠", "excited": "🎉",
+   376→   376→   376→                         "bored": "😐", "confused": "❓", "sarcastic": "😏", "neutral": "😌"}
+   377→   377→   377→            recent_moods = " ".join([mood_emojis.get(m.get("mood", "neutral"), m.get("mood", "?")) 
+   378→   378→   378→                                   for m in mood_history])
+   379→   379→   379→            
+   380→   380→   380→            user_data = f"""
+   381→   381→   381→**Name:** {display_name}
+   382→   382→   382→**Relationship:** {relationship} ({'New' if msg_count < 30 else 'Casual' if msg_count < 60 else 'Friend' if msg_count < 100 else 'Bestie!'})
+   383→   383→   383→**Messages Sent:** {msg_count}
+   384→   384→   384→**First Seen:** {first_seen[:10]}
+   385→   385→   385→**Topics They Like:** {', '.join(topics) if topics else 'Not enough data'}
+   386→   386→   386→**Recent Moods:** {recent_moods or 'Neutral'}
+   387→   387→   387→**Status:** {'Very Active!' if msg_count > 50 else 'Getting to know them...' if msg_count > 10 else 'New user!'}"""
+   388→   388→   388→            
+   389→   389→   389→            data['user_profile_data'] = user_data
+   390→   390→   390→        
+   391→   391→   391→        # 2️⃣ CHANNEL CONTEXT DATA
+   392→   392→   392→        channel_context_summary = self.get_channel_context_summary(channel_id)
+   393→   393→   393→        if channel_context_summary:
+   394→   394→   394→            # Shorten it for the prompt
+   395→   395→   395→            data['channel_context_data'] = channel_context_summary[:800] + "..." if len(channel_context_summary) > 800 else channel_context_summary
+   396→   396→   396→        else:
+   397→   397→   397→            data['channel_context_data'] = "No channel context tracked yet. Messages will be stored as they come!"
+   398→   398→   398→        
+   399→   399→   399→        # 3️⃣ PERMISSIONS DATA (if guild provided)
+   400→   400→   400→        if bot_member:
+   401→   401→   401→            perms = bot_member.guild_permissions
+   402→   402→   402→            perms_list = []
+   403→   403→   403→            
+   404→   404→   404→            if perms.administrator:
+   405→   405→   405→                perms_list.append("✅ Administrator (FULL ACCESS)")
+   406→   406→   406→            else:
+   407→   407→   407→                if perms.kick_members: perms_list.append("✅ Kick Members")
+   408→   408→   408→                if perms.ban_members: perms_list.append("✅ Ban Members")
+   409→   409→   409→                if perms.moderate_members: perms_list.append("✅ Timeout Members")
+   410→   410→   410→                if perms.manage_messages: perms_list.append("✅ Manage Messages")
+   411→   411→   411→                if perms.manage_roles: perms_list.append("✅ Manage Roles")
+   412→   412→   412→                if perms.add_reactions: perms_list.append("✅ Add Reactions")
+   413→   413→   413→                if perms.connect: perms_list.append("✅ Connect Voice")
+   414→   414→   414→            
+   415→   415→   415→            if not perms_list:
+   416→   416→   416→                perms_list.append("❌ Limited permissions")
+   417→   417→   417→            
+   418→   418→   418→            data['permissions_data'] = "\n".join(perms_list)
+   419→   419→   419→        else:
+   420→   420→   420→            data['permissions_data'] = "Permission data not available in this context"
+   421→   421→   421→        
+   422→   422→   422→        # 4️⃣ OWNERS DATA (With NAMES if possible!)
+   423→   423→   423→        try:
+   424→   424→   424→            from config.settings import config
+   425→   425→   425→            owner_ids = config.owner_ids
+   426→   426→   426→            
+   427→   427→   427→            owners_text = f"👑 **BOT OWNERS ({len(owner_ids)} total):**\n\n"
+   428→   428→   428→            
+   429→   429→   429→            # Try to get names from guild if available
+   430→   430→   430→            owner_names_fetched = 0
+   431→   431→   431→            if guild:
+   432→   432→   432→                for owner_id in owner_ids[:5]:
+   433→   433→   433→                    try:
+   434→   434→   434→                        member = guild.get_member(owner_id)
+   435→   435→   435→                        if member:
+   436→   436→   436→                            name = member.display_name or member.name
+   437→   437→   437→                            owners_text += f"• **{name}** (ID: `{owner_id}`) 👑\n"
+   438→   438→   438→                            owner_names_fetched += 1
+   439→   439→   439→                        else:
+   440→   440→   440→                            owners_text += f"• Unknown Owner (ID: `{owner_id}`) 👑\n"
+   441→   441→   441→                    except:
+   442→   442→   442→                        owners_text += f"• Owner (ID: `{owner_id}`) 👑\n"
+   443→   443→   443→            
+   444→   444→   444→            # If no guild or couldn't fetch names, show IDs with note
+   445→   445→   445→            if not guild or owner_names_fetched == 0:
+   446→   446→   446→                # Try to provide some context about who owners are
+   447→   447→   447→                sample_owners = [
+   448→   448→   448→                    ("▸Subhu", "1169492860278669312"),  # Main owner
+   449→   449→   449→                    ("Owner 2", "1463113729959919801"),
+   450→   450→   450→                    ("Owner 3", "1443836576802013316")
+   451→   451→   451→                ]
+   452→   452→   452→                
+   453→   453→   453→                for i, (name, oid) in enumerate(sample_owners[:len(owner_ids)], 1):
+   454→   454→   454→                    if i <= len(owner_ids):
+   455→   455→   455→                        real_id = list(owner_ids)[i-1] if i <= len(owner_ids) else oid
+   456→   456→   456→                        owners_text += f"{i}. **{name}** (ID: `{real_id}`) 👑\n"
+   457→   457→   457→            
+   458→   458→   458→            if len(owner_ids) > 5:
+   459→   459→   459→                owners_text += f"\n*...and {len(owner_ids) - 5} more owners*"
+   460→   460→   460→            
+   461→   461→   461→            owners_text += "\n\n💡 **Owners have FULL ACCESS** - they can use all commands including kick/ban!"
+   462→   462→   462→            
+   463→   463→   463→            data['owners_data'] = owners_text
+   464→   464→   464→        except Exception as e:
+   465→   465→   465→            data['owners_data'] = f"👑 **Owners:** {str(e)[:80]}"
+   466→   466→   466→        
+   467→   467→   467→        return data
+   468→   468→   468→    
+   469→   469→   469→    def store_channel_message(
+   470→   470→   470→        self,
+   471→   471→   471→        channel_id: int,
+   472→   472→   472→        author_name: str,
+   473→   473→   473→        content: str,
+   474→   474→   474→        is_bot: bool = False,
+   475→   475→   475→        timestamp: str = None
+   476→   476→   476→    ):
+   477→   477→   477→        """
+   478→   478→   478→        Store channel messages for CONTEXT AWARENESS!
+   479→   479→   479→        This lets Ophelia know what's happening in the server!
+   480→   480→   480→        """
+   481→   481→   481→        self._init_clients()
+   482→   482→   482→        
+   483→   483→   483→        if not timestamp:
+   484→   484→   484→            timestamp = datetime.now().isoformat()
+   485→   485→   485→        
+   486→   486→   486→        # Get existing channel history or create new
+   487→   487→   487→        cache_key = f"channel_history:{channel_id}"
+   488→   488→   488→        history = self.cache.get_user_context(channel_id)  # Reusing user_context for channel
+   489→   489→   489→        
+   490→   490→   490→        if not history:
+   491→   491→   491→            history = {
+   492→   492→   492→                "messages": [],
+   493→   493→   493→                "participants": set(),
+   494→   494→   494→                "topics": [],
+   495→   495→   495→                "conflict_detected": False
+   496→   496→   496→            }
+   497→   497→   497→        
+   498→   498→   498→        # Add new message
+   499→   499→   499→        msg_entry = {
+   500→   500→   500→            "author": author_name,
+
+[showing lines 1-500 of 1062; use offset=501 with limit to continue reading]
