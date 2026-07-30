@@ -875,6 +875,204 @@ class AIHandler:
             else:
                 return f"Kuch technical issue aa gaya 😅 `{error_msg[:80]}` - Try again bro!"
     
+    async def generate_response_with_tools(
+        self,
+        guild_id: int,
+        channel_id: int,
+        user_id: int,
+        user_message: str,
+        username: str = "Unknown",
+        display_name: str = "Unknown",
+        guild: object = None,
+        bot_member: object = None,
+        mentioned_users: list = None,
+        max_tool_iterations: int = 3
+    ) -> str:
+        """
+        🛠️ NEW: Generate AI response WITH TOOL-CALLING SUPPORT!
+        
+        This is the MCP-style magic - AI can now USE DISCORD TOOLS!
+        
+        Flow:
+        1. Build context (user profile, mood, data)
+        2. Send to Groq with tool definitions
+        3. If AI wants to use tools → Execute them
+        4. Feed results back to AI
+        5. Get final natural language response
+        
+        Returns:
+            Natural language response with tool results incorporated!
+        """
+        self._init_clients()
+        
+        try:
+            # Import tool executor
+            from src.tools import get_tool_executor
+            
+            # Get tool executor instance
+            tool_executor = get_tool_executor()
+            
+            # Get user profile & mood (same as regular flow)
+            user_profile = self._get_user_profile(user_id, username, display_name)
+            current_mood = self._detect_mood(user_message)
+            
+            # Save message to memory
+            await self._save_message(guild_id, channel_id, user_id, "user", user_message)
+            
+            # Detect task type
+            task_type = self.groq.detect_task_type(user_message)
+            
+            # Gather available data
+            available_data = self.gather_available_data(
+                user_profile=user_profile,
+                channel_id=channel_id,
+                guild=guild,
+                bot_member=bot_member
+            )
+            
+            # Build conversation context
+            messages = await self.get_conversation_context(
+                guild_id, channel_id, user_id, username, display_name,
+                task_type=task_type,
+                user_query=user_message
+            )
+            
+            # Build system prompt WITH TOOLS INFO!
+            if messages and messages[0].get("role") == "system":
+                full_prompt = await self.build_system_prompt(
+                    guild_id, user_profile, current_mood,
+                    available_data=available_data,
+                    user_message=user_message  # For decision engine
+                )
+                
+                # Add tool info to prompt
+                tools_info = tool_executor.get_tool_schema_summary()
+                if len(full_prompt) + len(tools_info) < self.MAX_SYSTEM_PROMPT_CHARS:
+                    full_prompt += f"\n\n{tools_info}"
+                
+                full_prompt = full_prompt[:self.MAX_SYSTEM_PROMPT_CHARS]
+                messages[0]["content"] = full_prompt
+            
+            # Add user message
+            messages.append({"role": "user", "content": user_message})
+            
+            # Get settings
+            settings = await self.get_guild_settings(guild_id)
+            
+            # Get tool schemas for Groq
+            tool_schemas = tool_executor.schemas_for_groq
+            
+            # Build execution context for tools
+            exec_context = {
+                "guild": guild,
+                "guild_id": str(guild_id),
+                "channel_id": str(channel_id),
+                "user_id": str(user_id),
+                "author_name": display_name,
+                "is_owner": self._check_owner(user_id),
+                "is_moderator": False  # Could check properly
+            }
+            
+            # 🔄 TOOL-CALLING LOOP
+            final_response = ""
+            iteration = 0
+            
+            while iteration < max_tool_iterations:
+                iteration += 1
+                logger.info(f"🔧 Tool iteration {iteration}/{max_tool_iterations}")
+                
+                # Call Groq with tools enabled
+                result = await self.groq.chat_completion_with_tools(
+                    messages=messages,
+                    tools=tool_schemas,
+                    temperature=settings.get("temperature", 0.7),
+                    task_type=task_type,
+                    tool_choice="auto"
+                )
+                
+                # Check if AI made tool calls
+                tool_calls = result.get("tool_calls", [])
+                content = result.get("content", "")
+                
+                if not tool_calls:
+                    # No tool calls - use the text response as final
+                    final_response = content or "Hmm, I'm not sure how to respond to that."
+                    break
+                
+                # Add assistant's response (with tool calls) to history
+                messages.append({
+                    "role": "assistant",
+                    "content": content,
+                    "tool_calls": tool_calls
+                })
+                
+                # Execute each tool call and collect results
+                logger.info(f"🔧 Executing {len(tool_calls)} tool call(s)...")
+                
+                tool_results = await tool_executor.process_ai_tool_calls(
+                    tool_calls=tool_calls,
+                    context=exec_context
+                )
+                
+                # Add tool results back to conversation
+                for tr in tool_results:
+                    messages.append(tr)
+                
+                # Continue loop - AI will decide what to do next based on tool results
+                
+                # Safety: prevent infinite loops
+                if iteration >= max_tool_iterations:
+                    final_response = content or "I've gathered some information for you!"
+                    logger.warning(f"⚠️ Max tool iterations ({max_tool_iterations}) reached")
+            
+            # If we exited without a final response, make one more call
+            if not final_response:
+                logger.info("📝 Getting final response after tool execution...")
+                final_result = await self.groq.chat_completion(
+                    messages=messages,
+                    temperature=settings.get("temperature", 1.02),
+                    task_type=TaskType.CHAT
+                )
+                final_response = final_result or "Done! Let me know if you need anything else!"
+            
+            # Save assistant response
+            await self._save_message(guild_id, channel_id, user_id, "assistant", final_response)
+            
+            # Update profile
+            user_profile["last_interactions"].append(
+                f"[{datetime.now().strftime('%H:%M')}] Ophelia [TOOLS]: {final_response[:50]}"
+            )
+            user_profile["last_interactions"] = user_profile["last_interactions"][-10:]
+            self.cache.set_user_context(user_id, user_profile)
+            
+            logger.info(f"🛠️ Tool-Enhanced Response for {display_name} | Length: {len(final_response)}")
+            
+            return final_response
+            
+        except Exception as e:
+            logger.error(f"Error in tool-enhanced generation: {e}", exc_info=True)
+            # Fallback to regular generation on error
+            logger.info("⬇️ Falling back to regular generation...")
+            return await self.generate_response(
+                guild_id=guild_id,
+                channel_id=channel_id,
+                user_id=user_id,
+                user_message=user_message,
+                username=username,
+                display_name=display_name,
+                guild=guild,
+                bot_member=bot_member,
+                mentioned_users=mentioned_users
+            )
+    
+    def _check_owner(self, user_id) -> bool:
+        """Check if user is bot owner"""
+        try:
+            from config.settings import is_owner
+            return is_owner(user_id)
+        except:
+            return False
+    
     async def generate_response_stream(
         self,
         guild_id: int,

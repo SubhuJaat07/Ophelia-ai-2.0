@@ -148,18 +148,35 @@ class MessageHandler:
                 else:
                     context_info = ""
                 
-                # 🧠 SEND TO AI WITH FULL CONTEXT!
-                response = await ai.generate_response(
-                    guild_id=message.guild.id if message.guild else 0,
-                    channel_id=message.channel.id,
-                    user_id=message.author.id,
-                    user_message=clean_message + context_info,
-                    username=username,
-                    display_name=display_name,
-                    guild=message.guild,
-                    bot_member=message.guild.me if message.guild else None,
-                    mentioned_users=mentioned_users  # 🆕 Pass who was mentioned!
-                )
+                # 🧠🛠️ SEND TO AI WITH TOOLS ENABLED!
+                # Use tool-enhanced generation (falls back to regular if needed)
+                try:
+                    # NEW: Try tool-enhanced generation first
+                    response = await ai.generate_response_with_tools(
+                        guild_id=message.guild.id if message.guild else 0,
+                        channel_id=message.channel.id,
+                        user_id=message.author.id,
+                        user_message=clean_message + context_info,
+                        username=username,
+                        display_name=display_name,
+                        guild=message.guild,
+                        bot_member=message.guild.me if message.guild else None,
+                        mentioned_users=mentioned_users
+                    )
+                except Exception as tool_error:
+                    logger.debug(f"Tool generation failed, using regular: {tool_error}")
+                    # Fallback to regular generation
+                    response = await ai.generate_response(
+                        guild_id=message.guild.id if message.guild else 0,
+                        channel_id=message.channel.id,
+                        user_id=message.author.id,
+                        user_message=clean_message + context_info,
+                        username=username,
+                        display_name=display_name,
+                        guild=message.guild,
+                        bot_member=message.guild.me if message.guild else None,
+                        mentioned_users=mentioned_users
+                    )
                 
                 # Send response
                 await self._send_response(message, response)

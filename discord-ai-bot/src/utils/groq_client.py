@@ -275,6 +275,122 @@ class GroqClient:
         
         raise RuntimeError(f"Groq API request failed after {max_retries} attempts: {last_error}")
     
+    async def chat_completion_with_tools(
+        self,
+        messages: List[Dict[str, Any]],
+        tools: List[Dict] = None,
+        model: str = None,
+        temperature: float = 0.7,  # Lower temp for better tool use
+        max_tokens: int = 2048,    # More tokens for tool calls + response
+        top_p: float = 1.0,
+        max_retries: int = 3,
+        task_type: TaskType = None,
+        tool_choice: str = "auto"
+    ) -> Dict[str, Any]:
+        """
+        Chat completion WITH FUNCTION CALLING SUPPORT! 🛠️
+        
+        This is the MCP-style magic - AI can now USE TOOLS!
+        
+        Args:
+            messages: Conversation history
+            tools: Tool definitions (from ToolExecutor.schemas_for_groq)
+            model: Override model selection
+            temperature: Response creativity
+            max_tokens: Max tokens in response
+            top_p: Nucleus sampling
+            max_retries: Retry count on failure
+            task_type: Task type for model routing
+            tool_choice: "auto", "none", or specific function name
+        
+        Returns:
+            Dict with:
+            - content: Text response (if any)
+            - tool_calls: List of tool calls AI wants to make
+            - raw_response: Full API response object
+        """
+        # Auto-detect task type
+        if task_type is None and messages:
+            last_user_msg = ""
+            for msg in reversed(messages):
+                if msg.get("role") == "user":
+                    last_user_msg = msg.get("content", "")
+                    break
+            task_type = self.detect_task_type(last_user_msg)
+        
+        # Use REASONING model by default for tool calls (smarter decisions!)
+        task_config = MODELS.get(task_type or TaskType.REASONING, MODELS[TaskType.REASONING])
+        
+        final_model = model or task_config["primary"]
+        final_temp = temperature if temperature is not None else 0.7
+        final_max_tokens = max_tokens if max_tokens is not None else 2048
+        
+        logger.info(f"🔧 Tool-Enabled Request | Model: {final_model} | Tools: {len(tools) if tools else 0}")
+        
+        # Build request kwargs
+        kwargs = {
+            "model": final_model,
+            "messages": messages,
+            "temperature": final_temp,
+            "max_completion_tokens": final_max_tokens,
+            "top_p": top_p,
+            "stream": False
+        }
+        
+        # Add tools if provided
+        if tools:
+            kwargs["tools"] = tools
+            kwargs["tool_choice"] = tool_choice
+        
+        last_error = None
+        
+        for attempt in range(max_retries):
+            try:
+                client, key_idx = self._get_client()
+                
+                response = await client.chat.completions.create(**kwargs)
+                
+                message = response.choices[0].message
+                
+                # Parse result
+                result = {
+                    "content": message.content,  # Text response (may be None if only tool call)
+                    "tool_calls": [],           # List of tool calls
+                    "raw_response": response,
+                    "model_used": final_model,
+                    "finish_reason": response.choices[0].finish_reason
+                }
+                
+                # Extract tool calls if present
+                if hasattr(message, 'tool_calls') and message.tool_calls:
+                    for tc in message.tool_calls:
+                        result["tool_calls"].append({
+                            "id": tc.id,
+                            "type": tc.type,
+                            "function": {
+                                "name": tc.function.name,
+                                "arguments": tc.function.arguments
+                            }
+                        })
+                    
+                    logger.info(f"🤖 AI requested {len(result['tool_calls'])} tool call(s)")
+                
+                return result
+                
+            except Exception as e:
+                last_error = e
+                logger.warning(f"Tool request failed (attempt {attempt+1}): {e}")
+                
+                if attempt == 0 and "fallback" in task_config:
+                    final_model = task_config["fallback"]
+                    logger.info(f"🔄 Trying fallback model: {final_model}")
+                
+                self._rotate_key()
+                await asyncio.sleep(0.5 * (attempt + 1))
+        
+        logger.error(f"All tool requests failed. Last error: {last_error}")
+        raise RuntimeError(f"Tool-enabled request failed after {max_retries} attempts: {last_error}")
+    
     async def test_connection(self) -> tuple[bool, str]:
         """Test if the API connection works"""
         try:
