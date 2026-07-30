@@ -973,9 +973,10 @@ class AIHandler:
                 "is_moderator": False  # Could check properly
             }
             
-            # 🔄 TOOL-CALLING LOOP
+            # 🔄 TOOL-CALLING LOOP - FIXED VERSION 🛠️
             final_response = ""
             iteration = 0
+            tools_used = []  # Track what tools were used
             
             while iteration < max_tool_iterations:
                 iteration += 1
@@ -992,17 +993,24 @@ class AIHandler:
                 
                 # Check if AI made tool calls
                 tool_calls = result.get("tool_calls", [])
-                content = result.get("content", "")
+                content = result.get("content", "") or ""
                 
                 if not tool_calls:
-                    # No tool calls - use the text response as final
-                    final_response = content or "Hmm, I'm not sure how to respond to that."
+                    # No tool calls - AI gave us a direct response! Use it.
+                    final_response = content
+                    logger.info(f"✅ AI responded directly (no tools needed)")
                     break
+                
+                # AI wants to use tools - log what it's doing
+                for tc in tool_calls:
+                    func_name = tc.get("function", {}).get("name", "unknown")
+                    tools_used.append(func_name)
+                    logger.info(f"🤖 AI wants to use: {func_name}")
                 
                 # Add assistant's response (with tool calls) to history
                 messages.append({
                     "role": "assistant",
-                    "content": content,
+                    "content": content,  # May be empty, that's OK
                     "tool_calls": tool_calls
                 })
                 
@@ -1018,22 +1026,33 @@ class AIHandler:
                 for tr in tool_results:
                     messages.append(tr)
                 
-                # Continue loop - AI will decide what to do next based on tool results
+                # Loop continues - AI can decide to use more tools or respond
                 
                 # Safety: prevent infinite loops
                 if iteration >= max_tool_iterations:
-                    final_response = content or "I've gathered some information for you!"
-                    logger.warning(f"⚠️ Max tool iterations ({max_tool_iterations}) reached")
+                    logger.warning(f"⚠️ Max tool iterations ({max_tool_iterations}) reached, generating response...")
             
-            # If we exited without a final response, make one more call
-            if not final_response:
-                logger.info("📝 Getting final response after tool execution...")
-                final_result = await self.groq.chat_completion(
+            # 🔑 CRITICAL FIX: Always generate final response after tools!
+            if not final_response or not final_response.strip():
+                logger.info(f"📝 Generating contextual response after using tools: {tools_used}")
+                
+                # Make final call WITH tool_choice="none" to FORCE text response
+                final_result = await self.groq.chat_completion_with_tools(
                     messages=messages,
-                    temperature=settings.get("temperature", 1.02),
-                    task_type=TaskType.CHAT
+                    tools=tool_schemas,  # Still pass tools for context
+                    temperature=settings.get("temperature", 1.02),  # Higher temp for personality
+                    task_type=TaskType.CHAT,  # Use CHAT model for natural responses
+                    tool_choice="none"  # FORCE text response, no more tools!
                 )
-                final_response = final_result or "Done! Let me know if you need anything else!"
+                
+                final_response = final_result.get("content", "") or ""
+                
+                # If STILL empty (shouldn't happen), use personality-based fallback
+                if not final_response.strip():
+                    if tools_used:
+                        final_response = f"Arre yaar, maine {', '.join(tools_used[-3:])} use kiya but response nahi aaya 😅 Kya bolna hai?"
+                    else:
+                        final_response = "Hmm, kuch gadbad hai. Phir se try karo? 🤔"
             
             # Save assistant response
             await self._save_message(guild_id, channel_id, user_id, "assistant", final_response)

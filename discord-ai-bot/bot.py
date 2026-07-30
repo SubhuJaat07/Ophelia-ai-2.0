@@ -21,6 +21,7 @@ from src.handlers.ai_handler import init_ai_handler, get_ai_handler
 from src.handlers.message_handler import init_message_handler, get_message_handler
 from src.utils.meta_commands import init_meta_commands
 from src.utils.natural_commands import init_natural_commands
+from src.tools import get_tool_executor  # 🔧 NEW: MCP Tools!
 
 # Configure logging
 logging.basicConfig(
@@ -110,6 +111,11 @@ class OpheliaBot(commands.Bot):
             logger.info("🗣️ Initializing natural language command parser...")
             natural = init_natural_commands(self)
             
+            # 🔧 NEW: Initialize MCP Tool Executor with bot access!
+            logger.info("🛠️ Initializing MCP Tool System...")
+            tool_exec = get_tool_executor(bot=self)
+            logger.info(f"✅ {len(tool_exec.tool_names)} tools ready: {', '.join(tool_exec.tool_names[:5])}...")
+            
             # Load cogs/commands (utility commands merged into settings!)
             logger.info("📦 Loading commands...")
             await self.load_extension("src.commands.settings")
@@ -137,6 +143,7 @@ class OpheliaBot(commands.Bot):
         logger.info(f"🆔 Bot ID: {self.user.id}")
         logger.info(f"👑 Owners: {len(config.owner_ids)} users with FULL ACCESS")
         logger.info(f"🗣️ Natural Language Commands: ENABLED")
+        logger.info(f"🛠️ MCP Tool Calling: ENABLED (True Functional Bot!)")
         logger.info("=" * 60)
         
         # Update presence with cool status
