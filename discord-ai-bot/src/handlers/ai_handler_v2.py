@@ -212,12 +212,19 @@ class AIHandlerV2:
                     full_prompt += f"• If tool fails, report the error honestly\n"
                     full_prompt += f"• Wait for tool result before responding\n"
                 
-                # Add tool info
+                # Add tool info (but check length first!)
                 tools_info = tool_executor.get_tool_schema_summary()
                 if len(full_prompt) + len(tools_info) < self.MAX_SYSTEM_PROMPT_CHARS:
                     full_prompt += f"\n\n{tools_info}"
+                    logger.info(f"✅ Tool info added to prompt ({len(tools_info)} chars)")
+                else:
+                    logger.warning(f"⚠️ Tool info TOO LONG ({len(tools_info)} chars), skipping!")
                 
-                messages[0]["content"] = full_prompt[:self.MAX_SYSTEM_PROMPT_CHARS]
+                # Truncate to max (personality should be safe now)
+                final_prompt = full_prompt[:self.MAX_SYSTEM_PROMPT_CHARS]
+                messages[0]["content"] = final_prompt
+                
+                logger.info(f"📝 Final prompt: {len(final_prompt)} chars | Has tools: {len(tools_info) < (self.MAX_SYSTEM_PROMPT_CHARS - len(full_prompt))}")
             
             # Add user message
             messages.append({"role": "user", "content": user_message})
@@ -486,7 +493,24 @@ class AIHandlerV2:
     # ==========================================
     
     async def _save_message(self, guild_id, channel_id, user_id, role, content):
-        """Save message to database"""
+        """Save message to BOTH cache (primary) and database (fallback)"""
+        msg_data = {
+            "guild_id": str(guild_id),
+            "channel_id": str(channel_id),
+            "user_id": str(user_id),
+            "role": role,
+            "content": content,
+            "timestamp": datetime.now().isoformat()
+        }
+        
+        # 🔑 PRIMARY: Save to Cache (PERSISTS across restarts!)
+        try:
+            self.cache.add_to_conversation(channel_id, msg_data)
+            logger.debug(f"💾 Saved to cache: {channel_id}/{role}")
+        except Exception as e:
+            logger.warning(f"Cache save failed: {e}")
+        
+        # 🔄 SECONDARY: Try Database (best effort)
         try:
             db = get_db()
             await db.save_message(
@@ -497,62 +521,118 @@ class AIHandlerV2:
                 content=content
             )
         except Exception as e:
-            logger.debug(f"Message save failed: {e}")
+            logger.debug(f"DB save failed (cache is primary): {e}")
     
     async def get_conversation_context(self, guild_id, channel_id, user_id, username, 
                                      display_name, task_type=None, user_query=None) -> list:
-        """Build conversation context for AI"""
+        """
+        Build conversation context for AI - USES CACHE (not broken DB!)
+        This fixes the memory loss issue!
+        """
         messages = []
         
-        # Get recent conversation history
+        # 🔑 PRIMARY: Use Cache (works reliably!)
         try:
-            db = get_db()
-            history = await db.get_recent_messages(
-                guild_id=str(guild_id),
-                channel_id=str(channel_id),
-                limit=15
-            )
-            
-            for msg in history:
-                role = msg.get("role", "user")
-                content = msg.get("content", "")
-                if role in ["user", "assistant"]:
-                    messages.append({"role": role, "content": content})
-                    
+            conv = self.cache.get_conversation(channel_id)
+            if conv:
+                # Get last 15 messages from cache
+                recent_msgs = conv[-15:] if len(conv) > 15 else conv
+                
+                for msg in recent_msgs:
+                    role = msg.get("role", "user")
+                    content = msg.get("content", "")
+                    if role in ["user", "assistant"] and content:
+                        messages.append({"role": role, "content": content})
+                
+                logger.info(f"📚 Loaded {len(messages)} msgs from CACHE for channel {channel_id}")
+                
         except Exception as e:
-            logger.debug(f"History fetch failed: {e}")
+            logger.warning(f"Cache history failed: {e}")
+        
+        # 🔄 FALLBACK: Try Database (might work sometimes)
+        if not messages:
+            try:
+                db = get_db()
+                history = await db.get_recent_messages(
+                    guild_id=str(guild_id),
+                    channel_id=str(channel_id),
+                    limit=15
+                )
+                
+                for msg in history:
+                    role = msg.get("role", "user")
+                    content = msg.get("content", "")
+                    if role in ["user", "assistant"] and content:
+                        messages.append({"role": role, "content": content})
+                        
+                if messages:
+                    logger.info(f"📚 Loaded {len(messages)} msgs from DATABASE")
+                    
+            except Exception as e:
+                logger.debug(f"DB history fetch failed: {e}")
         
         return messages
     
     async def build_system_prompt(self, guild_id, user_profile, mood, 
                                  available_data=None, user_message=None) -> str:
-        """Build comprehensive system prompt"""
-        personality = SYSTEM_PROMPTS.get("fun", "")
-        custom_instructions = ""
+        """
+        Build comprehensive system prompt - PERSONALITY FIRST!
         
+        Priority order (to prevent truncation issues):
+        1. Personality (Hinglish, Ophelia identity) - CRITICAL
+        2. Tool capabilities (I CAN do things on Discord)
+        3. User context
+        4. Available data
+        """
+        
+        # 🔑 STEP 1: Get base personality (this MUST come first!)
+        personality = SYSTEM_PROMPTS.get("fun", "")
+        
+        # 🔑 STEP 2: Add TOOL CAPABILITIES to personality
+        # This tells AI "Hey, you have Discord powers!"
+        tool_capability_text = """
+
+**🛠️ MY DISCORD POWERS (I CAN DO THESE THINGS!):**
+• Create channels (text/voice) in this server
+• Kick/ban/timeout users (if I have permission)
+• Search & read message history
+• Send messages to any channel
+• Add reactions to messages
+• Get info about users, channels, server
+
+**IMPORTANT:** When user asks for these actions, USE THE TOOLS!
+Don't say "I can't do that" - TRY THE TOOL FIRST!
+
+"""
+        
+        # Combine personality + capabilities
+        base_prompt = personality + tool_capability_text
+        
+        # Custom instructions (if any, keep short)
+        custom_instructions = ""
         try:
             settings = await self.get_guild_settings(guild_id)
-            custom_instructions = settings.get("custom_instructions", "")
+            custom_instructions = settings.get("custom_instructions", "")[:200]  # Limit custom
         except:
             pass
         
+        # Format with BASE_SYSTEM_PROMPT template
         prompt = BASE_SYSTEM_PROMPT.format(
-            personality=personality,
+            personality=base_prompt,
             custom_instructions=custom_instructions
         )
         
-        # Add user context
+        # 🔑 STEP 3: Add user context (compact)
         if user_profile:
             msg_count = user_profile.get("message_count", 0)
-            topics = list(user_profile.get("topics_discussed", []))[-5:]
-            prompt += f"\n\n**👤 User Context:**\n"
-            prompt += f"- Messages exchanged: {msg_count}\n"
-            if topics:
-                prompt += f"- Topics discussed: {', '.join(topics)}\n"
+            prompt += f"\n\n👤 **User:** {user_profile.get('display_name', 'Unknown')} | Msgs: {msg_count}"
         
-        # Add available data
+        # 🔑 STEP 4: Add available data (permissions etc.)
         if available_data:
             prompt += f"\n{available_data}"
+        
+        # Log prompt length for debugging
+        logger.info(f"📝 System prompt length: {len(prompt)} chars (max: {self.MAX_SYSTEM_PROMPT_CHARS})")
         
         return prompt
     
