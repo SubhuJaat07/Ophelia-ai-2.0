@@ -1,0 +1,785 @@
+     1→"""
+     2→AI Response Handler - PROPER MCP IMPLEMENTATION v2.0 🛠️
+     3→====================================================
+     4→
+     5→This version FIXES all hallucination issues:
+     6→✅ Action intent detection (create, kick, timeout)
+     7→✅ FORCED tool use for actions (no faking!)
+     8→✅ Real Discord API execution
+     9→✅ Validation of tool results
+    10→✅ No more fake Channel IDs!
+    11→✅ No more raw function leaks!
+    12→
+    13→Author: Proper Full-Stack Implementation
+    14→"""
+    15→
+    16→import logging
+    17→import re
+    18→from typing import List, Dict, Optional, Any
+    19→from datetime import datetime
+    20→
+    21→from config.settings import (
+    22→    DEFAULT_GUILD_SETTINGS,
+    23→    SYSTEM_PROMPTS,
+    24→    BASE_SYSTEM_PROMPT
+    25→)
+    26→from src.utils.database import get_db
+    27→from src.utils.cache import get_cache
+    28→from src.utils.groq_client import get_groq_client, TaskType
+    29→from src.handlers.ai_decision_engine import get_decision_engine
+    30→
+    31→logger = logging.getLogger("AIHandler")
+    32→
+    33→
+    34→class AIHandlerV2:
+    35→    """
+    36→    PROPER AI Handler with REAL tool execution!
+    37→    
+    38→    Key improvements over v1:
+    39→    - Action intent detection
+    40→    - Forced tool use for actions  
+    41→    - Result validation
+    42→    - Anti-hallucination measures
+    43→    """
+    44→    
+    45→    def __init__(self):
+    46→        self.db = None
+    47→        self.cache = None
+    48→        self.groq = None
+    49→        
+    50→        # Keywords that trigger channel context awareness
+    51→        self.CHANNEL_CONTEXT_KEYWORDS = [
+    52→            "kya hua", "kya chal rha", "kya ho rha", "what happened", 
+    53→            "kon sahi", "who won", "kya kiya", "kya bola",
+    54→            "recent msgs", "recent messages", "channel context",
+    55→            "kya ho rha hai", "kya chal rha hai", "update do",
+    56→            "batao kya hua", "tell me what happened"
+    57→        ]
+    58→        
+    59→        # Mood detection keywords (Hinglish support!)
+    60→        self.MOOD_KEYWORDS = {
+    61→            'happy': ['😊', '😂', '❤️', '🎉', '💪', ':D', 'haha', 'lol', 'lmao', 
+    62→                    'happy', 'maza aa rha', 'mast', 'badhiya', 'awesome', 'cool',
+    63→                    'dhan dhana dhan', 'jai ho', 'waah', 'kya baat'],
+    64→            'sad': ['😢', '😞', '😔', '☹️', 'sad', 'dukh', 'cry', 'rona', 
+    65→                  'emotional', 'miss', 'yaad', 'tanha', 'akela'],
+    66→            'angry': ['😠', '😡', 'gussa', 'angry', 'pagal', 'stupid', 'idiot',
+    67→                    'frustrated', 'annoying', 'irritating', 'bakwas', 'ghtna'],
+    68→            'excited': ['🤩', '😍', '🔥', '⚡', 'excited', 'finally', 'omg', 
+    69→                      'wtf', 'zor se', 'chillao', 'party'],
+    70→            'confused': ['🤔', '😕', '?', 'confused', 'samajh nahi aaya', 'kaise',
+    71→                       'kyun', 'why', 'how', 'explain', 'matlab']
+    72→        }
+    73→        
+    74→        # 🔍 ACTION INTENT PATTERNS - Detect when user wants REAL actions!
+    75→        self.ACTION_PATTERNS = {
+    76→            'create_channel': ['create channel', 'channel banao', 'make channel', 'new channel', 
+    77→                            'add channel', 'banana', 'banado', 'channel create karo'],
+    78→            'kick_user': ['kick', 'hatao', 'nikalo', 'remove from server', 'throw out', 
+    79→                        'kick karo', 'bahar karo', 'server se hatao'],
+    80→            'timeout_user': ['timeout', 'mute', 'chupao', 'silent mode', 'shut up', 
+    81→                           'timeout do', 'chup karao', 'band karo'],
+    82→            'send_message': ['send message', 'bhejo', 'announce', 'broadcast', 
+    83→                          'message bhejo', 'send karo'],
+    84→            'add_reaction': ['react', 'emoji lagao', 'reaction add karo', 'react karo']
+    85→        }
+    86→        
+    87→        # Max system prompt length to avoid token limits
+    88→        self.MAX_SYSTEM_PROMPT_CHARS = 3500
+    89→    
+    90→    def _init_clients(self):
+    91→        """Initialize lazy-loaded clients"""
+    92→        if not self.db:
+    93→            self.db = get_db()
+    94→        if not self.cache:
+    95→            self.cache = get_cache()
+    96→        if not self.groq:
+    97→            self.groq = get_groq_client()
+    98→    
+    99→    # ==========================================
+   100→    # 🔍 ACTION DETECTION SYSTEM
+   101→    # ==========================================
+   102→    
+   103→    def _detect_action_intent(self, user_message: str) -> Optional[str]:
+   104→        """
+   105→        Detect if user wants to perform a REAL action.
+   106→        Returns the tool name that should be used, or None for chat/info.
+   107→        
+   108→        This is CRITICAL to prevent hallucination!
+   109→        """
+   110→        msg_lower = user_message.lower().strip()
+   111→        
+   112→        # Check each action pattern
+   113→        for tool_name, patterns in self.ACTION_PATTERNS.items():
+   114→            for pattern in patterns:
+   115→                if pattern in msg_lower:
+   116→                    logger.info(f"🎯 ACTION DETECTED: {tool_name} | Pattern: '{pattern}'")
+   117→                    return tool_name
+   118→        
+   119→        return None
+   120→    
+   121→    # ==========================================
+   122→    # 🛠️ MAIN TOOL-ENABLED RESPONSE GENERATOR
+   123→    # ==========================================
+   124→    
+   125→    async def generate_response_with_tools(
+   126→        self,
+   127→        guild_id: int,
+   128→        channel_id: int,
+   129→        user_id: int,
+   130→        user_message: str,
+   131→        username: str = "Unknown",
+   132→        display_name: str = "Unknown",
+   133→        guild: object = None,
+   134→        bot_member: object = None,
+   135→        mentioned_users: list = None,
+   136→        max_tool_iterations: int = 5
+   137→    ) -> str:
+   138→        """
+   139→        PROPER MCP-Style Tool Calling with ANTI-HALLUCINATION! 
+   140→        
+   141→        Flow:
+   142→        1. Detect if this is an ACTION request or INFO request
+   143→        2. For ACTIONS → Force tool use (tool_choice=specific_tool)
+   144→        3. Execute tools via Discord API (REAL results)
+   145→        4. Validate results (no fake IDs allowed)
+   146→        5. Generate natural response using REAL data
+   147→        
+   148→        NO MORE FAKE RESPONSES! 🚫
+   149→        """
+   150→        self._init_clients()
+   151→        
+   152→        try:
+   153→            # Import tool executor
+   154→            from src.tools import get_tool_executor
+   155→            
+   156→            tool_executor = get_tool_executor()
+   157→            
+   158→            # ✅ CHECK: Are tools available?
+   159→            if not tool_executor.tool_names:
+   160→                logger.warning("⚠️ No tools available!")
+   161→                return await self._generate_fallback_response(
+   162→                    guild_id, channel_id, user_id, user_message, 
+   163→                    username, display_name, guild, bot_member, mentioned_users
+   164→                )
+   165→            
+   166→            logger.info(f"🛠️ Tools available: {len(tool_executor.tool_names)}")
+   167→            
+   168→            # Get user profile & mood
+   169→            user_profile = self._get_user_profile(user_id, username, display_name)
+   170→            current_mood = self._detect_mood(user_message)
+   171→            
+   172→            # Save message to memory
+   173→            await self._save_message(guild_id, channel_id, user_id, "user", user_message)
+   174→            
+   175→            # 🔑 STEP 1: Detect Action Intent
+   176→            action_intent = self._detect_action_intent(user_message)
+   177→            
+   178→            task_type = self.groq.detect_task_type(user_message)
+   179→            
+   180→            logger.info(f"📝 Intent: {action_intent or 'CHAT/INFO'} | Task: {task_type.value}")
+   181→            
+   182→            # Gather available data
+   183→            available_data = self.gather_available_data(
+   184→                user_profile=user_profile,
+   185→                channel_id=channel_id,
+   186→                guild=guild,
+   187→                bot_member=bot_member
+   188→            )
+   189→            
+   190→            # Build conversation context
+   191→            messages = await self.get_conversation_context(
+   192→                guild_id, channel_id, user_id, username, display_name,
+   193→                task_type=task_type,
+   194→                user_query=user_message
+   195→            )
+   196→            
+   197→            # 🔑 STEP 2: Build System Prompt with STRICT rules
+   198→            if messages and messages[0].get("role") == "system":
+   199→                full_prompt = await self.build_system_prompt(
+   200→                    guild_id, user_profile, current_mood,
+   201→                    available_data=available_data,
+   202→                    user_message=user_message
+   203→                )
+   204→                
+   205→                # ⚠️ Add CRITICAL instructions for actions
+   206→                if action_intent:
+   207→                    full_prompt += f"\n\n{'='*50}\n"
+   208→                    full_prompt += f"⚠️ **ACTION REQUIRED: User wants you to use `{action_intent}` tool!**\n"
+   209→                    full_prompt += f"{'='*50}\n"
+   210→                    full_prompt += f"• You MUST call the `{action_intent}` function\n"
+   211→                    full_prompt += f"• Do NOT make up results or fake IDs\n"
+   212→                    full_prompt += f"• If tool fails, report the error honestly\n"
+   213→                    full_prompt += f"• Wait for tool result before responding\n"
+   214→                
+   215→                # Add tool info (but check length first!)
+   216→                tools_info = tool_executor.get_tool_schema_summary()
+   217→                if len(full_prompt) + len(tools_info) < self.MAX_SYSTEM_PROMPT_CHARS:
+   218→                    full_prompt += f"\n\n{tools_info}"
+   219→                    logger.info(f"✅ Tool info added to prompt ({len(tools_info)} chars)")
+   220→                else:
+   221→                    logger.warning(f"⚠️ Tool info TOO LONG ({len(tools_info)} chars), skipping!")
+   222→                
+   223→                # Truncate to max (personality should be safe now)
+   224→                final_prompt = full_prompt[:self.MAX_SYSTEM_PROMPT_CHARS]
+   225→                messages[0]["content"] = final_prompt
+   226→                
+   227→                logger.info(f"📝 Final prompt: {len(final_prompt)} chars | Has tools: {len(tools_info) < (self.MAX_SYSTEM_PROMPT_CHARS - len(full_prompt))}")
+   228→            
+   229→            # Add user message
+   230→            messages.append({"role": "user", "content": user_message})
+   231→            
+   232→            # Get settings & tool schemas
+   233→            settings = await self.get_guild_settings(guild_id)
+   234→            tool_schemas = tool_executor.schemas_for_groq
+   235→            
+   236→            # Build execution context
+   237→            exec_context = {
+   238→                "guild": guild,
+   239→                "guild_id": str(guild_id),
+   240→                "channel_id": str(channel_id),
+   241→                "user_id": str(user_id),
+   242→                "author_name": display_name,
+   243→                "is_owner": self._check_owner(user_id),
+   244→                "is_moderator": self._check_if_moderator(user_id, guild)
+   245→            }
+   246→            
+   247→            # 🔑 STEP 3: Tool-Calling Loop with VALIDATION
+   248→            final_response = ""
+   249→            iteration = 0
+   250→            tools_used = []
+   251→            tool_results_data = []  # Store actual tool results
+   252→            
+   253→            # Determine initial tool_choice strategy
+   254→            tool_choice = action_intent or "auto"
+   255→            
+   256→            logger.info(f"🎯 Strategy: tool_choice='{tool_choice}'")
+   257→            
+   258→            while iteration < max_tool_iterations:
+   259→                iteration += 1
+   260→                logger.info(f"\n{'='*50}")
+   261→                logger.info(f"🔄 Iteration {iteration}/{max_tool_iterations}")
+   262→                logger.info(f"{'='*50}")
+   263→                
+   264→                # Call Groq with tools
+   265→                result = await self.groq.chat_completion_with_tools(
+   266→                    messages=messages,
+   267→                    tools=tool_schemas,
+   268→                    temperature=settings.get("temperature", 0.7),
+   269→                    task_type=task_type,
+   270→                    tool_choice=tool_choice
+   271→                )
+   272→                
+   273→                # Parse response
+   274→                tool_calls = result.get("tool_calls", [])
+   275→                content = result.get("content", "") or ""
+   276→                
+   277→                logger.info(f"📊 Response: {len(tool_calls)} tool calls | Content: '{content[:80]}...'")
+   278→                
+   279→                # CASE A: No tool calls requested
+   280→                if not tool_calls:
+   281→                    final_response = content
+   282→                    
+   283→                    # ⚠️ VALIDATION: If we expected an action but got none
+   284→                    if action_intent and iteration == 1:
+   285→                        logger.warning(f"⚠️ Expected action '{action_intent}' but no tool called!")
+   286→                        
+   287→                        # Check for potential hallucination indicators
+   288→                        hallucination_indicators = ['channel id', 'created', 'done', '✅', 'kicked', 'timed out']
+   289→                        is_potential_fake = any(ind in final_response.lower() for ind in hallucination_indicators)
+   290→                        
+   291→                        if is_potential_fake or not final_response.strip():
+   292→                            logger.warning("❌ POTENTIAL HALLUCINATION DETECTED! Forcing retry...")
+   293→                            
+   294→                            # Add correction message and retry
+   295→                            messages.append({
+   296→                                "role": "assistant",
+   297→                                "content": content
+   298→                            })
+   299→                            messages.append({
+   300→                                "role": "user", 
+   301→                                "content": f"❌ ERROR: You didn't call the {action_intent} tool!\n"
+   302→                                        f"You MUST use the {action_intent} function to perform this action.\n"
+   303→                                        f"Do NOT make up results. Call the tool NOW!"
+   304→                            })
+   305→                            continue
+   306→                    
+   307→                    logger.info(f"✅ Using direct response (no tools)")
+   308→                    break
+   309→                
+   310→                # CASE B: Tool calls requested - EXECUTE THEM!
+   311→                logger.info(f"🤖 AI wants to execute {len(tool_calls)} tool(s):")
+   312→                
+   313→                for tc in tool_calls:
+   314→                    func_name = tc.get("function", {}).get("name", "unknown")
+   315→                    func_args = tc.get("function", {}).get("arguments", "{}")
+   316→                    tools_used.append(func_name)
+   317→                    logger.info(f"   → {func_name}({func_args[:120]}...)")
+   318→                
+   319→                # Add assistant message with tool calls to history
+   320→                messages.append({
+   321→                    "role": "assistant",
+   322→                    "content": content,
+   323→                    "tool_calls": tool_calls
+   324→                })
+   325→                
+   326→                # 🛠️ EXECUTE TOOLS - Get REAL results from Discord API!
+   327→                logger.info(f"⚡ Executing tools via Discord API...")
+   328→                
+   329→                tool_results = await tool_executor.process_ai_tool_calls(
+   330→                    tool_calls=tool_calls,
+   331→                    context=exec_context
+   332→                )
+   333→                
+   334→                # Log actual results
+   335→                for tr in tool_results:
+   336→                    result_content = tr.get("content", "")[:250]
+   337→                    logger.info(f"   ← RESULT: {result_content}...")
+   338→                    tool_results_data.append(tr)
+   339→                
+   340→                # Add tool results back to conversation
+   341→                for tr in tool_results:
+   342→                    messages.append(tr)
+   343→                
+   344→                # After first tool use, switch to getting text response
+   345→                tool_choice = "none"
+   346→                
+   347→                # Safety check
+   348→                if iteration >= max_tool_iterations:
+   349→                    logger.warning(f"⚠️ Max iterations reached")
+   350→            
+   351→            # 🔑 STEP 4: Generate Final Response (if needed)
+   352→            if not final_response or not final_response.strip():
+   353→                logger.info(f"📝 Generating final response from {len(tool_results_data)} tool results...")
+   354→                
+   355→                final_result = await self.groq.chat_completion_with_tools(
+   356→                    messages=messages,
+   357→                    tools=tool_schemas,
+   358→                    temperature=settings.get("temperature", 1.02),
+   359→                    task_type=TaskType.CHAT,
+   360→                    tool_choice="none"
+   361→                )
+   362→                
+   363→                final_response = final_result.get("content", "") or ""
+   364→            
+   365→            # 🔑 STEP 5: Clean & Validate Response
+   366→            final_response = self._clean_ai_response(final_response)
+   367→            
+   368→            # ✅ FINAL VALIDATION: For actions, verify tool was actually used
+   369→            if action_intent:
+   370→                if action_intent not in tools_used:
+   371→                    logger.error(f"❌ ACTION '{action_intent}' WAS NEVER EXECUTED!")
+   372→                    
+   373→                    # Override fake success responses
+   374→                    fake_success_words = ['done', 'created', '✅', 'success', 'kicked', 'timed out', 'ready']
+   375→                    is_fake_success = any(word in final_response.lower() for word in fake_success_words)
+   376→                    
+   377→                    if is_fake_success:
+   378→                        logger.warning("🔴 Overriding FAKE success response with honest error!")
+   379→                        final_response = (
+   380→                            f"😅 Arre yaar, maine {action_intent} execute nahi kar paayi!\n"
+   381→                            f"Kuch technical issue hai ya permission nahi hai.\n"
+   382→                            f"Admin/Owner se puch lo please? 🙏"
+   383→                        )
+   384→            
+   385→            # Save response
+   386→            await self._save_message(guild_id, channel_id, user_id, "assistant", final_response)
+   387→            
+   388→            # Update profile
+   389→            tools_str = ','.join(tools_used) if tools_used else 'none'
+   390→            user_profile["last_interactions"].append(
+   391→                f"[{datetime.now().strftime('%H:%M')}] Ophelia [TOOLS:{tools_str}]: {final_response[:60]}"
+   392→            )
+   393→            user_profile["last_interactions"] = user_profile["last_interactions"][-10:]
+   394→            self.cache.set_user_context(user_id, user_profile)
+   395→            
+   396→            logger.info(f"\n{'='*50}")
+   397→            logger.info(f"✅ RESPONSE GENERATED")
+   398→            logger.info(f"   Tools used: {tools_used}")
+   399→            logger.info(f"   Length: {len(final_response)} chars")
+   400→            logger.info(f"   Preview: {final_response[:100]}...")
+   401→            logger.info(f"{'='*50}\n")
+   402→            
+   403→            return final_response
+   404→            
+   405→        except Exception as e:
+   406→            logger.error(f"❌ ERROR in tool generation: {e}", exc_info=True)
+   407→            logger.info("⬇️ Falling back to regular generation...")
+   408→            return await self._generate_fallback_response(
+   409→                guild_id, channel_id, user_id, user_message,
+   410→                username, display_name, guild, bot_member, mentioned_users
+   411→            )
+   412→    
+   413→    async def _generate_fallback_response(self, *args, **kwargs) -> str:
+   414→        """Fallback when tool system fails"""
+   415→        # Import here to avoid circular dependency
+   416→        return await self.generate_response(*args, **kwargs)
+   417→    
+   418→    # ==========================================
+   419→    # 🧹 RESPONSE CLEANING
+   420→    # ==========================================
+   421→    
+   422→    def _clean_ai_response(self, response: str) -> str:
+   423→        """
+   424→        Clean AI response - remove raw function calls and weird formatting.
+   425→        Prevents leaks like <function=get_channel_info[...]>
+   426→        """
+   427→        if not response:
+   428→            return response
+   429→        
+   430→        # Remove raw function call syntax: <function=name[params]>
+   431→        response = re.sub(r'<function=\w+[\[\{].*?[\]\}]>', '', response, flags=re.DOTALL)
+   432→        
+   433→        # Remove standalone function calls: function_name(params)
+   434→        response = re.sub(r'^\s*\w+\([^)]*\)\s*$', '', response, flags=re.MULTILINE)
+   435→        
+   436→        # Clean up multiple newlines
+   437→        response = re.sub(r'\n{3,}', '\n\n', response)
+   438→        
+   439→        # Strip whitespace
+   440→        response = response.strip()
+   441→        
+   442→        # Fallback if empty after cleaning
+   443→        if not response:
+   444→            return "Hmm, kuch gadbad hai! Phir se try karo? 🤔"
+   445→        
+   446→        return response
+   447→    
+   448→    # ==========================================
+   449→    # 👤 USER PROFILE & MOOD
+   450→    # ==========================================
+   451→    
+   452→    def _get_user_profile(self, user_id, username, display_name):
+   453→        """Get or create user profile using correct cache methods"""
+   454→        # Use get_user_context (not .get()!)
+   455→        profile = self.cache.get_user_context(user_id)
+   456→        
+   457→        if not profile:
+   458→            profile = {
+   459→                "user_id": str(user_id),
+   460→                "username": username,
+   461→                "display_name": display_name,
+   462→                "first_seen": datetime.now().isoformat(),
+   463→                "message_count": 0,
+   464→                "topics_discussed": set(),
+   465→                "inside_jokes": set(),
+   466→                "preferences": {},
+   467→                "last_interactions": [],
+   468→                "mood_history": []
+   469→            }
+   470→            self.cache.set_user_context(user_id, profile)
+   471→        
+   472→        # Update basic info
+   473→        profile["display_name"] = display_name
+   474→        profile["username"] = username
+   475→        profile["message_count"] = profile.get("message_count", 0) + 1
+   476→        
+   477→        return profile
+   478→    
+   479→    def _detect_mood(self, message: str) -> str:
+   480→        """Detect mood from message"""
+   481→        msg_lower = message.lower()
+   482→        scores = {}
+   483→        
+   484→        for mood, keywords in self.MOOD_KEYWORDS.items():
+   485→            score = sum(1 for kw in keywords if kw in msg_lower)
+   486→            scores[mood] = score
+   487→        
+   488→        best_mood = max(scores, key=scores.get) if any(scores.values()) else "neutral"
+   489→        return best_mood
+   490→    
+   491→    # ==========================================
+   492→    # 💾 MEMORY OPERATIONS
+   493→    # ==========================================
+   494→    
+   495→    async def _save_message(self, guild_id, channel_id, user_id, role, content):
+   496→        """Save message to BOTH cache (primary) and database (fallback)"""
+   497→        msg_data = {
+   498→            "guild_id": str(guild_id),
+   499→            "channel_id": str(channel_id),
+   500→            "user_id": str(user_id),
+   501→            "role": role,
+   502→            "content": content,
+   503→            "timestamp": datetime.now().isoformat()
+   504→        }
+   505→        
+   506→        # 🔑 PRIMARY: Save to Cache (PERSISTS across restarts!)
+   507→        try:
+   508→            self.cache.add_to_conversation(channel_id, msg_data)
+   509→            logger.debug(f"💾 Saved to cache: {channel_id}/{role}")
+   510→        except Exception as e:
+   511→            logger.warning(f"Cache save failed: {e}")
+   512→        
+   513→        # 🔄 SECONDARY: Try Database (best effort)
+   514→        try:
+   515→            db = get_db()
+   516→            await db.save_message(
+   517→                guild_id=str(guild_id),
+   518→                channel_id=str(channel_id),
+   519→                user_id=str(user_id),
+   520→                role=role,
+   521→                content=content
+   522→            )
+   523→        except Exception as e:
+   524→            logger.debug(f"DB save failed (cache is primary): {e}")
+   525→    
+   526→    async def get_conversation_context(self, guild_id, channel_id, user_id, username, 
+   527→                                     display_name, task_type=None, user_query=None) -> list:
+   528→        """
+   529→        Build conversation context for AI - USES CACHE (not broken DB!)
+   530→        This fixes the memory loss issue!
+   531→        """
+   532→        messages = []
+   533→        
+   534→        # 🔑 PRIMARY: Use Cache (works reliably!)
+   535→        try:
+   536→            conv = self.cache.get_conversation(channel_id)
+   537→            if conv:
+   538→                # Get last 15 messages from cache
+   539→                recent_msgs = conv[-15:] if len(conv) > 15 else conv
+   540→                
+   541→                for msg in recent_msgs:
+   542→                    role = msg.get("role", "user")
+   543→                    content = msg.get("content", "")
+   544→                    if role in ["user", "assistant"] and content:
+   545→                        messages.append({"role": role, "content": content})
+   546→                
+   547→                logger.info(f"📚 Loaded {len(messages)} msgs from CACHE for channel {channel_id}")
+   548→                
+   549→        except Exception as e:
+   550→            logger.warning(f"Cache history failed: {e}")
+   551→        
+   552→        # 🔄 FALLBACK: Try Database (might work sometimes)
+   553→        if not messages:
+   554→            try:
+   555→                db = get_db()
+   556→                history = await db.get_recent_messages(
+   557→                    guild_id=str(guild_id),
+   558→                    channel_id=str(channel_id),
+   559→                    limit=15
+   560→                )
+   561→                
+   562→                for msg in history:
+   563→                    role = msg.get("role", "user")
+   564→                    content = msg.get("content", "")
+   565→                    if role in ["user", "assistant"] and content:
+   566→                        messages.append({"role": role, "content": content})
+   567→                        
+   568→                if messages:
+   569→                    logger.info(f"📚 Loaded {len(messages)} msgs from DATABASE")
+   570→                    
+   571→            except Exception as e:
+   572→                logger.debug(f"DB history fetch failed: {e}")
+   573→        
+   574→        return messages
+   575→    
+   576→    async def build_system_prompt(self, guild_id, user_profile, mood, 
+   577→                                 available_data=None, user_message=None) -> str:
+   578→        """
+   579→        Build comprehensive system prompt - PERSONALITY FIRST!
+   580→        
+   581→        Priority order (to prevent truncation issues):
+   582→        1. Personality (Hinglish, Ophelia identity) - CRITICAL
+   583→        2. Tool capabilities (I CAN do things on Discord)
+   584→        3. User context
+   585→        4. Available data
+   586→        """
+   587→        
+   588→        # 🔑 STEP 1: Get base personality (this MUST come first!)
+   589→        personality = SYSTEM_PROMPTS.get("fun", "")
+   590→        
+   591→        # 🔑 STEP 2: Add TOOL CAPABILITIES to personality
+   592→        # This tells AI "Hey, you have Discord powers!"
+   593→        tool_capability_text = """
+   594→
+   595→**🛠️ MY DISCORD POWERS (I CAN DO THESE THINGS!):**
+   596→• Create channels (text/voice) in this server
+   597→• Kick/ban/timeout users (if I have permission)
+   598→• Search & read message history
+   599→• Send messages to any channel
+   600→• Add reactions to messages
+   601→• Get info about users, channels, server
+   602→
+   603→**IMPORTANT:** When user asks for these actions, USE THE TOOLS!
+   604→Don't say "I can't do that" - TRY THE TOOL FIRST!
+   605→
+   606→"""
+   607→        
+   608→        # Combine personality + capabilities
+   609→        base_prompt = personality + tool_capability_text
+   610→        
+   611→        # Custom instructions (if any, keep short)
+   612→        custom_instructions = ""
+   613→        try:
+   614→            settings = await self.get_guild_settings(guild_id)
+   615→            custom_instructions = settings.get("custom_instructions", "")[:200]  # Limit custom
+   616→        except:
+   617→            pass
+   618→        
+   619→        # Format with BASE_SYSTEM_PROMPT template
+   620→        prompt = BASE_SYSTEM_PROMPT.format(
+   621→            personality=base_prompt,
+   622→            custom_instructions=custom_instructions
+   623→        )
+   624→        
+   625→        # 🔑 STEP 3: Add user context (compact)
+   626→        if user_profile:
+   627→            msg_count = user_profile.get("message_count", 0)
+   628→            prompt += f"\n\n👤 **User:** {user_profile.get('display_name', 'Unknown')} | Msgs: {msg_count}"
+   629→        
+   630→        # 🔑 STEP 4: Add available data (permissions etc.)
+   631→        if available_data:
+   632→            prompt += f"\n{available_data}"
+   633→        
+   634→        # Log prompt length for debugging
+   635→        logger.info(f"📝 System prompt length: {len(prompt)} chars (max: {self.MAX_SYSTEM_PROMPT_CHARS})")
+   636→        
+   637→        return prompt
+   638→    
+   639→    async def get_guild_settings(self, guild_id) -> dict:
+   640→        """Get guild-specific settings"""
+   641→        return DEFAULT_GUILD_SETTINGS.copy()
+   642→    
+   643→    def gather_available_data(self, user_profile=None, channel_id=None, 
+   644→                             guild=None, bot_member=None) -> str:
+   645→        """Gather context data for AI"""
+   646→        data_parts = ["**📊 Available Data:**\n"]
+   647→        
+   648→        # Owner info
+   649→        try:
+   650→            from config.settings import config
+   651→            owners_text = "\n👑 **Owners:**\n"
+   652→            if guild:
+   653→                for owner_id in config.owner_ids:
+   654→                    member = guild.get_member(owner_id)
+   655→                    if member:
+   656→                        name = member.display_name or member.name
+   657→                        owners_text += f"• **{name}** (ID: `{owner_id}`) 👑\n"
+   658→                    else:
+   659→                        owners_text += f"• Unknown (ID: `{owner_id}`) 👑\n"
+   660→            data_parts.append(owners_text)
+   661→        except:
+   662→            pass
+   663→        
+   664→        # Bot permissions
+   665→        if guild and bot_member:
+   666→            perms = guild.permissions_for(bot_member)
+   667→            perm_list = []
+   668→            if perms.manage_channels: perm_list.append("manage_channels ✅")
+   669→            if perms.kick_members: perm_list.append("kick ✅")
+   670→            if perms.ban_members: perm_list.append("ban ✅")
+   671→            if perms.moderate_members: perm_list.append("timeout ✅")
+   672→            if perms.send_messages: perm_list.append("send_messages ✅")
+   673→            if perms.add_reactions: perm_list.append("react ✅")
+   674→            
+   675→            if perm_list:
+   676→                data_parts.append(f"\n🔧 **My Permissions:** {', '.join(perm_list)}\n")
+   677→        
+   678→        return "\n".join(data_parts)
+   679→    
+   680→    # ==========================================
+   681→    # 🔐 PERMISSION CHECKS
+   682→    # ==========================================
+   683→    
+   684→    def _check_owner(self, user_id) -> bool:
+   685→        """Check if user is bot owner"""
+   686→        try:
+   687→            from config.settings import is_owner
+   688→            return is_owner(user_id)
+   689→        except:
+   690→            return False
+   691→    
+   692→    def _check_if_moderator(self, user_id, guild) -> bool:
+   693→        """Check if user has moderation permissions"""
+   694→        if not guild:
+   695→            return False
+   696→        
+   697→        try:
+   698→            member = guild.get_member(user_id)
+   699→            if not member:
+   700→                return False
+   701→            
+   702→            if guild.owner_id == user_id:
+   703→                return True
+   704→            
+   705→            perms = guild.permissions_for(member)
+   706→            return any([
+   707→                perms.administrator,
+   708→                perms.manage_guild,
+   709→                perms.kick_members,
+   710→                perms.ban_members,
+   711→                perms.moderate_members
+   712→            ])
+   713→        except:
+   714→            return False
+   715→    
+   716→    # ==========================================
+   717→    # 📝 LEGACY METHODS (for fallback)
+   718→    # ==========================================
+   719→    
+   720→    async def generate_response(self, guild_id, channel_id, user_id, user_message,
+   721→                              username="Unknown", display_name="Unknown",
+   722→                              guild=None, bot_member=None, mentioned_users=None) -> str:
+   723→        """Regular response without tools (fallback)"""
+   724→        self._init_clients()
+   725→        
+   726→        try:
+   727→            user_profile = self._get_user_profile(user_id, username, display_name)
+   728→            current_mood = self._detect_mood(user_message)
+   729→            
+   730→            await self._save_message(guild_id, channel_id, user_id, "user", user_message)
+   731→            
+   732→            task_type = self.groq.detect_task_type(user_message)
+   733→            
+   734→            messages = await self.get_conversation_context(
+   735→                guild_id, channel_id, user_id, username, display_name,
+   736→                task_type=task_type, user_query=user_message
+   737→            )
+   738→            
+   739→            if messages and messages[0].get("role") == "system":
+   740→                full_prompt = await self.build_system_prompt(
+   741→                    guild_id, user_profile, current_mood,
+   742→                    user_message=user_message
+   743→                )
+   744→                messages[0]["content"] = full_prompt[:self.MAX_SYSTEM_PROMPT_CHARS]
+   745→            
+   746→            messages.append({"role": "user", "content": user_message})
+   747→            
+   748→            settings = await self.get_guild_settings(guild_id)
+   749→            
+   750→            response = await self.groq.chat_completion(
+   751→                messages=messages,
+   752→                temperature=settings.get("temperature", 1.02),
+   753→                task_type=task_type
+   754→            )
+   755→            
+   756→            await self._save_message(guild_id, channel_id, user_id, "assistant", response)
+   757→            
+   758→            return response or "Hmm, kuch gadbad hai! 😅"
+   759→            
+   760→        except Exception as e:
+   761→            logger.error(f"Error generating response: {e}")
+   762→            return f"Arre error aa gaya 😅 Try karo!"
+   763→    
+   764→    def store_channel_message(self, channel_id, author_name, content, is_bot=False, timestamp=None):
+   765→        """Store channel message for context awareness"""
+   766→        pass  # Simplified for now
+   767→
+   768→
+   769→# Global instance
+   770→_ai_handler_v2_instance = None
+   771→
+   772→
+   773→def init_ai_handler_v2() -> AIHandlerV2:
+   774→    """Initialize global AI Handler v2 instance"""
+   775→    global _ai_handler_v2_instance
+   776→    _ai_handler_v2_instance = AIHandlerV2()
+   777→    return _ai_handler_v2_instance
+   778→
+   779→
+   780→def get_ai_handler_v2() -> AIHandlerV2:
+   781→    """Get global AI Handler v2 instance"""
+   782→    if _ai_handler_v2_instance is None:
+   783→        return init_ai_handler_v2()
+   784→    return _ai_handler_v2_instance
+   785→

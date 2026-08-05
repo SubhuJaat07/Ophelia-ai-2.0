@@ -16,7 +16,7 @@ import asyncio
 from typing import Optional
 
 from config.settings import DEFAULT_GUILD_SETTINGS, is_owner
-from src.handlers.ai_handler_v2 import get_ai_handler_v2  # 🆕 Use V2!
+from src.handlers.ai_handler_v3 import get_ai_handler_v3  # 🚀 PRODUCTION GRADE v3!
 from src.utils.cache import get_cache
 from src.utils.natural_commands import get_natural_parser
 
@@ -89,7 +89,7 @@ class MessageHandler:
             # 🆕 STORE CHANNEL MESSAGE FOR CONTEXT AWARENESS!
             # This lets Ophelia know what's happening in the server!
             try:
-                ai_handler_instance = get_ai_handler()
+                ai_handler_instance = get_ai_handler_v3()
                 ai_handler_instance.store_channel_message(
                     channel_id=message.channel.id,
                     author_name=message.author.display_name or str(message.author.name),
@@ -120,8 +120,8 @@ class MessageHandler:
             
             # Show typing indicator
             async with message.channel.typing():
-                # 🚀 NEW AI-FIRST APPROACH: AI decides everything!
-                ai = get_ai_handler_v2()
+                # 🚀 PRODUCTION-GRADE AI-FIRST APPROACH!
+                ai = get_ai_handler_v3()
                 
                 # Get user info for USER RECOGNITION! 👤
                 username = str(message.author.name)
@@ -149,9 +149,9 @@ class MessageHandler:
                     context_info = ""
                 
                 # 🧠🛠️ SEND TO AI WITH TOOLS ENABLED!
-                # Use tool-enhanced generation (falls back to regular if needed)
+                # Use production-grade tool-enhanced generation
                 try:
-                    # NEW: Try tool-enhanced generation first
+                    # PRODUCTION: Use v3 handler with full integration
                     response = await ai.generate_response_with_tools(
                         guild_id=message.guild.id if message.guild else 0,
                         channel_id=message.channel.id,
@@ -161,22 +161,13 @@ class MessageHandler:
                         display_name=display_name,
                         guild=message.guild,
                         bot_member=message.guild.me if message.guild else None,
-                        mentioned_users=mentioned_users
+                        mentioned_users=mentioned_users,
+                        message=message  # Pass original message for context
                     )
                 except Exception as tool_error:
-                    logger.debug(f"Tool generation failed, using regular: {tool_error}")
-                    # Fallback to regular generation
-                    response = await ai.generate_response(
-                        guild_id=message.guild.id if message.guild else 0,
-                        channel_id=message.channel.id,
-                        user_id=message.author.id,
-                        user_message=clean_message + context_info,
-                        username=username,
-                        display_name=display_name,
-                        guild=message.guild,
-                        bot_member=message.guild.me if message.guild else None,
-                        mentioned_users=mentioned_users
-                    )
+                    logger.error(f"❌ Tool generation failed: {tool_error}", exc_info=True)
+                    # Fallback: Simple response
+                    response = "😅 Arre yaar, kuch technical issue aa gaya! Thoda der baad try karo."
                 
                 # Send response
                 await self._send_response(message, response)
