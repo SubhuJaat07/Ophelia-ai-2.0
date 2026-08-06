@@ -669,6 +669,77 @@ class RemoveTimeoutTool(DiscordTool):
             return ToolResult(success=False, content=f"❌ Remove timeout failed: {str(e)[:150]}")
 
 
+class MuteUserTool(DiscordTool):
+    """Server mute a user (voice mute - can't speak in VC)"""
+    
+    name = "mute_user"
+    description = """Server mute a user so they cannot speak in any voice channel. This is a VOICE mute, not text timeout."""
+    
+    parameters = [
+        ToolParameter(name="user_id", param_type="string", description="User ID to mute", required=True),
+        ToolParameter(name="reason", param_type="string", description="Reason for mute", required=False, default="Muted by Ophelia"),
+    ]
+    
+    permission_level = ToolPermissionLevel.MODERATOR
+    
+    async def execute(self, args: Dict[str, Any], context: Dict[str, Any]) -> ToolResult:
+        try:
+            user_id = args["user_id"]
+            reason = args.get("reason", "Muted by Ophelia")
+            
+            guild = context.get("guild")
+            if not guild:
+                return ToolResult(success=False, content="❌ No guild available")
+            
+            member = guild.get_member(int(user_id))
+            if not member:
+                return ToolResult(success=False, content="❌ User not found in server!")
+            
+            if member.id == guild.owner_id:
+                return ToolResult(success=False, content="❌ Owner ko mute nahi kar sakte!")
+            
+            await member.edit(mute=True, reason=reason)
+            return ToolResult(success=True, content=f"🔇 **{member.display_name}** ko VOICE MUTED kar diya! Ab ye VC me bol nahi sakta!", data={"muted_user": member.display_name})
+        except discord.Forbidden:
+            return ToolResult(success=False, content="❌ Permission denied! Mute members chahiye!")
+        except Exception as e:
+            return ToolResult(success=False, content=f"❌ Mute failed: {str(e)[:150]}")
+
+
+class UnmuteUserTool(DiscordTool):
+    """Unmute a user (remove voice mute)"""
+    
+    name = "unmute_user"
+    description = """Remove voice mute from a user so they can speak in voice channels again."""
+    
+    parameters = [
+        ToolParameter(name="user_id", param_type="string", description="User ID to unmute", required=True),
+        ToolParameter(name="reason", param_type="string", description="Reason for unmute", required=False, default="Unmuted by Ophelia"),
+    ]
+    
+    permission_level = ToolPermissionLevel.MODERATOR
+    
+    async def execute(self, args: Dict[str, Any], context: Dict[str, Any]) -> ToolResult:
+        try:
+            user_id = args["user_id"]
+            reason = args.get("reason", "Unmuted by Ophelia")
+            
+            guild = context.get("guild")
+            if not guild:
+                return ToolResult(success=False, content="❌ No guild available")
+            
+            member = guild.get_member(int(user_id))
+            if not member:
+                return ToolResult(success=False, content="❌ User not found in server!")
+            
+            await member.edit(mute=False, reason=reason)
+            return ToolResult(success=True, content=f"🔊 **{member.display_name}** ko UNMUTED kar diya! Ab ye VC me bol sakta hai!", data={"unmuted_user": member.display_name})
+        except discord.Forbidden:
+            return ToolResult(success=False, content="❌ Permission denied!")
+        except Exception as e:
+            return ToolResult(success=False, content=f"❌ Unmute failed: {str(e)[:150]}")
+
+
 class GetBannedUsersTool(DiscordTool):
     """List all banned users"""
     
@@ -1449,13 +1520,15 @@ ALL_COMPLETE_DISCORD_TOOLS = [
     SendEmbedTool,
     AddReactionTool,
     
-    # 👥 Member Tools (10)
+    # 👥 Member Tools (12)
     GetMemberTool,
     KickUserTool,
     BanUserTool,
     UnbanUserTool,
     TimeoutUserTool,
     RemoveTimeoutTool,
+    MuteUserTool,
+    UnmuteUserTool,
     GetBannedUsersTool,
     EditNicknameTool,
     ListMembersTool,
