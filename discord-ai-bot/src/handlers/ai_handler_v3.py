@@ -269,7 +269,9 @@ class AIHandlerV3:
                 
                 # ⚡ CRITICAL: Force tool use for actions
                 if action_intent:
-                    full_prompt += self._build_action_instruction(action_intent, user_message)
+                    full_prompt += self._build_action_instruction(
+                        action_intent, user_message, mentioned_users
+                    )
                 
                 # Add tool info (with length check!)
                 tools_info = tool_executor.get_tool_schema_summary()
@@ -302,6 +304,17 @@ class AIHandlerV3:
                 "member": message.author if message and hasattr(message, 'author') else None,
             }
             
+            # ⚠️ CRITICAL: Add mentioned users to context for kick/timeout!
+            if mentioned_users:
+                exec_context["mentioned_users"] = mentioned_users
+                logger.info(f"👥 Mentioned users available: {[u['name'] for u in mentioned_users]}")
+                
+                # Also add first mentioned user's ID as primary target (for convenience)
+                if len(mentioned_users) == 1:
+                    exec_context["target_user_id"] = mentioned_users[0]["id"]
+                    exec_context["target_user_name"] = mentioned_users[0]["name"]
+                    logger.info(f"🎯 Target user: {mentioned_users[0]['name']} ({mentioned_users[0]['id']})")
+            
             # 🔑 STEP 3: TOOL EXECUTION LOOP (ROBUST!)
             final_response = ""
             iteration = 0
@@ -309,7 +322,12 @@ class AIHandlerV3:
             tool_results_data = []
             
             # Determine tool strategy
-            tool_choice = action_intent if action_intent else "auto"
+            # ⚠️ CRITICAL: If action detected, FORCE that specific tool!
+            if action_intent:
+                tool_choice = action_intent  # Force specific tool like "kick_user"
+                logger.warning(f"🎯 FORCING TOOL: {action_intent}")
+            else:
+                tool_choice = "auto"
             
             logger.info(f"🎯 Strategy: tool_choice='{tool_choice}'")
             
@@ -495,8 +513,23 @@ class AIHandlerV3:
             
             return f"😅 Arre yaar, kuch bada error aa gaya!\n`{str(e)[:150]}`\nThoda der baad try karo."
     
-    def _build_action_instruction(self, action_intent: str, user_message: str) -> str:
+    def _build_action_instruction(self, action_intent: str, user_message: str, mentioned_users: list = None) -> str:
         """Build CRITICAL instruction for forcing tool use"""
+        
+        # Build user info for the instruction
+        user_info = ""
+        if mentioned_users:
+            users_text = "\n".join([
+                f"   - {u['name']} (ID: {u['id']})" 
+                for u in mentioned_users
+            ])
+            user_info = f"""
+👥 **MENTIONED USERS (use their IDs!):**
+{users_text}
+
+⚠️ Use these EXACT user_ids when calling the tool!
+"""
+        
         return f"""
 \n\n{'='*60}
 ⚠️⚠️⚠️ CRITICAL ACTION REQUIRED ⚠️⚠️⚠️
@@ -504,23 +537,32 @@ class AIHandlerV3:
 
 The user wants to perform an ACTION. You MUST:
 
-1. Call the `{action_intent}` function NOW
+1. Call the `{action_intent}` function IMMEDIATELY
 2. Do NOT make up results or fake IDs
 3. Wait for the tool result before responding
 4. Use the REAL data from the tool result in your reply
-
+{user_info}
 User's exact words: "{user_message[:200]}"
 
-❌ FORBIDDEN:
-- Saying "I've created..." without calling the tool
-- Making up channel IDs, role IDs, etc.
+❌ FORBIDDEN (will cause error):
+- Saying "I've kicked..." without calling the tool
+- Making up channel IDs, role IDs, or results
 - Saying you can't do it without trying
-- Any response that doesn't use the tool first
+- Any response that doesn't call the tool first
 
 ✅ REQUIRED:
-- Call the `{action_intent}` function with appropriate arguments
-- Use @mentioned user IDs if provided
+- Call `{action_intent}` function NOW with proper arguments
+- For user_id parameter: USE THE MENTIONED USER'S ID from above
 - Report the ACTUAL result from the tool
+
+EXAMPLE OF CORRECT TOOL CALL:
+{{
+    "name": "{action_intent}",
+    "parameters": {{
+        "user_id": "<USE_MENTIONED_USER_ID>",
+        "reason": "Requested by user"
+    }}
+}}
 
 FAILING TO CALL THE TOOL IS A CRITICAL ERROR.
 {'='*60}

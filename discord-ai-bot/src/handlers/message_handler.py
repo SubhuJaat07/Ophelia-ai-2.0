@@ -1,13 +1,17 @@
 """
-🚀 Message Handler for Ophelia AI 2.0 - AI-FIRST Architecture!
+🚀 Message Handler for Ophelia AI 3.0 - PRODUCTION GRADE!
 
-NEW FLOW (v4.0):
-1. User sends message
-2. AI analyzes intent with FULL context (mentions, channel, history)
-3. AI decides: Command? Chat? Question?
-4. Execute action OR respond naturally
+CRITICAL RULES:
+✅ SIRF @mention pe reply kare (owners exception)
+✅ Tools ACTUALLY execute (no fake responses)
+✅ Memory persists across restarts
 
-NO MORE PATTERN MATCHING - AI IS THE BRAIN NOW! 🧠
+FLOW:
+1. Check if should respond (MENTION REQUIRED!)
+2. Extract context (mentions, channel, history)
+3. Send to AI with tools enabled
+4. Execute REAL Discord actions
+5. Return response
 """
 import discord
 from discord.ext import commands
@@ -33,55 +37,59 @@ class MessageHandler:
     async def should_respond(self, message: discord.Message) -> tuple[bool, str]:
         """
         Determine if bot should respond to this message.
+        
+        ⚠️ CRITICAL: SIRF @mention pe reply kare! (except DMs/owners)
         Returns (should_respond, reason)
         """
         # Ignore bot messages (including our own)
         if message.author.bot:
             return False, "bot_message"
         
-        # DMs - always respond (owners get full power)
+        # DMs - always respond
         if not message.guild:
             return True, "dm_message"
         
-        ai = get_ai_handler_v2()
-        settings = await ai.get_guild_settings(message.guild.id)
+        # Get settings safely
+        try:
+            ai = get_ai_handler_v3()
+            settings = await ai.get_guild_settings(message.guild.id)
+        except Exception as e:
+            logger.debug(f"Settings fetch failed: {e}")
+            settings = {"enabled": True, "require_mention": True, "ai_channel_ids": []}
         
-        # Check if AI is enabled for this guild
+        # Check if AI is disabled for this guild
         if not settings.get("enabled", True):
-            # But owners can always use it!
             if not is_owner(message.author.id):
                 return False, "ai_disabled"
         
-        # Check if message is in an AI channel (auto-reply without ping)
+        # ✅ CHECK 1: Is this an AI channel? (auto-reply channels)
         ai_channel_ids = settings.get("ai_channel_ids", [])
         if message.channel.id in ai_channel_ids:
             return True, "ai_channel"
         
-        # Check if pinging is required
-        require_mention = settings.get("require_mention", True)
-        
-        # Check for bot mention
+        # ✅ CHECK 2: Bot mentioned?
         is_mentioned = self.bot.user in message.mentions
         
         if is_mentioned:
             if settings.get("ping_reply_enabled", True):
+                logger.info(f"✅ Mention detected from {message.author.name}")
                 return True, "mention"
             else:
                 return False, "ping_reply_disabled"
         
-        # Check for @everyone or @here mentions
+        # ✅ CHECK 3: Reply to @everyone/@here ONLY if enabled
         if settings.get("everyone_ping_reply", False):
             if "@everyone" in message.content or "@here" in message.content:
                 return True, "everyone_ping"
         
-        # Owners don't need mention in servers where bot is active
+        # ✅ CHECK 4: Owners can bypass mention (but log it!)
         if is_owner(message.author.id) and settings.get("enabled", True):
+            logger.info(f"👑 Owner {message.author.name} used command without mention")
             return True, "owner_command"
         
-        if require_mention and not is_mentioned:
-            return False, "no_mention_required"
-        
-        return False, "no_trigger"
+        # ❌ NO MENTION = NO REPLY
+        logger.debug(f"❌ No reply - no mention from {message.author.name}")
+        return False, "no_mention"
     
     async def handle_message(self, message: discord.Message):
         """Main message handler with natural command processing"""

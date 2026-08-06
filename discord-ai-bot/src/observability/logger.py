@@ -273,7 +273,7 @@ class ObservabilityManager:
         
         self.log(
             EventType.TOOL_EXECUTION_END if success else EventType.TOOL_EXECUTION_ERROR,
-            f"Tool {'completed' if else 'failed'}: {record.tool_name} ({record.duration_ms:.0f}ms)",
+            f"Tool {'completed' if success else 'failed'}: {record.tool_name} ({record.duration_ms:.0f}ms)",  # Fixed f-string
             level=LogLevel.INFO if success else LogLevel.ERROR,
             tool_name=record.tool_name,
             duration_ms=record.duration_ms,

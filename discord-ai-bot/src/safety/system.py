@@ -53,7 +53,7 @@ class ActionStatus(Enum):
 @dataclass
 class SafetyMetadata:
     """Complete safety information for a tool action"""
-    danger_level: DangerLevel = DangerLevel SAFE
+    danger_level: DangerLevel = DangerLevel.SAFE  # Fixed: was "DangerLevel SAFE"
     requires_confirmation: bool = False
     requires_human_approval: bool = False
     reversible: bool = False
