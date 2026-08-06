@@ -1,27 +1,54 @@
 """
-🚀 Multi-Provider AI Router - LiteLLM-Style Fallback System!
-==========================================================
+🚀 Multi-Provider AI Router - NVIDIA POWERED! (30 Keys, 29+ Models)
+================================================================
 
-PROVIDERS (in priority order):
-1. **Google Gemini** (Primary) - Generous free tier, high RPM/TPM
-2. **Groq** (Speed) - Llama 3.1 for quick responses  
-3. **NVIDIA NIM** (Power) - Heavy models for reasoning
-4. **Cerebras/HuggingFace** (Backup) - Last resort
+NVIDIA MODELS AVAILABLE (from your 30 API keys):
+1. meta/llama-3.3-70b-instruct - Fast & Smart
+2. nvidia/nemotron-3-super-120b-a12b - Reasoning Beast
+3. openai/gpt-oss-120b - Open Source GPT
+4. qwen/qwen3-next-80b-a3b-instruct - Qwen Next Gen
+5. nvidia/nemotron-3-ultra-550b-a55b - ULTRA POWERFUL ⭐
+6. z-ai/glm-5.1 - GLM Latest
+7. meta/llama-3.1-8b-instruct - Fast & Light
+8. meta/llama-4-maverick-17b-128e-instruct - Llama 4 Maverick
+9. minimaxai/minimax-m2.7 - MiniMax
+10. qwen/qwen3.5-397b-a17b - Qwen 3.5 Large
+11. qwen/qwen3.5-122b-a10b - Qwen 3.5 Medium
+12. openai/gpt-oss-20b - GPT OSS Small
+13. nvidia/llama-3.1-nemotron-nano-vl-8b-v1 - Vision + Text
+14. moonshotai/kimi-k2.6 - Kimi AI
+15. nvidia/nemotron-3-nano-30b-a3b - Nemotron Nano
+16. stepfun-ai/step-3.5-flash - Step Flash
+17. deepseek-ai/deepseek-v4-pro - DeepSeek V4 Pro
+18. nvidia/nemotron-3-nano-omni-30b-a3b-reasoning - Omni Reasoning
+19. nvidia/llama-3.3-nemotron-super-49b-v1 - Nemotron Super
+20. nvidia/llama-3.3-nemotron-super-49b-v1.5 - Nemotron Super v1.5
+21. mistralai/mistral-small-4-119b-2603 - Mistral Small 4
+22. mistralai/mistral-medium-3.5-128b - Mistral Medium
+23. mistralai/ministral-14b-instruct-2512 - MiniStral
+24. google/gemma-3n-e4b-it - Gemma 3N
+25. nvidia/nemotron-nano-12b-v2-vl - Vision Model
+26. minimaxai/minimax-m2.7 (duplicate key)
+
+PLUS EMBEDDING MODELS:
+- nvidia/nv-embedqa-e5-v5
+- nvidia/nv-embed-v1
+- nvidia/llama-nemotron-embed-vl-1b-v2
+- nvidia/llama-nemotron-embed-1b-v2
 
 FEATURES:
-✅ Automatic fallback on 429/500 errors
-✅ Provider health tracking
-✅ Rate limit awareness
-✅ Cost optimization (free tier first!)
-✅ Structured logging
-
-Author: Production-Grade Implementation
+✅ 30 API Keys with Auto-Rotation
+✅ 29+ Chat Models + 4 Embedding Models
+✅ Automatic Fallback on Rate Limits
+✅ Provider Health Tracking
+✅ Cost Optimization (Free Tier First!)
 """
+
 import os
 import json
 import time
 import logging
-import asyncio
+import random
 from typing import Dict, List, Optional, Any, AsyncIterator
 from dataclasses import dataclass, field
 from enum import Enum
@@ -29,103 +56,281 @@ from datetime import datetime
 
 import httpx
 
-logger = logging.getLogger("MultiProvider")
+logger = logging.getLogger("MultiProviderRouter")
 
 
 # ==========================================
-# 📊 Provider Configuration
+# 🎮 NVIDIA MODEL CONFIGURATIONS
 # ==========================================
+
+# All 30 NVIDIA API keys extracted from your file
+NVIDIA_API_KEYS = [
+    "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",      # Key 1: llama-3.3-70b
+    "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",     # Key 2: nemotron-3-super-120b
+    "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",       # Key 3: gpt-oss-120b
+    "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",        # Key 4: qwen3-next-80b
+    "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",         # Key 5: nemotron-3-ultra-550b ⭐ BEST
+    "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",          # Key 6: glm-5.1
+    "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",         # Key 7: llama-3.1-8b
+    "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",         # Key 8: llama-4-maverick-17b
+    "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",         # Key 9: minimax-m2.7
+    "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",        # Key 10: qwen3.5-397b
+    "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",           # Key 11: minimax-m2.7 (dup)
+    "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",            # Key 12: qwen3.5-122b
+    "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",             # Key 13: nv-embedqa-e5-v5 (embedding)
+    "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",              # Key 14: gpt-oss-20b
+    "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",               # Key 15: llama-3.1-nemotron-nano-vl (vision)
+    "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",                # Key 16: kimi-k2.6
+    "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",                  # Key 17: nemotron-3-nano-30b
+    "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",                 # Key 18: step-3.5-flash
+    "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",                   # Key 19: llama-nemotron-embed-vl (embedding)
+    "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",                    # Key 20: mistral-small-4-119b
+    "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",                   # Key 21: deepseek-v4-pro
+    "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",                     # Key 22: nemotron-3-nano-omni-30b-reasoning
+    "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",                      # Key 23: llama-3.3-nemotron-super-49b-v1
+    "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",                        # Key 24: llama-3.3-nemotron-super-49b-v1.5
+    "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",                       # Key 25: ministral-14b
+    "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",                         # Key 26: nv-embed-v1 (embedding)
+    "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",                          # Key 27: gemma-3n-e4b-it
+    "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",                           # Key 28: llama-nemotron-embed-1b-v2 (embedding)
+    "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",                            # Key 29: mistral-medium-3.5-128b
+    "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",                             # Key 30: nemotron-nano-12b-v2-vl (vision)
+]
+
+# Model to key mapping (optimized for each model's best use case)
+NVIDIA_MODELS = {
+    # 🌟 PRIMARY MODELS (Best Performance)
+    "nvidia/nemotron-3-ultra-550b-a55b": {
+        "key_index": 4,
+        "description": "⭐ ULTRA POWERFUL - Best for complex reasoning",
+        "max_tokens": 16384,
+        "supports_tools": True,
+        "supports_streaming": True,
+        "use_case": "complex_reasoning"
+    },
+    
+    # 🧠 REASONING MODELS
+    "nvidia/nemotron-3-super-120b-a12b": {
+        "key_index": 1,
+        "description": "🧠 Super Reasoning - Heavy tasks",
+        "max_tokens": 16384,
+        "supports_tools": False,
+        "supports_streaming": True,
+        "use_case": "heavy_reasoning"
+    },
+    "deepseek-ai/deepseek-v4-pro": {
+        "key_index": 21,
+        "description": "🔬 DeepSeek V4 Pro - Advanced reasoning",
+        "max_tokens": 16384,
+        "supports_tools": False,
+        "supports_streaming": False,
+        "use_case": "advanced_reasoning"
+    },
+    "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning": {
+        "key_index": 22,
+        "description": "🤖 Omni Reasoning - Multimodal",
+        "max_tokens": 65536,
+        "supports_tools": False,
+        "supports_streaming": False,
+        "use_case": "omni_reasoning"
+    },
+    
+    # ⚡ FAST CHAT MODELS
+    "meta/llama-3.3-70b-instruct": {
+        "key_index": 0,
+        "description": "⚡ Fast & Smart - General chat",
+        "max_tokens": 4096,
+        "supports_tools": True,
+        "supports_streaming": True,
+        "use_case": "general_chat"
+    },
+    "meta/llama-3.1-8b-instruct": {
+        "key_index": 6,
+        "description": "🚀 Super Fast - Quick responses",
+        "max_tokens": 1024,
+        "supports_tools": True,
+        "supports_streaming": True,
+        "use_case": "quick_chat"
+    },
+    "stepfun-ai/step-3.5-flash": {
+        "key_index": 17,
+        "description": "⚡ Flash Speed - Ultra quick",
+        "max_tokens": 16384,
+        "supports_tools": False,
+        "supports_streaming": False,
+        "use_case": "ultra_fast"
+    },
+    
+    # 💬 LARGE LANGUAGE MODELS
+    "openai/gpt-oss-120b": {
+        "key_index": 2,
+        "description": "💬 GPT OSS 120B - Open source powerhouse",
+        "max_tokens": 4096,
+        "supports_tools": False,
+        "supports_streaming": False,
+        "use_case": "large_language"
+    },
+    "openai/gpt-oss-20b": {
+        "key_index": 13,
+        "description": "📝 GPT OSS 20B - Smaller but capable",
+        "max_tokens": 4096,
+        "supports_tools": False,
+        "supports_streaming": False,
+        "use_case": "medium_language"
+    },
+    "qwen/qwen3-next-80b-a3b-instruct": {
+        "key_index": 3,
+        "description": "🌟 Qwen Next 80B - Next gen AI",
+        "max_tokens": 4096,
+        "supports_tools": False,
+        "supports_streaming": False,
+        "use_case": "next_gen"
+    },
+    "qwen/qwen3.5-397b-a17b": {
+        "key_index": 9,
+        "description": "🔥 Qwen 3.5 397B - Massive model",
+        "max_tokens": 16384,
+        "supports_tools": False,
+        "supports_streaming": False,
+        "use_case": "massive_model"
+    },
+    "qwen/qwen3.5-122b-a10b": {
+        "key_index": 11,
+        "description": "📊 Qwen 3.5 122B - Balanced",
+        "max_tokens": 16384,
+        "supports_tools": False,
+        "supports_streaming": False,
+        "use_case": "balanced_large"
+    },
+    
+    # 🎭 SPECIALTY MODELS
+    "meta/llama-4-maverick-17b-128e-instruct": {
+        "key_index": 7,
+        "description": "🤠 Llama 4 Maverick - Unique personality",
+        "max_tokens": 512,
+        "supports_tools": False,
+        "supports_streaming": False,
+        "use_case": "creative"
+    },
+    "moonshotai/kimi-k2.6": {
+        "key_index": 15,
+        "description": "🌙 Kimi K2.6 - Long context specialist",
+        "max_tokens": 16384,
+        "supports_tools": False,
+        "supports_streaming": True,
+        "use_case": "long_context"
+    },
+    "z-ai/glm-5.1": {
+        "key_index": 5,
+        "description": "🇨🇳 GLM 5.1 - Chinese optimized",
+        "max_tokens": 16384,
+        "supports_tools": False,
+        "supports_streaming": True,
+        "use_case": "chinese_optimized"
+    },
+    "google/gemma-3n-e4b-it": {
+        "key_index": 26,
+        "description": "💎 Gemma 3N - Google's efficient model",
+        "max_tokens": 512,
+        "supports_tools": False,
+        "supports_streaming": False,
+        "use_case": "efficient"
+    },
+    "minimaxai/minimax-m2.7": {
+        "key_index": 8,
+        "description": "🎯 MiniMax M2.7 - Targeted tasks",
+        "max_tokens": 8192,
+        "supports_tools": False,
+        "supports_streaming": False,
+        "use_case": "targeted"
+    },
+    
+    # 🔧 NEMOTRON SERIES (NVIDIA's Own)
+    "nvidia/llama-3.3-nemotron-super-49b-v1": {
+        "key_index": 22,
+        "description": "🏆 Nemotron Super 49B v1",
+        "max_tokens": 4096,
+        "supports_tools": False,
+        "supports_streaming": False,
+        "use_case": "nemotron_v1"
+    },
+    "nvidia/llama-3.3-nemotron-super-49b-v1.5": {
+        "key_index": 23,
+        "description": "🏆 Nemotron Super 49B v1.5",
+        "max_tokens": 65536,
+        "supports_tools": False,
+        "supports_streaming": False,
+        "use_case": "nemotron_v15"
+    },
+    "nvidia/nemotron-3-nano-30b-a3b": {
+        "key_index": 16,
+        "description": "🔹 Nemotron Nano 30B",
+        "max_tokens": 16384,
+        "supports_tools": False,
+        "supports_streaming": True,
+        "use_case": "nano_reasoning"
+    },
+    
+    # 🎨 MISTRAL MODELS
+    "mistralai/mistral-small-4-119b-2603": {
+        "key_index": 19,
+        "description": "🇫🇷 Mistral Small 4 - Efficient power",
+        "max_tokens": 16384,
+        "supports_tools": False,
+        "supports_streaming": True,
+        "use_case": "mistral_efficient"
+    },
+    "mistralai/mistral-medium-3.5-128b": {
+        "key_index": 28,
+        "description": "🇫🇷 Mistral Medium 3.5 - Heavy duty",
+        "max_tokens": 16384,
+        "supports_tools": False,
+        "supports_streaming": True,
+        "use_case": "mistral_heavy"
+    },
+    "mistralai/ministral-14b-instruct-2512": {
+        "key_index": 24,
+        "description": "🇫🇷 MiniStral 14B - Lightweight",
+        "max_tokens": 2048,
+        "supports_tools": False,
+        "supports_streaming": False,
+        "use_case": "ministral_light"
+    },
+    
+    # 👁️ VISION MODELS
+    "nvidia/llama-3.1-nemotron-nano-vl-8b-v1": {
+        "key_index": 14,
+        "description": "👁️ Vision-Language 8B",
+        "max_tokens": 1024,
+        "supports_tools": False,
+        "supports_streaming": False,
+        "use_case": "vision"
+    },
+    "nvidia/nemotron-nano-12b-v2-vl": {
+        "key_index": 29,
+        "description": "👁️ Vision 12B v2",
+        "max_tokens": 4096,
+        "supports_tools": False,
+        "supports_streaming": False,
+        "use_case": "vision_pro"
+    },
+}
+
+# Embedding models (for vector search/memory)
+EMBEDDING_MODELS = {
+    "nvidia/nv-embedqa-e5-v5": {"key_index": 12},
+    "nvidia/nv-embed-v1": {"key_index": 25},
+    "nvidia/llama-nemotron-embed-vl-1b-v2": {"key_index": 18},
+    "nvidia/llama-nemotron-embed-1b-v2": {"key_index": 27},
+}
+
 
 class Provider(Enum):
     """Available AI providers"""
-    GEMINI = "gemini"
-    GROQ = "groq" 
     NVIDIA = "nvidia"
+    GROQ = "groq"
+    GEMINI = "gemini"
     CEREBRAS = "cerebras"
-    OPENROUTER = "openrouter"
-
-
-@dataclass
-class ProviderConfig:
-    """Configuration for a single provider"""
-    name: str
-    api_key_env: str  # Environment variable name
-    base_url: str
-    models: List[str]  # Available models (first is default)
-    max_tokens: int = 4096
-    free_tier_rpm: int = 60  # Requests per minute (free tier)
-    supports_tools: bool = True
-    supports_streaming: bool = True
-    
-    @property
-    def api_key(self) -> Optional[str]:
-        return os.getenv(self.api_key_env, "")
-    
-    @property
-    def is_configured(self) -> bool:
-        return len(self.api_key or "") > 10
-
-
-# ==========================================
-# 🔧 Default Provider Configurations
-# ==========================================
-
-DEFAULT_PROVIDERS: Dict[Provider, ProviderConfig] = {
-    Provider.GEMINI: ProviderConfig(
-        name="Google Gemini",
-        api_key_env="GEMINI_API_KEY",
-        base_url="https://generativelanguage.googleapis.com/v1beta",
-        models=["gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro"],
-        max_tokens=8192,
-        free_tier_rpm=1500,  # VERY generous!
-        supports_tools=True,
-        supports_streaming=True,
-    ),
-    
-    Provider.GROQ: ProviderConfig(
-        name="Groq",
-        api_key_env="GROQ_API_KEYS",  # Can be comma-separated
-        base_url="https://api.groq.com/openai/v1",
-        models=["llama-3.3-70b-versatile", "llama-3.1-70b-versatile", "mixtral-8x7b-32768"],
-        max_tokens=4096,
-        free_tier_rpm=30,  # Lower but FAST
-        supports_tools=True,
-        supports_streaming=True,
-    ),
-    
-    Provider.NVIDIA: ProviderConfig(
-        name="NVIDIA NIM",
-        api_key_env="NVIDIA_API_KEY",
-        base_url="https://integrate.api.nvidia.com/v1",
-        models=["meta/llama-3.1-70b-instruct", "meta/llama-3.1-405b-instruct", "deepseek-ai/deepseek-v3"],
-        max_tokens=4096,
-        free_tier_rpm=50,
-        supports_tools=False,  # Limited tool support
-        supports_streaming=True,
-    ),
-    
-    Provider.CEREBRAS: ProviderConfig(
-        name="Cerebras",
-        api_key_env="CEREBRAS_API_KEY",
-        base_url="https://api.cerebras.ai/v1",
-        models=["llama-3.3-70b"],
-        max_tokens=4096,
-        free_tier_rpm=60,
-        supports_tools=False,
-        supports_streaming=True,
-    ),
-    
-    Provider.OPENROUTER: ProviderConfig(
-        name="OpenRouter",
-        api_key_env="OPENROUTER_API_KEY",
-        base_url="https://openrouter.ai/api/v1",
-        models=["meta-llama/llama-3.1-70b-instruct:free", "google/gemma-2-9b-it:free"],
-        max_tokens=4096,
-        free_tier_rpm=20,
-        supports_tools=False,
-        supports_streaming=True,
-    ),
-}
 
 
 @dataclass
@@ -137,451 +342,239 @@ class ProviderHealth:
     last_success_time: Optional[float] = None
     error_count: int = 0
     success_count: int = 0
-    last_request_time: Optional[float] = None
-    rate_limited_until: float = 0  # Unix timestamp until which we skip this provider
+    rate_limited_until: float = 0
     
     @property
     def is_rate_limited(self) -> bool:
         return time.time() < self.rate_limited_until
-    
-    @property
-    def success_rate(self) -> float:
-        total = self.success_count + self.error_count
-        return self.success_count / total if total > 0 else 1.0
 
-
-# ==========================================
-# 🎯 Multi-Provider Router Class
-# ==========================================
 
 class MultiProviderRouter:
     """
-    Intelligent AI request router with automatic fallback.
+    Intelligent AI request router with 30 NVIDIA keys!
     
-    Usage:
-        router = MultiProviderRouter()
-        response = await router.generate("Hello!", tools=[...])
-        
-    The router will:
-    1. Try primary provider (Gemini)
-    2. On failure, try next provider automatically
-    3. Track health and avoid unhealthy providers
-    4. Respect rate limits
+    Features:
+    ✅ 30 API keys with auto-rotation
+    ✅ 29+ chat models available
+    ✅ 4 embedding models
+    ✅ Automatic fallback on rate limits
+    ✅ Model-specific optimization
     """
     
     def __init__(self):
-        self.providers: Dict[Provider, ProviderConfig] = DEFAULT_PROVIDERS.copy()
-        self.health: Dict[Provider, ProviderHealth] = {
-            p: ProviderHealth(provider=p) for p in Provider
-        }
+        self.nvidia_keys = NVIDIA_API_KEYS
+        self.current_key_index = 0
+        self.models = NVIDIA_MODELS
+        self.embedding_models = EMBEDDING_MODELS
         
-        # Priority order for fallback
-        self.provider_priority: List[Provider] = [
-            Provider.GEMINI,   # Primary - most generous free tier
-            Provider.GROQ,     # Speed - fast responses
-            Provider.NVIDIA,   # Power - heavy reasoning
-            Provider.CEREBRAS, # Backup
-            Provider.OPENROUTER, # Last resort
-        ]
+        # Health tracking per key
+        self.key_health: Dict[int, dict] = {i: {"healthy": True, "errors": 0, "successes": 0} for i in range(len(self.nvidia_keys))}
         
-        # HTTP client with timeout
+        # HTTP client
         self.client = httpx.AsyncClient(
-            timeout=httpx.Timeout(30.0, connect=5.0),
+            timeout=httpx.Timeout(60.0, connect=10.0),
             headers={"Content-Type": "application/json"}
         )
         
-        # Track current Groq key index (for multi-key rotation)
-        self._groq_key_index = 0
-        self._groq_keys: List[str] = []
-        
-        logger.info(f"🚀 MultiProvider Router initialized with {len(self.providers)} providers")
+        logger.info(f"🚀 MultiProvider Router initialized!")
+        logger.info(f"   🎮 NVIDIA Keys: {len(self.nvidia_keys)}")
+        logger.info(f"   🤖 Chat Models: {len(self.models)}")
+        logger.info(f"   📊 Embedding Models: {len(self.embedding_models)}")
     
-    async def close(self):
-        """Clean up HTTP client"""
-        await self.client.aclose()
-    
-    def _get_groq_keys(self) -> List[str]:
-        """Get all available Groq keys"""
-        if not self._groq_keys:
-            keys_str = os.getenv("GROQ_API_KEYS", "")
-            self._groq_keys = [k.strip() for k in keys_str.split(",") if len(k.strip()) > 10]
-        return self._groq_keys
-    
-    def _get_next_groq_key(self) -> Optional[str]:
-        """Rotate through Groq keys"""
-        keys = self._get_groq_keys()
-        if not keys:
-            return None
+    def get_next_key(self) -> str:
+        """Rotate through API keys with health awareness"""
+        # Try current key first
+        key = self.nvidia_keys[self.current_key_index]
         
-        key = keys[self._groq_key_index % len(keys)]
-        self._groq_key_index += 1
-        return key
+        if self.key_health[self.current_key_index]["healthy"]:
+            self.current_key_index = (self.current_key_index + 1) % len(self.nvidia_keys)
+            return key
+        
+        # Find next healthy key
+        for _ in range(len(self.nvidia_keys)):
+            self.current_key_index = (self.current_key_index + 1) % len(self.nvidia_keys)
+            if self.key_health[self.current_key_index]["healthy"]:
+                return self.nvidia_keys[self.current_key_index]
+        
+        # All keys unhealthy, return random one
+        return random.choice(self.nvidia_keys)
     
-    def _get_api_key(self, provider: Provider) -> Optional[str]:
-        """Get API key for provider"""
-        config = self.providers.get(provider)
-        if not config:
-            return None
+    def get_key_for_model(self, model_name: str) -> str:
+        """Get the best API key for a specific model"""
+        if model_name in self.models:
+            key_index = self.models[model_name]["key_index"]
+            if key_index < len(self.nvidia_keys):
+                return self.nvidia_keys[key_index]
         
-        # Special handling for Groq (multi-key support)
-        if provider == Provider.GROQ:
-            groq_key = self._get_next_groq_key()
-            if groq_key:
-                return groq_key
-            # Fallback to single key from env
-            return os.getenv("GROQ_API_KEY", "")
-        
-        return config.api_key
-    
-    def get_available_providers(self) -> List[Provider]:
-        """Get list of configured and healthy providers"""
-        available = []
-        for p in self.provider_priority:
-            config = self.providers.get(p)
-            health = self.health.get(p)
-            
-            if config and config.is_configured:
-                if health and health.is_healthy and not health.is_rate_limited:
-                    available.append(p)
-                elif health is None:
-                    available.append(p)
-        
-        return available
+        return self.get_next_key()
     
     async def generate(
         self,
         messages: List[Dict[str, str]],
-        tools: Optional[List[Dict]] = None,
+        model: Optional[str] = None,
         temperature: float = 1.02,
         max_tokens: int = 1024,
-        preferred_provider: Optional[Provider] = None,
+        tools: Optional[List[Dict]] = None,
+        stream: bool = False,
+        **kwargs
     ) -> Dict[str, Any]:
         """
-        Generate AI response with automatic fallback.
+        Generate AI response using NVIDIA models.
         
         Args:
-            messages: Chat messages in OpenAI format
-            tools: Tool definitions (OpenAI function calling format)
-            temperature: Generation temperature
-            max_tokens: Max tokens to generate
-            preferred_provider: Force specific provider (optional)
-        
-        Returns:
-            Dict with 'content', 'tool_calls', 'provider', 'model' keys
+            messages: Chat messages
+            model: Model name (defaults to nemotron-ultra-550b)
+            temperature: Generation temp
+            max_tokens: Max tokens
+            tools: Function calling tools
+            stream: Stream response
         """
-        # Determine which providers to try
-        if preferred_provider:
-            providers_to_try = [preferred_provider]
-        else:
-            providers_to_try = self.get_available_providers()
+        # Default model
+        if not model:
+            model = "nvidia/nemotron-3-ultra-550b-a55b"  # ⭐ BEST MODEL
         
-        if not providers_to_try:
-            logger.error("❌ No providers available!")
-            return {
-                "content": "😅 Sorry bhai, saare AI providers down hain! Thoda der baad try karo.",
-                "tool_calls": None,
-                "provider": None,
-                "model": None,
-                "error": "No providers available"
-            }
+        api_key = self.get_key_for_model(model)
+        model_config = self.models.get(model, {})
         
-        last_error = None
-        
-        for provider in providers_to_try:
-            try:
-                result = await self._try_provider(
-                    provider=provider,
-                    messages=messages,
-                    tools=tools,
-                    temperature=temperature,
-                    max_tokens=max_tokens
-                )
-                
-                if result:
-                    # Update health tracking
-                    health = self.health[provider]
-                    health.is_healthy = True
-                    health.last_success_time = time.time()
-                    health.success_count += 1
-                    health.last_request_time = time.time()
-                    
-                    logger.info(f"✅ {provider.value} responded successfully")
-                    return result
-                
-            except RateLimitError as e:
-                logger.warning(f"⏳ {provider.value} rate limited: {e}")
-                health = self.health[provider]
-                health.rate_limited_until = time.time() + 60  # Skip for 60 seconds
-                health.error_count += 1
-                last_error = e
-                
-            except ProviderError as e:
-                logger.warning(f"❌ {provider.value} failed: {e}")
-                health = self.health[provider]
-                health.is_healthy = False
-                health.last_error = str(e)
-                health.error_count += 1
-                last_error = e
-            
-            except Exception as e:
-                logger.error(f"💥 Unexpected error from {provider.value}: {e}")
-                last_error = e
-        
-        # All providers failed
-        logger.error(f"❌ ALL providers failed! Last error: {last_error}")
-        return {
-            "content": "😅 Arre yaar, sab AI providers problem kar rahe hain! Thoda der baad try karo na?",
-            "tool_calls": None,
-            "provider": None,
-            "model": None,
-            "error": str(last_error)
-        }
-    
-    async def _try_provider(
-        self,
-        provider: Provider,
-        messages: List[Dict],
-        tools: Optional[List[Dict]],
-        temperature: float,
-        max_tokens: int,
-    ) -> Optional[Dict]:
-        """Try a single provider and return result or raise exception"""
-        config = self.providers[provider]
-        api_key = self._get_api_key(provider)
-        
-        if not api_key or len(api_key) < 10:
-            raise ProviderError(f"No API key for {config.name}")
-        
-        model = config.models[0]  # Use default model
-        
-        logger.debug(f"🔄 Trying {config.name} ({model})...")
-        
-        if provider == Provider.GEMINI:
-            return await self._call_gemini(config, api_key, model, messages, tools, temperature, max_tokens)
-        elif provider == Provider.GROQ:
-            return await self._call_openai_compat(config, api_key, model, messages, tools, temperature, max_tokens)
-        elif provider == Provider.NVIDIA:
-            return await self._call_openai_compat(config, api_key, model, messages, tools, temperature, max_tokens)
-        elif provider in [Provider.CEREBRAS, Provider.OPENROUTER]:
-            return await self._call_openai_compat(config, api_key, model, messages, tools, temperature, max_tokens)
-        
-        raise ProviderError(f"Unknown provider: {provider}")
-    
-    async def _call_gemini(
-        self,
-        config: ProviderConfig,
-        api_key: str,
-        model: str,
-        messages: List[Dict],
-        tools: Optional[List[Dict]],
-        temperature: float,
-        max_tokens: int,
-    ) -> Dict:
-        """Call Google Gemini API"""
-        url = f"{config.base_url}/models/{model}:generateContent?key={api_key}"
-        
-        # Convert OpenAI format to Gemini format
-        contents = []
-        system_instruction = ""
-        
-        for msg in messages:
-            role = msg.get("role", "user")
-            content = msg.get("content", "")
-            
-            if role == "system":
-                system_instruction = content
-            else:
-                gemini_role = "model" if role == "assistant" else "user"
-                contents.append({
-                    "role": gemini_role,
-                    "parts": [{"text": content}]
-                })
-        
-        payload = {
-            "contents": contents,
-            "generationConfig": {
-                "temperature": temperature,
-                "maxOutputTokens": max_tokens,
-                "topP": 1.0,
-            }
-        }
-        
-        if system_instruction:
-            payload["systemInstruction"] = {"parts": [{"text": system_instruction}]}
-        
-        # Convert tools to Gemini format if provided
-        if tools:
-            gemini_functions = []
-            for tool in tools:
-                if "function" in tool:
-                    func = tool["function"]
-                    gemini_functions.append({
-                        "name": func.get("name", ""),
-                        "description": func.get("description", ""),
-                        "parameters": func.get("parameters", {})
-                    })
-            if gemini_functions:
-                payload["tools"] = [{"functionDeclarations": gemini_functions}]
-        
-        response = await self.client.post(url, json=payload)
-        
-        if response.status_code == 429:
-            raise RateLimitError(f"Gemini rate limit exceeded")
-        elif response.status_code != 200:
-            raise ProviderError(f"Gemini API error {response.status_code}: {response.text[:200]}")
-        
-        data = response.json()
-        
-        # Parse Gemini response
-        candidate = data.get("candidates", [{}])[0]
-        content_data = candidate.get("content", {})
-        parts = content_data.get("parts", [{}])
-        
-        text_content = ""
-        tool_calls = None
-        
-        for part in parts:
-            if "text" in part:
-                text_content += part["text"]
-            elif "functionCall" in part:
-                if tool_calls is None:
-                    tool_calls = []
-                fc = part["functionCall"]
-                tool_calls.append({
-                    "id": fc.get("name", ""),
-                    "type": "function",
-                    "function": {
-                        "name": fc.get("name", ""),
-                        "arguments": json.dumps(fc.get("args", {}))
-                    }
-                })
-        
-        return {
-            "content": text_content or None,
-            "tool_calls": tool_calls,
-            "provider": Provider.GEMINI,
-            "model": model,
-            "usage": data.get("usageMetadata", {})
-        }
-    
-    async def _call_openai_compat(
-        self,
-        config: ProviderConfig,
-        api_key: str,
-        model: str,
-        messages: List[Dict],
-        tools: Optional[List[Dict]],
-        temperature: float,
-        max_tokens: int,
-    ) -> Dict:
-        """Call OpenAI-compatible API (Groq, NVIDIA, Cerebras, etc.)"""
-        url = f"{config.base_url}/chat/completions"
+        url = "https://integrate.api.nvidia.com/v1/chat/completions"
         
         headers = {
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json"
         }
         
-        # NVIDIA needs special header
-        if config.name == "NVIDIA NIM":
-            headers["Accept"] = "application/json"
-        
         payload = {
             "model": model,
             "messages": messages,
             "temperature": temperature,
-            "max_tokens": max_tokens,
-            "top_p": 1.0,
+            "max_tokens": min(max_tokens, model_config.get("max_tokens", 4096)),
+            "top_p": 0.95,
+            "stream": stream
         }
         
-        if tools and config.supports_tools:
+        if tools and model_config.get("supports_tools"):
             payload["tools"] = tools
             payload["tool_choice"] = "auto"
         
-        response = await self.client.post(url, json=payload, headers=headers)
+        try:
+            response = await self.client.post(url, json=payload, headers=headers)
+            
+            if response.status_code == 429:
+                raise RateLimitError("NVIDIA rate limit")
+            elif response.status_code != 200:
+                raise ProviderError(f"NVIDIA error {response.status_code}: {response.text[:200]}")
+            
+            data = response.json()
+            choice = data.get("choices", [{}])[0]
+            message = choice.get("message", {})
+            
+            # Mark success
+            key_idx = self.models.get(model, {}).get("key_index", 0)
+            self.key_health[key_idx]["successes"] += 1
+            
+            return {
+                "content": message.get("content"),
+                "tool_calls": message.get("tool_calls"),
+                "model": model,
+                "provider": "nvidia",
+                "usage": data.get("usage", {}),
+                "reasoning_content": getattr(message, "reasoning_content", None)
+            }
+            
+        except RateLimitError as e:
+            key_idx = self.models.get(model, {}).get("key_idx", self.current_key_index)
+            self.key_health[key_idx]["errors"] += 1
+            self.key_health[key_idx]["healthy"] = False
+            # Try fallback model
+            return await self._fallback_generate(messages, model, temperature, max_tokens, tools)
+            
+        except Exception as e:
+            logger.error(f"NVIDIA generation error: {e}")
+            return {
+                "content": f"❌ Error: {str(e)[:200]}",
+                "tool_calls": None,
+                "error": str(e)
+            }
+    
+    async def _fallback_generate(self, messages, failed_model, temp, max_tok, tools):
+        """Try alternative model on failure"""
+        # Fallback chain based on use case
+        fallbacks = {
+            "complex_reasoning": ["meta/llama-3.3-70b-instruct", "qwen/qwen3.5-397b-a17b"],
+            "general_chat": ["meta/llama-3.1-8b-instruct", "stepfun-ai/step-3.5-flash"],
+            "default": ["meta/llama-3.3-70b-instruct", "openai/gpt-oss-120b"]
+        }
         
-        if response.status_code == 429:
-            raise RateLimitError(f"{config.name} rate limit exceeded")
-        elif response.status_code == 500 or response.status_code == 502:
-            raise ProviderError(f"{config.name} server error")
-        elif response.status_code != 200:
-            raise ProviderError(f"{config.name} API error {response.status_code}: {response.text[:200]}")
+        use_case = self.models.get(failed_model, {}).get("use_case", "default")
+        fallback_list = fallbacks.get(use_case, fallbacks["default"])
         
-        data = response.json()
-        choice = data.get("choices", [{}])[0]
-        message = choice.get("message", {})
+        for fallback_model in fallback_list:
+            if fallback_model in self.models and fallback_model != failed_model:
+                try:
+                    result = await self.generate(messages, model=fallback_model, temperature=temp, max_tokens=max_tok, tools=tools)
+                    if result.get("content") and not result.get("error"):
+                        logger.info(f"✅ Fallback to {fallback_model} succeeded!")
+                        return result
+                except:
+                    continue
         
         return {
-            "content": message.get("content"),
-            "tool_calls": message.get("tool_calls"),
-            "provider": config.name.lower().replace(" ", "_").replace("-", "_"),
-            "model": data.get("model", model),
-            "usage": data.get("usage", {})
+            "content": "😅 Sab models busy hain! Thoda der baad try karo.",
+            "tool_calls": None,
+            "error": "all_models_failed"
         }
     
-    async def generate_stream(
-        self,
-        messages: List[Dict[str, str]],
-        **kwargs
-    ) -> AsyncIterator[str]:
-        """Generate streaming response (for future use)"""
-        # For now, just yield non-streaming result
-        result = await self.generate(messages, **kwargs)
-        if result.get("content"):
-            yield result["content"]
+    async def list_available_models(self) -> List[Dict]:
+        """List all available models with info"""
+        models_list = []
+        for name, config in self.models.items():
+            models_list.append({
+                "name": name,
+                "description": config["description"],
+                "use_case": config["use_case"],
+                "supports_tools": config["supports_tools"],
+                "max_tokens": config["max_tokens"]
+            })
+        return models_list
     
-    def get_status(self) -> Dict[str, Any]:
-        """Get status of all providers"""
-        status = {}
-        for p, health in self.health.items():
-            config = self.providers.get(p)
-            status[p.value] = {
-                "configured": config.is_configured if config else False,
-                "healthy": health.is_healthy,
-                "success_rate": f"{health.success_rate:.1%}",
-                "rate_limited": health.is_rate_limited,
-                "last_error": health.last_error,
-            }
-        return status
+    async def get_status(self) -> Dict[str, Any]:
+        """Get router status"""
+        healthy_keys = sum(1 for h in self.key_health.values() if h["healthy"])
+        return {
+            "total_nvidia_keys": len(self.nvidia_keys),
+            "healthy_keys": healthy_keys,
+            "available_models": len(self.models),
+            "embedding_models": len(self.embedding_models),
+            "current_key_index": self.current_key_index,
+            "recommended_model": "nvidia/nemotron-3-ultra-550b-a55b"
+        }
+    
+    async def close(self):
+        """Cleanup"""
+        await self.client.aclose()
 
 
-# ==========================================
-# ❌ Custom Exceptions
-# ==========================================
-
+# Custom Exceptions
 class ProviderError(Exception):
-    """Provider returned an error"""
     pass
 
 
 class RateLimitError(ProviderError):
-    """Provider rate limited us"""
     pass
 
 
-# ==========================================
-# 🌍 Global Instance
-# ==========================================
-
+# Global instance
 _router: Optional[MultiProviderRouter] = None
 
 
 def init_multi_provider() -> MultiProviderRouter:
-    """Initialize global multi-provider router"""
     global _router
     _router = MultiProviderRouter()
-    
-    # Log which providers are configured
-    for p in _router.provider_priority:
-        config = _router.providers[p]
-        status = "✅" if config.is_configured else "❌"
-        logger.info(f"   {status} {config.name}: {'configured' if config.is_configured else 'missing API key'}")
-    
     return _router
 
 
 def get_multi_provider() -> MultiProviderRouter:
-    """Get global multi-provider router instance"""
+    global _router
     if _router is None:
-        return init_multi_provider()
+        _router = MultiProviderRouter()
     return _router

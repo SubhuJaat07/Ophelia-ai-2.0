@@ -2,23 +2,36 @@
 🔧 Tool Executor - Handles AI Tool Calls & Executes Discord Operations
 ================================================================
 
-This is the BRIDGE between AI (Groq) and Discord operations!
+This is the BRIDGE between AI (NVIDIA/Groq/Gemini) and Discord operations!
 
 When AI decides to use a tool:
-1. Groq returns: {name: "search_messages", arguments: {...}}
+1. AI returns: {name: "kick_user", arguments: {...}}
 2. This executor finds the right tool
 3. Validates parameters
 4. Checks permissions  
-5. Executes the operation
+5. Executes the operation (REAL Discord API calls!)
 6. Returns result back to AI
 
-AI then uses this info in its response!
+TOOLS AVAILABLE:
+⚡ Moderation: kick_user, ban_user, unban_user, timeout_user, mute_user, unmute_user
+📝 Channels: create_text_channel, create_voice_channel, delete_channel, rename_channel, list_channels, get_channel_info
+👤 Roles: create_role, delete_role, assign_role, remove_role, list_roles
+💬 Messages: send_message, send_embed, edit_message, delete_message, pin_message, add_reaction
+📊 Server: get_server_info, get_member_info, list_members, get_banned_users
+✨ Profile: change_nickname, get_avatar
+🔍 Search: search_messages, read_channel_history
+🎯 Utility: create_invite
+🌐 External: web_search, generate_image, execute_code
+
+TOTAL: 35+ TOOLS!
 """
 
 import logging
 import json
 from typing import Dict, Any, List, Optional, Callable
 from .discord_tools import get_all_tools, ALL_DISCORD_TOOLS
+from .complete_discord_tools import get_all_complete_tools, COMPLETE_TOOL_NAMES
+from .external_tools import WebSearchTool, ImageGenerationTool, CodeExecutionTool
 from .base_tool import ToolResult, DiscordTool
 
 logger = logging.getLogger("ToolExecutor")
@@ -40,15 +53,32 @@ class ToolExecutor:
         self._register_all_tools()
     
     def _register_all_tools(self):
-        """Register all available Discord tools"""
+        """Register ALL available Discord tools (35+ total!)"""
+        
+        # 1. Original Discord Tools
         tools = get_all_tools(bot=self.bot)
+        
+        # 2. Complete MCP Tools (30 new tools!)
+        complete_tools = get_all_complete_tools(bot=self.bot)
+        tools.extend(complete_tools)
+        
+        # 3. External API Tools (3 tools)
+        external_tools = [WebSearchTool(), ImageGenerationTool(), CodeExecutionTool()]
+        tools.extend(external_tools)
         
         for tool in tools:
             self._tools[tool.name] = tool
             self._tool_schemas.append(tool.schema)
             logger.debug(f"📦 Registered tool: {tool.name}")
         
-        logger.info(f"🛠️ Tool Executor ready with {len(self._tools)} tools")
+        logger.info(f"🛠️ Tool Executor ready with {len(self._tools)} tools!")
+        logger.info(f"   ⚡ Moderation: kick, ban, unban, timeout, mute, unmute")
+        logger.info(f"   📝 Channels: create, delete, rename, list, info")
+        logger.info(f"   👤 Roles: create, delete, assign, remove, list")
+        logger.info(f"   💬 Messages: send, embed, edit, delete, pin, react")
+        logger.info(f"   📊 Server: info, members, bans")
+        logger.info(f"   🔍 Search: search messages, read history")
+        logger.info(f"   🌐 External: web_search, image_gen, code_exec")
     
     @property
     def tool_names(self) -> List[str]:
