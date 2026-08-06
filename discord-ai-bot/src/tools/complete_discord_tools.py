@@ -798,7 +798,7 @@ class DeleteChannelTool(DiscordTool):
         ToolParameter(name="reason", param_type="string", description="Reason for deletion", required=False, default="Deleted by Ophelia"),
     ]
     
-    permission_level = ToolPermissionLevel.ADMIN  # Admin only - dangerous!
+    permission_level = ToolPermissionLevel.OWNER  # Owner only - dangerous!
     
     async def execute(self, args: Dict[str, Any], context: Dict[str, Any]) -> ToolResult:
         try:
@@ -1080,7 +1080,7 @@ class DeleteRoleTool(DiscordTool):
         ToolParameter(name="reason", param_type="string", description="Reason for deletion", required=False, default="Deleted by Ophelia"),
     ]
     
-    permission_level = ToolPermissionLevel.ADMIN  # Admin only - dangerous!
+    permission_level = ToolPermissionLevel.OWNER  # Owner only - dangerous!
     
     async def execute(self, args: Dict[str, Any], context: Dict[str, Any]) -> ToolResult:
         try:
