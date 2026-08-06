@@ -240,7 +240,7 @@ class BaseTool(ABC):
             # 2. Validate parameters
             is_valid, error_msg = self._validate_args(args)
             if not is_valid:
-                obs.log_event(EventType.TOOL_EXECUTION_ERROR, f"Validation failed: {error_name}",
+                obs.log(EventType.TOOL_EXECUTION_ERROR, f"Validation failed: {error_name}",
                             tool_name=self.name, user_id=user_id, error=error_msg)
                 return ToolResult(
                     success=False,
@@ -270,7 +270,7 @@ class BaseTool(ABC):
             )
             
             if not safety_ok:
-                obs.log_event(EventType.SAFETY_CONFIRMATION_REQUESTED,
+                obs.log(EventType.SAFETY_CONFIRMATION_REQUESTED,
                             f"Safety block for {self.name}",
                             level=LogLevel.WARNING,
                             tool_name=self.name, user_id=user_id)
@@ -337,7 +337,7 @@ class BaseTool(ABC):
             duration_ms = (time.time() - start_time) * 1000
             logger.error(f"❌ Tool {self.name} crashed: {e}", exc_info=True)
             
-            obs.log_event(
+            obs.log(
                 EventType.TOOL_EXECUTION_ERROR,
                 f"Tool crashed: {self.name}",
                 level=LogLevel.ERROR,

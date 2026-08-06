@@ -204,7 +204,7 @@ class AIHandlerV3:
         start_time = time.time()
         obs = get_observability()
         
-        obs.log_event(
+        obs.log(
             EventType.AI_REQUEST_START,
             f"Starting AI request for user {user_id}",
             user_id=user_id,
@@ -479,16 +479,13 @@ class AIHandlerV3:
             
             duration_ms = (time.time() - start_time) * 1000
             
-            obs.log_event(
+            obs.log(
                 EventType.AI_RESPONSE_GENERATED,
                 f"Response generated in {duration_ms:.0f}ms",
-                level=LogLevel.INFO,
                 duration_ms=duration_ms,
-                context={
-                    "tools_used": tools_used,
-                    "response_length": len(final_response),
-                    "iterations": iteration,
-                }
+                tools_used=tools_used,
+                response_length=len(final_response),
+                iterations=iteration,
             )
             
             logger.info(f"\n{'='*50}")
@@ -503,10 +500,10 @@ class AIHandlerV3:
             duration_ms = (time.time() - start_time) * 1000
             logger.error(f"❌ FATAL ERROR in generate_response_with_tools: {e}", exc_info=True)
             
-            obs.log_event(
+            obs.log(
                 EventType.AI_ERROR,
                 f"Fatal error: {str(e)[:200]}",
-                level=LogLevel.CRITICAL,
+                level=logging.CRITICAL if hasattr(logging, 'CRITICAL') else LogLevel.CRITICAL,
                 error=str(e)[:500],
                 duration_ms=duration_ms
             )
