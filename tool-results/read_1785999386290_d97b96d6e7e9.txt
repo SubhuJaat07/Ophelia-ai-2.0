@@ -1,0 +1,1525 @@
+     1→"""
+     2→🔧 COMPLETE Discord Tools - FULL SERVER CONTROL!
+     3→================================================
+     4→
+     5→ALL Discord operations for AI to use - 30+ Tools!
+     6→Based on Discord MCP repos (iprashantraj, pasympa, etc.)
+     7→
+     8→Categories:
+     9→📝 Messages: search, read, send, edit, delete, pin, embed
+    10→👥 Members: info, kick, ban, unban, timeout, nickname, roles
+    11→🔧 Channels: create, delete, rename, info, list, permissions, slowmode, topic
+    12→🎭 Roles: create, delete, assign, remove, list
+    13→🔗 Other: invites, emojis, threads, reactions, server info
+    14→
+    15→All tools inherit from DiscordTool base class.
+    16→"""
+    17→
+    18→import discord
+    19→from datetime import datetime, timedelta
+    20→from typing import Dict, Any, List, Optional
+    21→from .base_tool import DiscordTool, ToolResult, ToolParameter, ToolPermissionLevel
+    22→import logging
+    23→
+    24→logger = logging.getLogger("CompleteDiscordTools")
+    25→
+    26→
+    27→# ============================================================
+    28→# 📝 MESSAGE TOOLS
+    29→# ============================================================
+    30→
+    31→class SearchMessagesTool(DiscordTool):
+    32→    """Search messages in server/channel"""
+    33→    
+    34→    name = "search_messages"
+    35→    description = """Search for messages in Discord server or channel by content, author, or date."""
+    36→    
+    37→    parameters = [
+    38→        ToolParameter(name="query", param_type="string", description="Text to search for", required=True),
+    39→        ToolParameter(name="channel_id", param_type="string", description="Specific channel ID", required=False, default=None),
+    40→        ToolParameter(name="author_id", param_type="string", description="Author user ID", required=False, default=None),
+    41→        ToolParameter(name="limit", param_type="integer", description="Max results (default: 10)", required=False, default=10),
+    42→    ]
+    43→    
+    44→    permission_level = ToolPermissionLevel.EVERYONE
+    45→    
+    46→    async def execute(self, args: Dict[str, Any], context: Dict[str, Any]) -> ToolResult:
+    47→        try:
+    48→            query = args["query"].lower()
+    49→            channel_id = args.get("channel_id")
+    50→            author_id = args.get("author_id")
+    51→            limit = min(args.get("limit", 10), 50)
+    52→            
+    53→            guild = context.get("guild")
+    54→            if not guild:
+    55→                return ToolResult(success=False, content="❌ No guild available")
+    56→            
+    57→            since_date = datetime.utcnow() - timedelta(days=30)
+    58→            results = []
+    59→            
+    60→            channels_to_search = []
+    61→            if channel_id:
+    62→                ch = guild.get_channel(int(channel_id))
+    63→                channels_to_search = [ch] if ch and hasattr(ch, 'history') else []
+    64→            else:
+    65→                channels_to_search = [ch for ch in guild.text_channels if ch.permissions_for(guild.me).read_message_history]
+    66→            
+    67→            for channel in channels_to_search[:20]:
+    68→                try:
+    69→                    async for message in channel.history(limit=100, after=since_date):
+    70→                        if query and query not in message.content.lower():
+    71→                            continue
+    72→                        if author_id and str(message.author.id) != str(author_id):
+    73→                            continue
+    74→                        if message.author.bot:
+    75→                            continue
+    76→                        results.append({
+    77→                            "content": message.content[:300],
+    78→                            "author": f"{message.author.display_name}",
+    79→                            "channel": f"#{message.channel.name}",
+    80→                            "message_id": str(message.id),
+    81→                            "jump_url": message.jump_url
+    82→                        })
+    83→                        if len(results) >= limit:
+    84→                            break
+    85→                    if len(results) >= limit:
+    86→                        break
+    87→                except Exception as e:
+    88→                    logger.debug(f"Cannot search channel {channel}: {e}")
+    89→            
+    90→            if not results:
+    91→                return ToolResult(success=True, content=f"😔 No messages found matching '{query}'", data={"count": 0})
+    92→            
+    93→            lines = [f"🔍 **Found {len(results)} message(s):**\n"]
+    94→            for i, msg in enumerate(results[:10], 1):
+    95→                lines.append(f"{i}. **{msg['author']}** in {msg['channel']}: {msg['content'][:200]}")
+    96→            
+    97→            return ToolResult(success=True, content="\n".join(lines), data={"count": len(results), "results": results})
+    98→        except Exception as e:
+    99→            return ToolResult(success=False, content=f"❌ Search error: {str(e)[:150]}")
+   100→
+   101→
+   102→class ReadChannelTool(DiscordTool):
+   103→    """Read recent messages from a channel"""
+   104→    
+   105→    name = "read_channel_messages"
+   106→    description = """Read recent messages from a Discord channel for context."""
+   107→    
+   108→    parameters = [
+   109→        ToolParameter(name="channel_id", param_type="string", description="Channel ID to read", required=True),
+   110→        ToolParameter(name="limit", param_type="integer", description="Number of messages (default: 20)", required=False, default=20),
+   111→    ]
+   112→    
+   113→    permission_level = ToolPermissionLevel.EVERYONE
+   114→    
+   115→    async def execute(self, args: Dict[str, Any], context: Dict[str, Any]) -> ToolResult:
+   116→        try:
+   117→            channel_id = args["channel_id"]
+   118→            limit = min(args.get("limit", 20), 100)
+   119→            
+   120→            guild = context.get("guild")
+   121→            if not guild:
+   122→                return ToolResult(success=False, content="❌ No guild available")
+   123→            
+   124→            channel = guild.get_channel(int(channel_id))
+   125→            if not channel or not hasattr(channel, 'history'):
+   126→                return ToolResult(success=False, content=f"❌ Channel not found or cannot read")
+   127→            
+   128→            if not channel.permissions_for(guild.me).read_message_history:
+   129→                return ToolResult(success=False, content="❌ No permission to read history")
+   130→            
+   131→            messages = []
+   132→            async for msg in channel.history(limit=limit):
+   133→                messages.append(msg)
+   134→            
+   135→            if not messages:
+   136→                return ToolResult(success=True, content=f"📭 No messages in #{channel.name}")
+   137→            
+   138→            messages.reverse()
+   139→            lines = [f"📖 **#{channel.name}** ({len(messages)} messages):\n"]
+   140→            for msg in messages[-30:]:
+   141→                is_bot = "🤖 " if msg.author.bot else ""
+   142→                lines.append(f"[{msg.created_at.strftime('%H:%M')}] {is_bot}**{msg.author.display_name}:** {msg.content[:250]}")
+   143→            
+   144→            return ToolResult(success=True, content="\n".join(lines), data={"count": len(messages)})
+   145→        except Exception as e:
+   146→            return ToolResult(success=False, content=f"❌ Error: {str(e)[:150]}")
+   147→
+   148→
+   149→class SendMessageTool(DiscordTool):
+   150→    """Send a message to any channel"""
+   151→    
+   152→    name = "send_message"
+   153→    description = """Send a message to a Discord channel."""
+   154→    
+   155→    parameters = [
+   156→        ToolParameter(name="channel_id", param_type="string", description="Channel ID to send to", required=True),
+   157→        ToolParameter(name="message", param_type="string", description="Message content", required=True),
+   158→        ToolParameter(name="reply_to_message_id", param_type="string", description="Reply to message ID", required=False, default=None),
+   159→    ]
+   160→    
+   161→    permission_level = ToolPermissionLevel.MODERATOR
+   162→    
+   163→    async def execute(self, args: Dict[str, Any], context: Dict[str, Any]) -> ToolResult:
+   164→        try:
+   165→            channel_id = args["channel_id"]
+   166→            content = args["message"][:1900]
+   167→            reply_to_id = args.get("reply_to_message_id")
+   168→            
+   169→            guild = context.get("guild")
+   170→            if not guild:
+   171→                return ToolResult(success=False, content="❌ No guild available")
+   172→            
+   173→            channel = guild.get_channel(int(channel_id))
+   174→            if not channel:
+   175→                return ToolResult(success=False, content=f"❌ Channel {channel_id} not found")
+   176→            
+   177→            if not channel.permissions_for(guild.me).send_messages:
+   178→                return ToolResult(success=False, content="❌ No permission to send messages")
+   179→            
+   180→            kwargs = {}
+   181→            if reply_to_id:
+   182→                try:
+   183→                    reply_msg = await channel.fetch_message(int(reply_to_id))
+   184→                    kwargs["reference"] = reply_msg.to_reference()
+   185→                except:
+   186→                    pass
+   187→            
+   188→            sent_msg = await channel.send(content=content, **kwargs)
+   189→            return ToolResult(success=True, content=f"✅ Message sent to #{channel.name}! (ID: {sent_msg.id})", data={"message_id": str(sent_msg.id)})
+   190→        except discord.Forbidden:
+   191→            return ToolResult(success=False, content="❌ Forbidden: Missing permissions")
+   192→        except Exception as e:
+   193→            return ToolResult(success=False, content=f"❌ Error: {str(e)[:150]}")
+   194→
+   195→
+   196→class EditMessageTool(DiscordTool):
+   197→    """Edit an existing message sent by bot"""
+   198→    
+   199→    name = "edit_message"
+   200→    description = """Edit a message that was sent by the bot."""
+   201→    
+   202→    parameters = [
+   203→        ToolParameter(name="channel_id", param_type="string", description="Channel ID", required=True),
+   204→        ToolParameter(name="message_id", param_type="string", description="Message ID to edit", required=True),
+   205→        ToolParameter(name="new_content", param_type="string", description="New message content", required=True),
+   206→    ]
+   207→    
+   208→    permission_level = ToolPermissionLevel.MODERATOR
+   209→    
+   210→    async def execute(self, args: Dict[str, Any], context: Dict[str, Any]) -> ToolResult:
+   211→        try:
+   212→            channel_id = args["channel_id"]
+   213→            message_id = args["message_id"]
+   214→            new_content = args["new_content"][:1900]
+   215→            
+   216→            guild = context.get("guild")
+   217→            if not guild:
+   218→                return ToolResult(success=False, content="❌ No guild available")
+   219→            
+   220→            channel = guild.get_channel(int(channel_id))
+   221→            if not channel:
+   222→                return ToolResult(success=False, content="❌ Channel not found")
+   223→            
+   224→            message = await channel.fetch_message(int(message_id))
+   225→            if message.author.id != guild.me.id:
+   226→                return ToolResult(success=False, content="❌ Can only edit my own messages!")
+   227→            
+   228→            await message.edit(content=new_content)
+   229→            return ToolResult(success=True, content=f"✅ Message edited successfully!", data={"message_id": message_id})
+   230→        except Exception as e:
+   231→            return ToolResult(success=False, content=f"❌ Edit failed: {str(e)[:150]}")
+   232→
+   233→
+   234→class DeleteMessageTool(DiscordTool):
+   235→    """Delete a message (bot's own or with manage_messages)"""
+   236→    
+   237→    name = "delete_message"
+   238→    description = """Delete a message. Can delete bot's own messages or any message with manage_messages permission."""
+   239→    
+   240→    parameters = [
+   241→        ToolParameter(name="channel_id", param_type="string", description="Channel ID", required=True),
+   242→        ToolParameter(name="message_id", param_type="string", description="Message ID to delete", required=True),
+   243→        ToolParameter(name="reason", param_type="string", description="Reason for deletion", required=False, default="Deleted by Ophelia"),
+   244→    ]
+   245→    
+   246→    permission_level = ToolPermissionLevel.MODERATOR
+   247→    
+   248→    async def execute(self, args: Dict[str, Any], context: Dict[str, Any]) -> ToolResult:
+   249→        try:
+   250→            channel_id = args["channel_id"]
+   251→            message_id = args["message_id"]
+   252→            reason = args.get("reason", "Deleted by Ophelia")
+   253→            
+   254→            guild = context.get("guild")
+   255→            if not guild:
+   256→                return ToolResult(success=False, content="❌ No guild available")
+   257→            
+   258→            channel = guild.get_channel(int(channel_id))
+   259→            if not channel:
+   260→                return ToolResult(success=False, content="❌ Channel not found")
+   261→            
+   262→            message = await channel.fetch_message(int(message_id))
+   263→            await message(reason=reason)
+   264→            return ToolResult(success=True, content=f"✅ Message deleted!", data={"deleted_message_id": message_id})
+   265→        except discord.Forbidden:
+   266→            return ToolResult(success=False, content="❌ Cannot delete this message (permission/age)")
+   267→        except Exception as e:
+   268→            return ToolResult(success=False, content=f"❌ Delete failed: {str(e)[:150]}")
+   269→
+   270→
+   271→class PinMessageTool(DiscordTool):
+   272→    """Pin a message to the channel"""
+   273→    
+   274→    name = "pin_message"
+   275→    description = """Pin a message in a channel so it's easily accessible."""
+   276→    
+   277→    parameters = [
+   278→        ToolParameter(name="channel_id", param_type="string", description="Channel ID", required=True),
+   279→        ToolParameter(name="message_id", param_type="string", description="Message ID to pin", required=True),
+   280→    ]
+   281→    
+   282→    permission_level = ToolPermissionLevel.MODERATOR
+   283→    
+   284→    async def execute(self, args: Dict[str, Any], context: Dict[str, Any]) -> ToolResult:
+   285→        try:
+   286→            channel_id = args["channel_id"]
+   287→            message_id = args["message_id"]
+   288→            
+   289→            guild = context.get("guild")
+   290→            if not guild:
+   291→                return ToolResult(success=False, content="❌ No guild available")
+   292→            
+   293→            channel = guild.get_channel(int(channel_id))
+   294→            if not channel:
+   295→                return ToolResult(success=False, content="❌ Channel not found")
+   296→            
+   297→            message = await channel.fetch_message(int(message_id))
+   298→            await message.pin()
+   299→            return ToolResult(success=True, content=f"📌 Message pinned successfully!")
+   300→        except Exception as e:
+   301→            return ToolResult(success=False, content=f"❌ Pin failed: {str(e)[:150]}")
+   302→
+   303→
+   304→class UnpinMessageTool(DiscordTool):
+   305→    """Unpin a pinned message"""
+   306→    
+   307→    name = "unpin_message"
+   308→    description = """Remove a pin from a pinned message."""
+   309→    
+   310→    parameters = [
+   311→        ToolParameter(name="channel_id", param_type="string", description="Channel ID", required=True),
+   312→        ToolParameter(name="message_id", param_type="string", description="Message ID to unpin", required=True),
+   313→    ]
+   314→    
+   315→    permission_level = ToolPermissionLevel.MODERATOR
+   316→    
+   317→    async def execute(self, args: Dict[str, Any], context: Dict[str, Any]) -> ToolResult:
+   318→        try:
+   319→            channel_id = args["channel_id"]
+   320→            message_id = args["message_id"]
+   321→            
+   322→            guild = context.get("guild")
+   323→            if not guild:
+   324→                return ToolResult(success=False, content="❌ No guild available")
+   325→            
+   326→            channel = guild.get_channel(int(channel_id))
+   327→            if not channel:
+   328→                return ToolResult(success=False, content="❌ Channel not found")
+   329→            
+   330→            message = await channel.fetch_message(int(message_id))
+   331→            await message.unpin()
+   332→            return ToolResult(success=True, content=f"📍 Message unpinned successfully!")
+   333→        except Exception as e:
+   334→            return ToolResult(success=False, content=f"❌ Unpin failed: {str(e)[:150]}")
+   335→
+   336→
+   337→class SendEmbedTool(DiscordTool):
+   338→    """Send a rich embed message"""
+   339→    
+   340→    name = "send_embed"
+   341→    description = """Send a beautiful embedded message with title, description, colors, fields, images, etc."""
+   342→    
+   343→    parameters = [
+   344→        ToolParameter(name="channel_id", param_type="string", description="Channel ID to send to", required=True),
+   345→        ToolParameter(name="title", param_type="string", description="Embed title", required=True),
+   346→        ToolParameter(name="description", param_type="string", description="Embed description/body", required=False, default=None),
+   347→        ToolParameter(name="color", param_type="string", description="Color (hex like 'FF0000' or name like 'red', 'blue', 'green')", required=False, default="0x5865F2"),
+   348→        ToolParameter(name="fields", param_type="string", description="Fields as JSON array: [{\"name\":\"Field\",\"value\":\"Value\"}]", required=False, default="[]"),
+   349→        ToolParameter(name="footer", param_type="string", description="Footer text", required=False, default=None),
+   350→        ToolParameter(name="thumbnail_url", param_type="string", description="Thumbnail image URL", required=False, default=None),
+   351→        ToolParameter(name="image_url", param_type="string", description="Main image URL", required=False, default=None),
+   352→        ToolParameter(name="author_name", param_type="string", description="Author name", required=False, default=None),
+   353→    ]
+   354→    
+   355→    permission_level = ToolPermissionLevel.MODERATOR
+   356→    
+   357→    async def execute(self, args: Dict[str, Any], context: Dict[str, Any]) -> ToolResult:
+   358→        try:
+   359→            import json
+   360→            
+   361→            channel_id = args["channel_id"]
+   362→            title = args["title"][:256]
+   363→            description = args.get("description")
+   364→            color_str = args.get("color", "0x5865F2")
+   365→            fields_json = args.get("fields", "[]")
+   366→            footer = args.get("footer")
+   367→            thumbnail_url = args.get("thumbnail_url")
+   368→            image_url = args.get("image_url")
+   369→            author_name = args.get("author_name")
+   370→            
+   371→            # Parse color
+   372→            color_map = {
+   373→                "red": 0xFF0000, "green": 0x00FF00, "blue": 0x0000FF,
+   374→                "yellow": 0xFFFF00, "purple": 0x9900FF, "orange": 0xFF8800,
+   375→                "white": 0xFFFFFF, "black": 0x000000
+   376→            }
+   377→            if color_str.lower() in color_map:
+   378→                color = color_map[color_str.lower()]
+   379→            elif color_str.startswith("0x"):
+   380→                color = int(color_str, 16)
+   381→            elif color_str.startswith("#"):
+   382→                color = int(color_str[1:], 16)
+   383→            else:
+   384→                color = 0x5865F2  # Discord blurple
+   385→            
+   386→            # Build embed
+   387→            embed = discord.Embed(
+   388→                title=title,
+   389→                description=description,
+   390→                color=color,
+   391→                timestamp=datetime.utcnow()
+   392→            )
+   393→            
+   394→            # Parse and add fields
+   395→            try:
+   396→                fields = json.loads(fields_json)
+   397→                for field in fields[:25]:  # Max 25 fields
+   398→                    inline = field.get("inline", False)
+   399→                    embed.add_field(name=field["name"][:256], value=field["value"][:1024], inline=inline)
+   400→            except json.JSONDecodeError:
+   401→                pass
+   402→            
+   403→            if footer:
+   404→                embed.set_footer(text=footer[:2048])
+   405→            if thumbnail_url:
+   406→                embed.set_thumbnail(url=thumbnail_url)
+   407→            if image_url:
+   408→                embed.set_image(url=image_url)
+   409→            if author_name:
+   410→                embed.set_author(name=author_name[:256])
+   411→            
+   412→            guild = context.get("guild")
+   413→            if not guild:
+   414→                return ToolResult(success=False, content="❌ No guild available")
+   415→            
+   416→            channel = guild.get_channel(int(channel_id))
+   417→            if not channel:
+   418→                return ToolResult(success=False, content="❌ Channel not found")
+   419→            
+   420→            msg = await channel(embed=embed)
+   421→            return ToolResult(success=True, content=f"✅ Embed sent to #{channel.name}!", data={"message_id": str(msg.id)})
+   422→        except Exception as e:
+   423→            return ToolResult(success=False, content=f"❌ Embed failed: {str(e)[:200]}")
+   424→
+   425→
+   426→# ============================================================
+   427→# 👥 MEMBER TOOLS
+   428→# ============================================================
+   429→
+   430→class GetMemberTool(DiscordTool):
+   431→    """Get detailed info about a server member"""
+   432→    
+   433→    name = "get_member_info"
+   434→    description = """Get detailed information about a Discord member."""
+   435→    
+   436→    parameters = [
+   437→        ToolParameter(name="user_id", param_type="string", description="User's Discord ID", required=True),
+   438→    ]
+   439→    
+   440→    permission_level = ToolPermissionLevel.EVERYONE
+   441→    
+   442→    async def execute(self, args: Dict[str, Any], context: Dict[str, Any]) -> ToolResult:
+   443→        try:
+   444→            user_id = args["user_id"]
+   445→            guild = context.get("guild")
+   446→            if not guild:
+   447→                return ToolResult(success=False, content="❌ No guild available")
+   448→            
+   449→            member = None
+   450→            try:
+   451→                member = await guild.fetch_member(int(user_id))
+   452→            except discord.NotFound:
+   453→                member = guild.get_member(int(user_id))
+   454→            
+   455→            if not member:
+   456→                return ToolResult(success=False, content=f"❌ User {user_id} not found")
+   457→            
+   458→            roles = [role.name for role in member.roles if role.name != "@everyone"]
+   459→            joined_at = member.joined_at.strftime("%Y-%m-%d") if member.joined_at else "Unknown"
+   460→            created_at = member.created_at.strftime("%Y-%m-%d") if member.created_at else "Unknown"
+   461→            
+   462→            status = {"online": "🟢 Online", "idle": "🌙 Idle", "dnd": "🔴 DND", "offline": "⚫ Offline"}.get(str(member.status), "⚫ Offline")
+   463→            
+   464→            info = f"""👤 **{member.display_name}**
+   465→• Username: `{member.name}`
+   466→• ID: `{member.id}`
+   467→• Bot: {'Yes' if member.bot else 'No'}
+   468→• Created: {created_at}
+   469→• Joined: {joined_at}
+   470→• Status: {status}
+   471→• Roles ({len(roles)}): {', '.join(roles[:10]) or 'None'}"""
+   472→            
+   473→            return ToolResult(success=True, content=info, data={"username": member.name, "roles": roles, "id": str(member.id)})
+   474→        except Exception as e:
+   475→            return ToolResult(success=False, content=f"❌ Error: {str(e)[:150]}")
+   476→
+   477→
+   478→class KickUserTool(DiscordTool):
+   479→    """Kick a user from the server"""
+   480→    
+   481→    name = "kick_user"
+   482→    description = """Kick a member from the server. They can rejoin with invite."""
+   483→    
+   484→    parameters = [
+   485→        ToolParameter(name="user_id", param_type="string", description="User ID to kick", required=True),
+   486→        ToolParameter(name="reason", param_type="string", description="Reason for kick", required=False, default="Kicked by Ophelia"),
+   487→    ]
+   488→    
+   489→    permission_level = ToolPermissionLevel.MODERATOR
+   490→    
+   491→    async def execute(self, args: Dict[str, Any], context: Dict[str, Any]) -> ToolResult:
+   492→        try:
+   493→            user_id = args["user_id"]
+   494→            reason = args.get("reason", "Kicked by Ophelia")
+   495→            
+   496→            guild = context.get("guild")
+   497→            if not guild:
+   498→                return ToolResult(success=False, content="❌ No guild available")
+   499→            
+   500→            member = guild.get_member(int(user_id))
+   501→            if not member:
+   502→                return ToolResult(success=False, content=f"❌ User not found")
+   503→            
+   504→            if member.id == guild.owner_id:
+   505→                return ToolResult(success=False, content="❌ Owner ko kick nahi kar sakte! 😂")
+   506→            
+   507→            if member.top_role >= guild.me.top_role:
+   508→                return ToolResult(success=False, content="❌ User ki role meri se equal/higher hai!")
+   509→            
+   510→            await member.kick(reason=reason)
+   511→            return ToolResult(success=True, content=f"✅ **{member.display_name}** ko kick diya!\nReason: {reason}", data={"kicked_user": member.display_name})
+   512→        except discord.Forbidden:
+   513→            return ToolResult(success=False, content="❌ Permission denied!")
+   514→        except Exception as e:
+   515→            return ToolResult(success=False, content=f"❌ Kick failed: {str(e)[:150]}")
+   516→
+   517→
+   518→class BanUserTool(DiscordTool):
+   519→    """Ban a user from the server"""
+   520→    
+   521→    name = "ban_user"
+   522→    description = """Ban a member from the server. They CANNOT rejoin unless unbanned."""
+   523→    
+   524→    parameters = [
+   525→        ToolParameter(name="user_id", param_type="string", description="User ID to ban", required=True),
+   526→        ToolParameter(name="reason", param_type="string", description="Reason for ban", required=False, default="Banned by Ophelia"),
+   527→        ToolParameter(name="delete_message_days", param_type="integer", description="Delete messages from last X days (0-7)", required=False, default=0),
+   528→    ]
+   529→    
+   530→    permission_level = ToolPermissionLevel.MODERATOR
+   531→    
+   532→    async def execute(self, args: Dict[str, Any], context: Dict[str, Any]) -> ToolResult:
+   533→        try:
+   534→            user_id = args["user_id"]
+   535→            reason = args.get("reason", "Banned by Ophelia")
+   536→            delete_days = min(max(args.get("delete_message_days", 0), 0), 7)
+   537→            
+   538→            guild = context.get("guild")
+   539→            if not guild:
+   540→                return ToolResult(success=False, content="❌ No guild available")
+   541→            
+   542→            member = guild.get_member(int(user_id))
+   543→            
+   544→            # Check if trying to ban owner
+   545→            if member and member.id == guild.owner_id:
+   546→                return ToolResult(success=False, content="❌ Owner ko ban nahi kar sakte! 😂")
+   547→            
+   548→            # Check role hierarchy
+   549→            if member and member.top_role >= guild.me.top_role:
+   550→                return ToolResult(success=False, content="❌ User ki role meri se equal/higher hai!")
+   551→            
+   552→            # Ban the user (works even if user not in server)
+   553→            user = member or discord.Object(id=int(user_id))
+   554→            await guild.ban(user, reason=reason, delete_message_days=delete_days)
+   555→            
+   556→            display_name = member.display_name if member else f"User({user_id})"
+   557→            return ToolResult(success=True, content=f"🚫 **{display_name}** ko BAN kar diya!\nReason: {reason}", data={"banned_user": display_name})
+   558→        except discord.Forbidden:
+   559→            return ToolResult(success=False, content="❌ Permission denied! Ban permission chahiye!")
+   560→        except Exception as e:
+   561→            return ToolResult(success=False, content=f"❌ Ban failed: {str(e)[:150]}")
+   562→
+   563→
+   564→class UnbanUserTool(DiscordTool):
+   565→    """Unban a banned user"""
+   566→    
+   567→    name = "unban_user"
+   568→    description = """Unban a previously banned user so they can rejoin."""
+   569→    
+   570→    parameters = [
+   571→        ToolParameter(name="user_id", param_type="string", description="User ID to unban", required=True),
+   572→        ToolParameter(name="reason", param_type="string", description="Reason for unban", required=False, default="Unbanned by Ophelia"),
+   573→    ]
+   574→    
+   575→    permission_level = ToolPermissionLevel.MODERATOR
+   576→    
+   577→    async def execute(self, args: Dict[str, Any], context: Dict[str, Any]) -> ToolResult:
+   578→        try:
+   579→            user_id = args["user_id"]
+   580→            reason = args.get("reason", "Unbanned by Ophelia")
+   581→            
+   582→            guild = context.get("guild")
+   583→            if not guild:
+   584→                return ToolResult(success=False, content="❌ No guild available")
+   585→            
+   586→            user = discord.Object(id=int(user_id))
+   587→            await guild.unban(user, reason=reason)
+   588→            
+   589→            return ToolResult(success=True, content=f"✅ User `{user_id}` ko UNBAN kar diya! Ab wo join kar sakte hain.", data={"unbanned_user_id": user_id})
+   590→        except discord.NotFound:
+   591→            return ToolResult(success=False, content="❌ Ye user ban list me nahi hai!")
+   592→        except discord.Forbidden:
+   593→            return ToolResult(success=False, content="❌ Permission denied!")
+   594→        except Exception as e:
+   595→            return ToolResult(success=False, content=f"❌ Unban failed: {str(e)[:150]}")
+   596→
+   597→
+   598→class TimeoutUserTool(DiscordTool):
+   599→    """Timeout/mute a user"""
+   600→    
+   601→    name = "timeout_user"
+   602→    description = """Timeout a user for specified duration. They can't send messages until timeout ends."""
+   603→    
+   604→    parameters = [
+   605→        ToolParameter(name="user_id", param_type="string", description="User ID to timeout", required=True),
+   606→        ToolParameter(name="duration_minutes", param_type="integer", description="Duration in minutes (1-10080)", required=False, default=10),
+   607→        ToolParameter(name="reason", param_type="string", description="Reason for timeout", required=False, default="Timed out by Ophelia"),
+   608→    ]
+   609→    
+   610→    permission_level = ToolPermissionLevel.MODERATOR
+   611→    
+   612→    async def execute(self, args: Dict[str, Any], context: Dict[str, Any]) -> ToolResult:
+   613→        try:
+   614→            user_id = args["user_id"]
+   615→            duration = min(max(args.get("duration_minutes", 10), 1), 10080)
+   616→            reason = args.get("reason", "Timed out by Ophelia")
+   617→            
+   618→            guild = context.get("guild")
+   619→            if not guild:
+   620→                return ToolResult(success=False, content="❌ No guild available")
+   621→            
+   622→            member = guild.get_member(int(user_id))
+   623→            if not member:
+   624→                return ToolResult(success=False, content="❌ User not found")
+   625→            
+   626→            if member.id == guild.owner_id:
+   627→                return ToolResult(success=False, content="❌ Owner ko timeout nahi kar sakte!")
+   628→            
+   629→            timeout_until = datetime.utcnow() + timedelta(minutes=duration)
+   630→            await member.timeout(timeout_until, reason=reason)
+   631→            
+   632→            duration_text = f"{duration} min" if duration < 60 else f"{duration//60} hours"
+   633→            return ToolResult(success=True, content=f"⏰ **{member.display_name}** ko {duration_text} ke liye timeout diya!", data={"duration_minutes": duration})
+   634→        except discord.Forbidden:
+   635→            return ToolResult(success=False, content="❌ Permission denied!")
+   636→        except Exception as e:
+   637→            return ToolResult(success=False, content=f"❌ Timeout failed: {str(e)[:150]}")
+   638→
+   639→
+   640→class RemoveTimeoutTool(DiscordTool):
+   641→    """Remove timeout from a user"""
+   642→    
+   643→    name = "remove_timeout"
+   644→    description = """Remove active timeout from a user immediately."""
+   645→    
+   646→    parameters = [
+   647→        ToolParameter(name="user_id", param_type="string", description="User ID to remove timeout from", required=True),
+   648→        ToolParameter(name="reason", param_type="string", description="Reason", required=False, default="Timeout removed by Ophelia"),
+   649→    ]
+   650→    
+   651→    permission_level = ToolPermissionLevel.MODERATOR
+   652→    
+   653→    async def execute(self, args: Dict[str, Any], context: Dict[str, Any]) -> ToolResult:
+   654→        try:
+   655→            user_id = args["user_id"]
+   656→            reason = args.get("reason", "Timeout removed by Ophelia")
+   657→            
+   658→            guild = context.get("guild")
+   659→            if not guild:
+   660→                return ToolResult(success=False, content="❌ No guild available")
+   661→            
+   662→            member = guild.get_member(int(user_id))
+   663→            if not member:
+   664→                return ToolResult(success=False, content="❌ User not found")
+   665→            
+   666→            await member.timeout(None, reason=reason)  # None removes timeout
+   667→            return ToolResult(success=True, content=f"✅ **{member.display_name}** ka timeout hataya!")
+   668→        except Exception as e:
+   669→            return ToolResult(success=False, content=f"❌ Remove timeout failed: {str(e)[:150]}")
+   670→
+   671→
+   672→class GetBannedUsersTool(DiscordTool):
+   673→    """List all banned users"""
+   674→    
+   675→    name = "get_banned_users"
+   676→    description = """Get list of all banned users in the server."""
+   677→    
+   678→    parameters = []  # No params needed
+   679→    
+   680→    permission_level = ToolPermissionLevel.MODERATOR
+   681→    
+   682→    async def execute(self, args: Dict[str, Any], context: Dict[str, Any]) -> ToolResult:
+   683→        try:
+   684→            guild = context.get("guild")
+   685→            if not guild:
+   686→                return ToolResult(success=False, content="❌ No guild available")
+   687→            
+   688→            bans = [entry async for entry in guild.bans()]
+   689→            
+   690→            if not bans:
+   691→                return ToolResult(success=True, content="📋 Koi banned users nahi hain!")
+   692→            
+   693→            lines = [f"🚫 **Banned Users ({len(bans)}):**\n"]
+   694→            for entry in bans[:25]:  # Show max 25
+   695→                user = entry.user
+   696→                reason = entry.reason or "No reason"
+   697→                lines.append(f"• **{user.name}** (`{user.id}`) - Reason: {reason}")
+   698→            
+   699→            return ToolResult(success=True, content="\n".join(lines), data={"count": len(bans)})
+   700→        except discord.Forbidden:
+   701→            return ToolResult(success=False, content="❌ No permission to view bans!")
+   702→        except Exception as e:
+   703→            return ToolResult(success=False, content=f"❌ Error: {str(e)[:150]}")
+   704→
+   705→
+   706→class EditNicknameTool(DiscordTool):
+   707→    """Change a member's nickname"""
+   708→    
+   709→    name = "edit_nickname"
+   710→    description = """Change a member's nickname in the server."""
+   711→    
+   712→    parameters = [
+   713→        ToolParameter(name="user_id", param_type="string", description="User ID", required=True),
+   714→        ToolParameter(name="nickname", param_type="string", description="New nickname (empty to reset)", required=True),
+   715→    ]
+   716→    
+   717→    permission_level = ToolPermissionLevel.MODERATOR
+   718→    
+   719→    async def execute(self, args: Dict[str, Any], context: Dict[str, Any]) -> ToolResult:
+   720→        try:
+   721→            user_id = args["user_id"]
+   722→            nickname = args["nickname"][:32] if args.get("nickname") else None
+   723→            
+   724→            guild = context.get("guild")
+   725→            if not guild:
+   726→                return ToolResult(success=False, content="❌ No guild available")
+   727→            
+   728→            member = guild.get_member(int(user_id))
+   729→            if not member:
+   730→                return ToolResult(success=False, content="❌ User not found")
+   731→            
+   732→            await member(nick=nickname)
+   733→            nick_display = nickname or "(reset)"
+   734→            return ToolResult(success=True, content=f"✅ **{member.name}** ka nickname change ho gaya: **{nick_display}**")
+   735→        except discord.Forbidden:
+   736→            return ToolResult(success=False, content="❌ Cannot change this nickname!")
+   737→        except Exception as e:
+   738→            return ToolResult(success=False, content=f"❌ Nickname change failed: {str(e)[:150]}")
+   739→
+   740→
+   741→# ============================================================
+   742→# 🔧 CHANNEL TOOLS
+   743→# ============================================================
+   744→
+   745→class CreateChannelTool(DiscordTool):
+   746→    """Create a new text or voice channel"""
+   747→    
+   748→    name = "create_channel"
+   749→    description = """Create a new text or voice channel in the server."""
+   750→    
+   751→    parameters = [
+   752→        ToolParameter(name="name", param_type="string", description="Channel name", required=True),
+   753→        ToolParameter(name="channel_type", param_type="string", description="Type: 'text' or 'voice'", required=False, default="text", enum=["text", "voice"]),
+   754→        ToolParameter(name="category_id", param_type="string", description="Category ID (optional)", required=False, default=None),
+   755→        ToolParameter(name="topic", param_type="string", description="Topic for text channels", required=False, default=None),
+   756→    ]
+   757→    
+   758→    permission_level = ToolPermissionLevel.MODERATOR
+   759→    
+   760→    async def execute(self, args: Dict[str, Any], context: Dict[str, Any]) -> ToolResult:
+   761→        try:
+   762→            name = args["name"].strip().lower().replace(" ", "-")[:100]
+   763→            channel_type = args.get("channel_type", "text")
+   764→            category_id = args.get("category_id")
+   765→            topic = args.get("topic")
+   766→            
+   767→            guild = context.get("guild")
+   768→            if not guild:
+   769→                return ToolResult(success=False, content="❌ No guild available")
+   770→            
+   771→            if not guild.me.guild_permissions.manage_channels:
+   772→                return ToolResult(success=False, content="❌ Mere paas manage_channels permission nahi hai!")
+   773→            
+   774→            category = None
+   775→            if category_id:
+   776→                category = guild.get_channel(int(category_id))
+   777→            
+   778→            if channel_type == "voice":
+   779→                channel = await guild.create_voice_channel(name=name, category=category)
+   780→            else:
+   781→                channel = await guild.create_text_channel(name=name, topic=topic, category=category)
+   782→            
+   783→            return ToolResult(success=True, content=f"✅ Channel '{channel.name}' bana diya! 🆔 `{channel.id}`", data={"channel_id": str(channel.id), "mention": channel.mention})
+   784→        except discord.Forbidden:
+   785→            return ToolResult(success=False, content="❌ Permission denied!")
+   786→        except Exception as e:
+   787→            return ToolResult(success=False, content=f"❌ Create failed: {str(e)[:150]}")
+   788→
+   789→
+   790→class DeleteChannelTool(DiscordTool):
+   791→    """Delete a channel"""
+   792→    
+   793→    name = "delete_channel"
+   794→    description = """Permanently delete a channel. This action CANNOT be undone!"""
+   795→    
+   796→    parameters = [
+   797→        ToolParameter(name="channel_id", param_type="string", description="Channel ID to delete", required=True),
+   798→        ToolParameter(name="reason", param_type="string", description="Reason for deletion", required=False, default="Deleted by Ophelia"),
+   799→    ]
+   800→    
+   801→    permission_level = ToolPermissionLevel.OWNER  # Owner only - dangerous!
+   802→    
+   803→    async def execute(self, args: Dict[str, Any], context: Dict[str, Any]) -> ToolResult:
+   804→        try:
+   805→            channel_id = args["channel_id"]
+   806→            reason = args.get("reason", "Deleted by Ophelia")
+   807→            
+   808→            guild = context.get("guild")
+   809→            if not guild:
+   810→                return ToolResult(success=False, content="❌ No guild available")
+   811→            
+   812→            channel = guild.get_channel(int(channel_id))
+   813→            if not channel:
+   814→                return ToolResult(success=False, content="❌ Channel not found")
+   815→            
+   816→            channel_name = channel.name
+   817→            await channel(reason=reason)
+   818→            return ToolResult(success=True, content=f"🗑️ Channel '{channel_name}' delete ho gaya!", data={"deleted_channel": channel_name})
+   819→        except discord.Forbidden:
+   820→            return ToolResult(success=False, content="❌ Permission denied! Admin chahiye iske liye!")
+   821→        except Exception as e:
+   822→            return ToolResult(success=False, content=f"❌ Delete failed: {str(e)[:150]}")
+   823→
+   824→
+   825→class RenameChannelTool(DiscordTool):
+   826→    """Rename a channel"""
+   827→    
+   828→    name = "rename_channel"
+   829→    description = """Rename an existing channel."""
+   830→    
+   831→    parameters = [
+   832→        ToolParameter(name="channel_id", param_type="string", description="Channel ID to rename", required=True),
+   833→        ToolParameter(name="new_name", param_type="string", description="New channel name", required=True),
+   834→    ]
+   835→    
+   836→    permission_level = ToolPermissionLevel.MODERATOR
+   837→    
+   838→    async def execute(self, args: Dict[str, Any], context: Dict[str, Any]) -> ToolResult:
+   839→        try:
+   840→            channel_id = args["channel_id"]
+   841→            new_name = args["new_name"].strip().lower().replace(" ", "-")[:100]
+   842→            
+   843→            guild = context.get("guild")
+   844→            if not guild:
+   845→                return ToolResult(success=False, content="❌ No guild available")
+   846→            
+   847→            channel = guild.get_channel(int(channel_id))
+   848→            if not channel:
+   849→                return ToolResult(success=False, content="❌ Channel not found")
+   850→            
+   851→            old_name = channel.name
+   852→            await channel(name=new_name)
+   853→            return ToolResult(success=True, content=f"✅ Channel rename: '{old_name}' → '**{new_name}**'")
+   854→        except discord.Forbidden:
+   855→            return ToolResult(success=False, content="❌ Permission denied!")
+   856→        except Exception as e:
+   857→            return ToolResult(success=False, content=f"❌ Rename failed: {str(e)[:150]}")
+   858→
+   859→
+   860→class ListChannelsTool(DiscordTool):
+   861→    """List all channels in server"""
+   862→    
+   863→    name = "list_channels"
+   864→    description = """List all channels in the Discord server."""
+   865→    
+   866→    parameters = [
+   867→        ToolParameter(name="type_filter", param_type="string", description="Filter: 'text', 'voice', 'all'", required=False, default="all", enum=["text", "voice", "all"]),
+   868→    ]
+   869→    
+   870→    permission_level = ToolPermissionLevel.EVERYONE
+   871→    
+   872→    async def execute(self, args: Dict[str, Any], context: Dict[str, Any]) -> ToolResult:
+   873→        try:
+   874→            type_filter = args.get("type_filter", "all")
+   875→            guild = context.get("guild")
+   876→            if not guild:
+   877→                return ToolResult(success=False, content="❌ No guild available")
+   878→            
+   879→            lines = [f"📁 **Channels in {guild.name}:**\n"]
+   880→            count = 0
+   881→            
+   882→            for channel in guild.channels:
+   883→                if type_filter == "text" and not isinstance(channel, discord.TextChannel):
+   884→                    continue
+   885→                if type_filter == "voice" and not isinstance(channel, discord.VoiceChannel):
+   886→                    continue
+   887→                
+   888→                icon = "💬" if isinstance(channel, discord.TextChannel) else "🔊"
+   889→                cat = f" ({channel.category.name})" if channel.category else ""
+   890→                lines.append(f"  {icon} {channel.name}{cat} (`{channel.id}`)")
+   891→                count += 1
+   892→            
+   893→            lines.append(f"\n**Total: {count} channels**")
+   894→            return ToolResult(success=True, content="\n".join(lines), data={"count": count})
+   895→        except Exception as e:
+   896→            return ToolResult(success=False, content=f"❌ Error: {str(e)[:150]}")
+   897→
+   898→
+   899→class GetChannelInfoTool(DiscordTool):
+   900→    """Get detailed info about a specific channel"""
+   901→    
+   902→    name = "get_channel_info"
+   903→    description = """Get detailed information about a specific channel."""
+   904→    
+   905→    parameters = [
+   906→        ToolParameter(name="channel_id", param_type="string", description="Channel ID to inspect", required=True),
+   907→    ]
+   908→    
+   909→    permission_level = ToolPermissionLevel.EVERYONE
+   910→    
+   911→    async def execute(self, args: Dict[str, Any], context: Dict[str, Any]) -> ToolResult:
+   912→        try:
+   913→            channel_id = args["channel_id"]
+   914→            guild = context.get("guild")
+   915→            if not guild:
+   916→                return ToolResult(success=False, content="❌ No guild available")
+   917→            
+   918→            channel = guild.get_channel(int(channel_id))
+   919→            if not channel:
+   920→                return ToolResult(success=False, content=f"❌ Channel {channel_id} not found")
+   921→            
+   922→            ch_type = {
+   923→                discord.ChannelType.text: "💬 Text",
+   924→                discord.ChannelType.voice: "🔊 Voice",
+   925→                discord.ChannelType.category: "📁 Category",
+   926→                discord.ChannelType.forum: "📋 Forum",
+   927→            }.get(channel.type, str(channel.type))
+   928→            
+   929→            info = f"📺 **{channel.name}**\nType: {ch_type}\nID: `{channel.id}`"
+   930→            
+   931→            if isinstance(channel, discord.TextChannel):
+   932→                info += f"\nTopic: {channel.topic or 'None'}\nNSFW: {'Yes' if channel.nsfw else 'No'}\nSlowmode: {channel.slowmode_delay}s"
+   933→            elif isinstance(channel, discord.VoiceChannel):
+   934→                info += f"\nBitrate: {channel.bitrate//1000}kbps\nLimit: {channel.user_limit or '∞'}\nUsers: {len(channel.members)}"
+   935→            
+   936→            return ToolResult(success=True, content=info, data={"name": channel.name, "id": str(channel.id)})
+   937→        except Exception as e:
+   938→            return ToolResult(success=False, content=f"❌ Error: {str(e)[:150]}")
+   939→
+   940→
+   941→class SetSlowmodeTool(DiscordTool):
+   942→    """Set slowmode on a channel"""
+   943→    
+   944→    name = "set_slowmode"
+   945→    description = """Set slowmode delay on a text channel (users must wait between messages)."""
+   946→    
+   947→    parameters = [
+   948→        ToolParameter(name="channel_id", param_type="string", description="Channel ID", required=True),
+   949→        ToolParameter(name="seconds", param_type="integer", description="Slowmode in seconds (0=off, max=21600)", required=True),
+   950→    ]
+   951→    
+   952→    permission_level = ToolPermissionLevel.MODERATOR
+   953→    
+   954→    async def execute(self, args: Dict[str, Any], context: Dict[str, Any]) -> ToolResult:
+   955→        try:
+   956→            channel_id = args["channel_id"]
+   957→            seconds = min(max(args.get("seconds", 0), 0), 21600)
+   958→            
+   959→            guild = context.get("guild")
+   960→            if not guild:
+   961→                return ToolResult(success=False, content="❌ No guild available")
+   962→            
+   963→            channel = guild.get_channel(int(channel_id))
+   964→            if not channel or not isinstance(channel, discord.TextChannel):
+   965→                return ToolResult(success=False, content="❌ Text channel not found")
+   966→            
+   967→            await channel(slowmode_delay=seconds)
+   968→            display = "off" if seconds == 0 else f"{seconds}s"
+   969→            return ToolResult(success=True, content=f"⏱️ Slowmode set to **{display}** on #{channel.name}")
+   970→        except Exception as e:
+   971→            return ToolResult(success=False, content=f"❌ Failed: {str(e)[:150]}")
+   972→
+   973→
+   974→class SetTopicTool(DiscordTool):
+   975→    """Set topic on a text channel"""
+   976→    
+   977→    name = "set_topic"
+   978→    description = """Set or update the topic/description of a text channel."""
+   979→    
+   980→    parameters = [
+   981→        ToolParameter(name="channel_id", param_type="string", description="Channel ID", required=True),
+   982→        ToolParameter(name="topic", param_type="string", description="New topic (empty to clear)", required=True),
+   983→    ]
+   984→    
+   985→    permission_level = ToolPermissionLevel.MODERATOR
+   986→    
+   987→    async def execute(self, args: Dict[str, Any], context: Dict[str, Any]) -> ToolResult:
+   988→        try:
+   989→            channel_id = args["channel_id"]
+   990→            topic = args.get("topic", "")[:1024] or None
+   991→            
+   992→            guild = context.get("guild")
+   993→            if not guild:
+   994→                return ToolResult(success=False, content="❌ No guild available")
+   995→            
+   996→            channel = guild.get_channel(int(channel_id))
+   997→            if not channel or not isinstance(channel, discord.TextChannel):
+   998→                return ToolResult(success=False, content="❌ Text channel not found")
+   999→            
+  1000→            await channel(topic=topic)
+  1001→            return ToolResult(success=True, content=f"📝 Topic updated on #{channel.name}!")
+  1002→        except Exception as e:
+  1003→            return ToolResult(success=False, content=f"❌ Failed: {str(e)[:150]}")
+  1004→
+  1005→
+  1006→# ============================================================
+  1007→# 🎭 ROLE TOOLS
+  1008→# ============================================================
+  1009→
+  1010→class CreateRoleTool(DiscordTool):
+  1011→    """Create a new role"""
+  1012→    
+  1013→    name = "create_role"
+  1014→    description = """Create a new role in the server with optional color and permissions."""
+  1015→    
+  1016→    parameters = [
+  1017→        ToolParameter(name="name", param_type="string", description="Role name", required=True),
+  1018→        ToolParameter(name="color", param_type="string", description="Color hex (e.g., 'FF5500') or name", required=False, default="0x99AAB5"),
+  1019→        ToolParameter(name="hoist", param_type="boolean", description="Show separately in member list", required=False, default=False),
+  1020→        ToolParameter(name="mentionable", param_type="boolean", description="Allow anyone to @mention", required=False, default=False),
+  1021→        ToolParameter(name="permissions", param_type="string", description="Comma-separated permissions (e.g., 'manage_messages,kick_members')", required=False, default=""),
+  1022→    ]
+  1023→    
+  1024→    permission_level = ToolPermissionLevel.MODERATOR
+  1025→    
+  1026→    async def execute(self, args: Dict[str, Any], context: Dict[str, Any]) -> ToolResult:
+  1027→        try:
+  1028→            name = args["name"][:100]
+  1029→            color_str = args.get("color", "0x99AAB5")
+  1030→            hoist = args.get("hoist", False)
+  1031→            mentionable = args.get("mentionable", False)
+  1032→            perms_str = args.get("permissions", "")
+  1033→            
+  1034→            # Parse color
+  1035→            color_map = {"red": 0xFF0000, "green": 0x00FF00, "blue": 0x0000FF, "yellow": 0xFFFF00, "purple": 0x9900FF}
+  1036→            if color_str.lower() in color_map:
+  1037→                color = color_map[color_str.lower()]
+  1038→            elif color_str.startswith("0x"):
+  1039→                color = int(color_str, 16)
+  1040→            elif color_str.startswith("#"):
+  1041→                color = int(color_str[1:], 16)
+  1042→            else:
+  1043→                color = 0x99AAB5
+  1044→            
+  1045→            # Parse permissions
+  1046→            permissions = discord.Permissions.none()
+  1047→            if perms_str:
+  1048→                perm_list = [p.strip() for p in perms_str.split(",")]
+  1049→                for perm in perm_list:
+  1050→                    if hasattr(permissions, perm):
+  1051→                        setattr(permissions, perm, True)
+  1052→            
+  1053→            guild = context.get("guild")
+  1054→            if not guild:
+  1055→                return ToolResult(success=False, content="❌ No guild available")
+  1056→            
+  1057→            role = await guild.create_role(
+  1058→                name=name,
+  1059→                color=color,
+  1060→                hoist=hoist,
+  1061→                mentionable=mentionable,
+  1062→                permissions=permissions
+  1063→            )
+  1064→            
+  1065→            return ToolResult(success=True, content=f"✅ Role '{role.name}' bana diya! 🆔 `{role.id}` - {role.mention}", data={"role_id": str(role.id), "mention": role.mention})
+  1066→        except discord.Forbidden:
+  1067→            return ToolResult(success=False, content="❌ Permission denied! Manage Roles chahiye!")
+  1068→        except Exception as e:
+  1069→            return ToolResult(success=False, content=f"❌ Create role failed: {str(e)[:150]}")
+  1070→
+  1071→
+  1072→class DeleteRoleTool(DiscordTool):
+  1073→    """Delete a role"""
+  1074→    
+  1075→    name = "delete_role"
+  1076→    description = """Permanently delete a role. This CANNOT be undone!"""
+  1077→    
+  1078→    parameters = [
+  1079→        ToolParameter(name="role_id", param_type="string", description="Role ID to delete", required=True),
+  1080→        ToolParameter(name="reason", param_type="string", description="Reason for deletion", required=False, default="Deleted by Ophelia"),
+  1081→    ]
+  1082→    
+  1083→    permission_level = ToolPermissionLevel.OWNER  # Owner only - dangerous!
+  1084→    
+  1085→    async def execute(self, args: Dict[str, Any], context: Dict[str, Any]) -> ToolResult:
+  1086→        try:
+  1087→            role_id = args["role_id"]
+  1088→            reason = args.get("reason", "Deleted by Ophelia")
+  1089→            
+  1090→            guild = context.get("guild")
+  1091→            if not guild:
+  1092→                return ToolResult(success=False, content="❌ No guild available")
+  1093→            
+  1094→            role = guild.get_role(int(role_id))
+  1095→            if not role:
+  1096→                return ToolResult(success=False, content="❌ Role not found")
+  1097→            
+  1098→            if role.is_default():
+  1099→                return ToolResult(success=False, content="❌ @everyone role delete nahi kar sakte!")
+  1100→            
+  1101→            role_name = role.name
+  1102→            await role(reason=reason)
+  1103→            return ToolResult(success=True, content=f"🗑️ Role '{role_name}' delete ho gaya!")
+  1104→        except discord.Forbidden:
+  1105→            return ToolResult(success=False, content="❌ Permission denied! Admin chahiye!")
+  1106→        except Exception as e:
+  1107→            return ToolResult(success=False, content=f"❌ Delete failed: {str(e)[:150]}")
+  1108→
+  1109→
+  1110→class AssignRoleTool(DiscordTool):
+  1111→    """Assign a role to a member"""
+  1112→    
+  1113→    name = "assign_role"
+  1114→    description = """Give/add a role to a member."""
+  1115→    
+  1116→    parameters = [
+  1117→        ToolParameter(name="user_id", param_type="string", description="User ID", required=True),
+  1118→        ToolParameter(name="role_id", param_type="string", description="Role ID to assign", required=True),
+  1119→        ToolParameter(name="reason", param_type="string", description="Reason", required=False, default="Role assigned by Ophelia"),
+  1120→    ]
+  1121→    
+  1122→    permission_level = ToolPermissionLevel.MODERATOR
+  1123→    
+  1124→    async def execute(self, args: Dict[str, Any], context: Dict[str, Any]) -> ToolResult:
+  1125→        try:
+  1126→            user_id = args["user_id"]
+  1127→            role_id = args["role_id"]
+  1128→            reason = args.get("reason", "Role assigned by Ophelia")
+  1129→            
+  1130→            guild = context.get("guild")
+  1131→            if not guild:
+  1132→                return ToolResult(success=False, content="❌ No guild available")
+  1133→            
+  1134→            member = guild.get_member(int(user_id))
+  1135→            role = guild.get_role(int(role_id))
+  1136→            
+  1137→            if not member:
+  1138→                return ToolResult(success=False, content="❌ User not found")
+  1139→            if not role:
+  1140→                return ToolResult(success=False, content="❌ Role not found")
+  1141→            
+  1142→            if role >= guild.me.top_role:
+  1143→                return ToolResult(success=False, content="❌ Ye role meri se higher hai, assign nahi kar sakti!")
+  1144→            
+  1145→            await member.add_roles(role, reason=reason)
+  1146→            return ToolResult(success=True, content=f"✅ **{member.display_name}** ko role **{role.name}** mil gaya!")
+  1147→        except discord.Forbidden:
+  1148→            return ToolResult(success=False, content="❌ Permission denied!")
+  1149→        except Exception as e:
+  1150→            return ToolResult(success=False, content=f"❌ Assign failed: {str(e)[:150]}")
+  1151→
+  1152→
+  1153→class RemoveRoleTool(DiscordTool):
+  1154→    """Remove a role from a member"""
+  1155→    
+  1156→    name = "remove_role"
+  1157→    description = """Remove a role from a member."""
+  1158→    
+  1159→    parameters = [
+  1160→        ToolParameter(name="user_id", param_type="string", description="User ID", required=True),
+  1161→        ToolParameter(name="role_id", param_type="string", description="Role ID to remove", required=True),
+  1162→        ToolParameter(name="reason", param_type="string", description="Reason", required=False, default="Role removed by Ophelia"),
+  1163→    ]
+  1164→    
+  1165→    permission_level = ToolPermissionLevel.MODERATOR
+  1166→    
+  1167→    async def execute(self, args: Dict[str, Any], context: Dict[str, Any]) -> ToolResult:
+  1168→        try:
+  1169→            user_id = args["user_id"]
+  1170→            role_id = args["role_id"]
+  1171→            reason = args.get("reason", "Role removed by Ophelia")
+  1172→            
+  1173→            guild = context.get("guild")
+  1174→            if not guild:
+  1175→                return ToolResult(success=False, content="❌ No guild available")
+  1176→            
+  1177→            member = guild.get_member(int(user_id))
+  1178→            role = guild.get_role(int(role_id))
+  1179→            
+  1180→            if not member:
+  1181→                return ToolResult(success=False, content="❌ User not found")
+  1182→            if not role:
+  1183→                return ToolResult(success=False, content="❌ Role not found")
+  1184→            
+  1185→            if role >= guild.me.top_role:
+  1186→                return ToolResult(success=False, content="❌ Ye role meri se higher hai, remove nahi kar sakti!")
+  1187→            
+  1188→            await member.remove_roles(role, reason=reason)
+  1189→            return ToolResult(success=True, content=f"✅ **{member.display_name}** se role **{role.name}** hataya!")
+  1190→        except discord.Forbidden:
+  1191→            return ToolResult(success=False, content="❌ Permission denied!")
+  1192→        except Exception as e:
+  1193→            return ToolResult(success=False, content=f"❌ Remove failed: {str(e)[:150]}")
+  1194→
+  1195→
+  1196→class ListRolesTool(DiscordTool):
+  1197→    """List all roles in the server"""
+  1198→    
+  1199→    name = "list_roles"
+  1200→    description = """List all roles in the server with their IDs and member counts."""
+  1201→    
+  1202→    parameters = []  # No params needed
+  1203→    
+  1204→    permission_level = ToolPermissionLevel.EVERYONE
+  1205→    
+  1206→    async def execute(self, args: Dict[str, Any], context: Dict[str, Any]) -> ToolResult:
+  1207→        try:
+  1208→            guild = context.get("guild")
+  1209→            if not guild:
+  1210→                return ToolResult(success=False, content="❌ No guild available")
+  1211→            
+  1212→            lines = [f"🎭 **Roles in {guild.name}** ({len(guild.roles)} total):\n"]
+  1213→            
+  1214→            # Sort by position (highest first)
+  1215→            sorted_roles = sorted(guild.roles, key=lambda r: r.position, reverse=True)
+  1216→            
+  1217→            for role in sorted_roles:
+  1218→                member_count = len(role.members)
+  1219→                color_hex = f"#{role.color.value:06X}" if role.color.value else "default"
+  1220→                mention = "@" if role.mentionable else ""
+  1221→                hoist = "📌 " if role.hoist else ""
+  1222→                lines.append(f"  {hoist}{mention}**{role.name}** (`{role.id}`) - {color_hex} - {member_count} members")
+  1223→            
+  1224→            return ToolResult(success=True, content="\n".join(lines), data={"count": len(guild.roles)})
+  1225→        except Exception as e:
+  1226→            return ToolResult(success=False, content=f"❌ Error: {str(e)[:150]}")
+  1227→
+  1228→
+  1229→# ============================================================
+  1230→# 🔗 OTHER TOOLS
+  1231→# ============================================================
+  1232→
+  1233→class GetServerInfoTool(DiscordTool):
+  1234→    """Get comprehensive server information"""
+  1235→    
+  1236→    name = "get_server_info"
+  1237→    description = """Get detailed information about the Discord server."""
+  1238→    
+  1239→    parameters = []
+  1240→    
+  1241→    permission_level = ToolPermissionLevel.EVERYONE
+  1242→    
+  1243→    async def execute(self, args: Dict[str, Any], context: Dict[str, Any]) -> ToolResult:
+  1244→        try:
+  1245→            guild = context.get("guild")
+  1246→            if not guild:
+  1247→                return ToolResult(success=False, content="❌ No guild available")
+  1248→            
+  1249→            online = sum(1 for m in guild.members if m.status == discord.Status.online)
+  1250→            bots = sum(1 for m in guild.members if m.bot)
+  1251→            humans = guild.member_count - bots
+  1252→            
+  1253→            info = f"""🏠 **{guild.name}**
+  1254→🆔 `{guild.id}`
+  1255→👑 Owner: {guild.owner.display_name if guild.owner else '?'} (`{guild.owner_id}`)
+  1256→
+  1257→📊 **Stats:**
+  1258→• Members: {guild.member_count} ({humans} 👥 + {bots} 🤖)
+  1259→• Online: ~{online}
+  1260→• Channels: {len(guild.text_channels)} 💬 + {len(guild.voice_channels)} 🔊
+  1261→• Roles: {len(guild.roles)}
+  1262→• Emojis: {len(guild.emojis)}
+  1263→
+  1264→📅 Created: {guild.created_at.strftime('%Y-%m-%d')}
+  1265→✅ Verification: {str(guild.verification_level)}"""
+  1266→            
+  1267→            return ToolResult(success=True, content=info, data={"name": guild.name, "id": str(guild.id), "members": guild.member_count})
+  1268→        except Exception as e:
+  1269→            return ToolResult(success=False, content=f"❌ Error: {str(e)[:150]}")
+  1270→
+  1271→
+  1272→class AddReactionTool(DiscordTool):
+  1273→    """Add emoji reaction to a message"""
+  1274→    
+  1275→    name = "add_reaction"
+  1276→    description = """Add an emoji reaction to a message."""
+  1277→    
+  1278→    parameters = [
+  1279→        ToolParameter(name="channel_id", param_type="string", description="Channel ID", required=True),
+  1280→        ToolParameter(name="message_id", param_type="string", description="Message ID", required=True),
+  1281→        ToolParameter(name="emoji", param_type="string", description="Emoji (e.g., 👍, 🔥, ❤️)", required=True),
+  1282→    ]
+  1283→    
+  1284→    permission_level = ToolPermissionLevel.EVERYONE
+  1285→    
+  1286→    async def execute(self, args: Dict[str, Any], context: Dict[str, Any]) -> ToolResult:
+  1287→        try:
+  1288→            channel_id = args["channel_id"]
+  1289→            message_id = args["message_id"]
+  1290→            emoji = args["emoji"]
+  1291→            
+  1292→            guild = context.get("guild")
+  1293→            if not guild:
+  1294→                return ToolResult(success=False, content="❌ No guild available")
+  1295→            
+  1296→            channel = guild.get_channel(int(channel_id))
+  1297→            if not channel:
+  1298→                return ToolResult(success=False, content="❌ Channel not found")
+  1299→            
+  1300→            message = await channel.fetch_message(int(message_id))
+  1301→            await message.add_reaction(emoji)
+  1302→            return ToolResult(success=True, content=f"✅ Added reaction {emoji}!")
+  1303→        except discord.HTTPException as e:
+  1304→            if "unknown_emoji" in str(e).lower():
+  1305→                return ToolResult(success=False, content=f"❌ Unknown emoji: {emoji}")
+  1306→            return ToolResult(success=False, content=f"❌ Could not react: {str(e)[:100]}")
+  1307→        except Exception as e:
+  1308→            return ToolResult(success=False, content=f"❌ Error: {str(e)[:150]}")
+  1309→
+  1310→
+  1311→class CreateInviteTool(DiscordTool):
+  1312→    """Create an invite link for a channel"""
+  1313→    
+  1314→    name = "create_invite"
+  1315→    description = """Create an invite link for a channel."""
+  1316→    
+  1317→    parameters = [
+  1318→        ToolParameter(name="channel_id", param_type="string", description="Channel ID", required=True),
+  1319→        ToolParameter(name="max_uses", param_type="integer", description="Max uses (0=unlimited)", required=False, default=0),
+  1320→        ToolParameter(name="max_age_minutes", param_type="integer", description="Expiry in minutes (0=never)", required=False, default=1440),
+  1321→    ]
+  1322→    
+  1323→    permission_level = ToolPermissionLevel.MODERATOR
+  1324→    
+  1325→    async def execute(self, args: Dict[str, Any], context: Dict[str, Any]) -> ToolResult:
+  1326→        try:
+  1327→            channel_id = args["channel_id"]
+  1328→            max_uses = args.get("max_uses", 0) or 0
+  1329→            max_age = (args.get("max_age_minutes", 1440) or 0) * 60  # Convert to seconds
+  1330→            
+  1331→            guild = context.get("guild")
+  1332→            if not guild:
+  1333→                return ToolResult(success=False, content="❌ No guild available")
+  1334→            
+  1335→            channel = guild.get_channel(int(channel_id))
+  1336→            if not channel:
+  1337→                return ToolResult(success=False, content="❌ Channel not found")
+  1338→            
+  1339→            invite = await channel.create_invite(max_uses=max_uses, max_age=max_age)
+  1340→            return ToolResult(success=True, content=f"🔗 **Invite Link:** {invite.url}\nUses: {invite.uses}/{invite.max_uses}", data={"invite_url": invite.url})
+  1341→        except discord.Forbidden:
+  1342→            return ToolResult(success=False, content="❌ No permission to create invites!")
+  1343→        except Exception as e:
+  1344→            return ToolResult(success=False, content=f"❌ Invite failed: {str(e)[:150]}")
+  1345→
+  1346→
+  1347→class CreateThreadTool(DiscordTool):
+  1348→    """Create a thread in a channel"""
+  1349→    
+  1350→    name = "create_thread"
+  1351→    description = """Create a new thread in a text channel."""
+  1352→    
+  1353→    parameters = [
+  1354→        ToolParameter(name="channel_id", param_type="string", description="Parent channel ID", required=True),
+  1355→        ToolParameter(name="name", param_type="string", description="Thread name", required=True),
+  1356→        ToolParameter(name="message_id", param_type="string", description="Optional: Create from message", required=False, default=None),
+  1357→    ]
+  1358→    
+  1359→    permission_level = ToolPermissionLevel.MODERATOR
+  1360→    
+  1361→    async def execute(self, args: Dict[str, Any], context: Dict[str, Any]) -> ToolResult:
+  1362→        try:
+  1363→            channel_id = args["channel_id"]
+  1364→            name = args["name"][:100]
+  1365→            message_id = args.get("message_id")
+  1366→            
+  1367→            guild = context.get("guild")
+  1368→            if not guild:
+  1369→                return ToolResult(success=False, content="❌ No guild available")
+  1370→            
+  1371→            channel = guild.get_channel(int(channel_id))
+  1372→            if not channel or not isinstance(channel, discord.TextChannel):
+  1373→                return ToolResult(success=False, content="❌ Text channel not found")
+  1374→            
+  1375→            if message_id:
+  1376→                message = await channel.fetch_message(int(message_id))
+  1377→                thread = await message.create_thread(name=name)
+  1378→            else:
+  1379→                thread = await channel.create_thread(name=name, type=discord.ChannelType.public_thread)
+  1380→            
+  1381→            return ToolResult(success=True, content=f"🧵 Thread '{thread.name}' bana diya! 🆔 `{thread.id}`", data={"thread_id": str(thread.id)})
+  1382→        except discord.Forbidden:
+  1383→            return ToolResult(success=False, content="❌ Permission denied!")
+  1384→        except Exception as e:
+  1385→            return ToolResult(success=False, content=f"❌ Thread failed: {str(e)[:150]}")
+  1386→
+  1387→
+  1388→class ListMembersTool(DiscordTool):
+  1389→    """List members in the server"""
+  1390→    
+  1391→    name = "list_members"
+  1392→    description = """List members in the server with filtering options."""
+  1393→    
+  1394→    parameters = [
+  1395→        ToolParameter(name="limit", param_type="integer", description="Max members to show (default: 20)", required=False, default=20),
+  1396→        ToolParameter(name="status_filter", param_type="string", description="Filter: 'online', 'idle', 'dnd', 'offline', 'all'", required=False, default="all"),
+  1397→        ToolParameter(name="include_bots", param_type="boolean", description="Include bots in list", required=False, default=False),
+  1398→    ]
+  1399→    
+  1400→    permission_level = ToolPermissionLevel.EVERYONE
+  1401→    
+  1402→    async def execute(self, args: Dict[str, Any], context: Dict[str, Any]) -> ToolResult:
+  1403→        try:
+  1404→            limit = min(args.get("limit", 20), 50)
+  1405→            status_filter = args.get("status_filter", "all")
+  1406→            include_bots = args.get("include_bots", False)
+  1407→            
+  1408→            guild = context.get("guild")
+  1409→            if not guild:
+  1410→                return ToolResult(success=False, content="❌ No guild available")
+  1411→            
+  1412→            members = []
+  1413→            for member in guild.members:
+  1414→                if not include_bots and member.bot:
+  1415→                    continue
+  1416→                if status_filter != "all" and str(member.status) != status_filter:
+  1417→                    continue
+  1418→                members.append(member)
+  1419→                if len(members) >= limit:
+  1420→                    break
+  1421→            
+  1422→            lines = [f"👥 **Members** ({len(members)} shown):\n"]
+  1423→            status_icons = {"online": "🟢", "idle": "🌙", "dnd": "🔴", "offline": "⚫"}
+  1424→            
+  1425→            for m in members:
+  1426→                icon = status_icons.get(str(m.status), "⚫")
+  1427→                bot_tag = " 🤖" if m.bot else ""
+  1428→                roles = len(m.roles) - 1  # Exclude @everyone
+  1429→                lines.append(f"  {icon} **{m.display_name}**`{m.id}`{bot_tag} - {roles} roles")
+  1430→            
+  1431→            return ToolResult(success=True, content="\n".join(lines), data={"count": len(members)})
+  1432→        except Exception as e:
+  1433→            return ToolResult(success=False, content=f"❌ Error: {str(e)[:150]}")
+  1434→
+  1435→
+  1436→# ============================================================
+  1437→# 📋 COMPLETE TOOL REGISTRY
+  1438→# ============================================================
+  1439→
+  1440→ALL_COMPLETE_DISCORD_TOOLS = [
+  1441→    # 📝 Message Tools (9)
+  1442→    SearchMessagesTool,
+  1443→    ReadChannelTool,
+  1444→    SendMessageTool,
+  1445→    EditMessageTool,
+  1446→    DeleteMessageTool,
+  1447→    PinMessageTool,
+  1448→    UnpinMessageTool,
+  1449→    SendEmbedTool,
+  1450→    AddReactionTool,
+  1451→    
+  1452→    # 👥 Member Tools (10)
+  1453→    GetMemberTool,
+  1454→    KickUserTool,
+  1455→    BanUserTool,
+  1456→    UnbanUserTool,
+  1457→    TimeoutUserTool,
+  1458→    RemoveTimeoutTool,
+  1459→    GetBannedUsersTool,
+  1460→    EditNicknameTool,
+  1461→    ListMembersTool,
+  1462→    
+  1463→    # 🔧 Channel Tools (8)
+  1464→    CreateChannelTool,
+  1465→    DeleteChannelTool,
+  1466→    RenameChannelTool,
+  1467→    ListChannelsTool,
+  1468→    GetChannelInfoTool,
+  1469→    SetSlowmodeTool,
+  1470→    SetTopicTool,
+  1471→    CreateThreadTool,
+  1472→    
+  1473→    # 🎭 Role Tools (5)
+  1474→    CreateRoleTool,
+  1475→    DeleteRoleTool,
+  1476→    AssignRoleTool,
+  1477→    RemoveRoleTool,
+  1478→    ListRolesTool,
+  1479→    
+  1480→    # 🔗 Other Tools (3)
+  1481→    GetServerInfoTool,
+  1482→    CreateInviteTool,
+  1483→]
+  1484→
+  1485→TOTAL_TOOLS_COUNT = len(ALL_COMPLETE_DISCORD_TOOLS)
+  1486→
+  1487→# Tool names list for easy reference (imported by tool_executor.py)
+  1488→COMPLETE_TOOL_NAMES = [tool.name for tool in ALL_COMPLETE_DISCORD_TOOLS]
+  1489→
+  1490→
+  1491→def get_all_complete_tools(bot=None) -> List[DiscordTool]:
+  1492→    """Instantiate all complete tools"""
+  1493→    return [tool_cls(bot=bot) for tool_cls in ALL_COMPLETE_DISCORD_TOOLS]
+  1494→
+  1495→
+  1496→def print_tool_summary():
+  1497→    """Print summary of all available tools"""
+  1498→    print("\n" + "="*70)
+  1499→    print(f"🔧 COMPLETE DISCORD TOOLS - {TOTAL_TOOLS_COUNT} TOOLS AVAILABLE!")
+  1500→    print("="*70)
+  1501→    
+  1502→    categories = {
+  1503→        "📝 Messages": ["search_messages", "read_channel_messages", "send_message", "edit_message", 
+  1504→                       "delete_message", "pin_message", "unpin_message", "send_embed", "add_reaction"],
+  1505→        "👥 Members": ["get_member_info", "kick_user", "ban_user", "unban_user", "timeout_user",
+  1506→                      "remove_timeout", "get_banned_users", "edit_nickname", "list_members"],
+  1507→        "🔧 Channels": ["create_channel", "delete_channel", "rename_channel", "list_channels",
+  1508→                       "get_channel_info", "set_slowmode", "set_topic", "create_thread"],
+  1509→        "🎭 Roles": ["create_role", "delete_role", "assign_role", "remove_role", "list_roles"],
+  1510→        "🔗 Other": ["get_server_info", "create_invite"],
+  1511→    }
+  1512→    
+  1513→    for cat, tools in categories.items():
+  1514→        print(f"\n{cat} ({len(tools)} tools):")
+  1515→        for tool in tools:
+  1516→            print(f"  • {tool}")
+  1517→    
+  1518→    print("\n" + "="*70)
+  1519→    print("✅ All tools perform REAL Discord API actions!")
+  1520→    print("="*70 + "\n")
+  1521→
+  1522→
+  1523→if __name__ == "__main__":
+  1524→    print_tool_summary()
+  1525→
