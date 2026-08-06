@@ -1,0 +1,1000 @@
+     1→2026-08-06T10:20:08.739479196Z [err]          <button
+     2→2026-08-06T10:20:08.739483006Z [err]          <span class="hidden" id="cf-footer-ip">152.55.176.230</span>
+     3→2026-08-06T10:20:08.739486576Z [err]              class="border border-solid bg-white cf-button cursor-pointer ml-4 px-4 py-2 rounded"
+     4→2026-08-06T10:20:08.739490196Z [err]          <span class="cf-footer-separator sm:hidden">&bull;</span>
+     5→2026-08-06T10:20:08.739492966Z [err]              id="feedback-button-no"
+     6→2026-08-06T10:20:08.739498126Z [err]        </span>
+     7→2026-08-06T10:20:08.739498926Z [err]              type="button"
+     8→2026-08-06T10:20:08.739502586Z [err]          >
+     9→2026-08-06T10:20:08.739505476Z [err]              No
+    10→2026-08-06T10:20:08.739508156Z [err]          </button>
+    11→2026-08-06T10:20:08.739510925Z [err]      </div>
+    12→2026-08-06T10:20:08.739513825Z [err]      <div class="feedback-success feedback-hidden" id="error-feedback-success">
+    13→2026-08-06T10:20:08.739516605Z [err]          Thank you for your feedback!
+    14→2026-08-06T10:20:08.739519305Z [err]      </div>
+    15→2026-08-06T10:20:08.739521945Z [err]  </div> <div class="cf-error-footer cf-wrapper w-240 lg:w-full py-10 sm:py-4 sm:px-8 mx-auto text-center sm:text-left border-solid border-0 border-t border-gray-300">
+    16→2026-08-06T10:20:08.739524895Z [err]      <p class="text-13">
+    17→2026-08-06T10:20:08.739527765Z [err]        <span class="cf-footer-item sm:block sm:mb-1">Cloudflare Ray ID: <strong class="font-semibold">a26d4ea9084b9ddb</strong></span>
+    18→2026-08-06T10:20:08.739530675Z [err]        <span class="cf-footer-separator sm:hidden">&bull;</span>
+    19→2026-08-06T10:20:08.740536214Z [err]        <span class="cf-footer-item sm:block sm:mb-1"><span>Performance &amp; security by</span> <a rel="noopener noreferrer" href="https://www.cloudflare.com/5xx-error-landing" id="brand_link" target="_blank">Cloudflare</a></span>
+    20→2026-08-06T10:20:08.740539273Z [err]        
+    21→2026-08-06T10:20:08.740541633Z [err]      </p>
+    22→2026-08-06T10:20:08.740543963Z [err]      <script>(function(){function d(){var b=a.getElementById("cf-footer-item-ip"),c=a.getElementById("cf-footer-ip-reveal");b&&"classList"in b&&(b.classList.remove("hidden"),c.addEventListener("click",function(){c.classList.add("hidden");a.getElementById("cf-footer-ip").classList.remove("hidden")}))}var a=document;document.addEventListener&&a.addEventListener("DOMContentLoaded",d)})();</script>
+    23→2026-08-06T10:20:08.740546373Z [err]    </div><!-- /.error-footer -->
+    24→2026-08-06T10:20:08.740549033Z [err]              </div>
+    25→2026-08-06T10:20:08.740551193Z [err]              <!-- /#cf-error-details -->
+    26→2026-08-06T10:20:08.740553433Z [err]          </div>
+    27→2026-08-06T10:20:08.740555813Z [err]          <!-- /#cf-wrapper -->
+    28→2026-08-06T10:20:08.740558133Z [err]  
+    29→2026-08-06T10:20:08.740560443Z [err]           <script>
+    30→2026-08-06T10:20:08.740562703Z [err]      window._cf_translation = {};
+    31→2026-08-06T10:20:08.740565163Z [err]      
+    32→2026-08-06T10:20:08.740567733Z [err]      
+    33→2026-08-06T10:20:08.740570283Z [err]    </script> 
+    34→2026-08-06T10:20:08.740572983Z [err]          
+    35→2026-08-06T10:20:08.740575263Z [err]      <script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a26d4ea9084b9ddb',t:'MTc4NjAxMTYwOA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+    36→2026-08-06T10:20:08.741361974Z [err]  </html>
+    37→2026-08-06T10:20:08.741364604Z [err]  2026-08-06 10:20:08 | asyncio | ERROR | Unclosed connector
+    38→2026-08-06T10:20:08.741367174Z [err]  connections: ['deque([(<aiohttp.client_proto.ResponseHandler object at 0x7fbe9da37290>, 6012592.558370563)])']
+    39→2026-08-06T10:20:08.741369804Z [err]  connector: <aiohttp.connector.TCPConnector object at 0x7fbe9d9ee380>
+    40→2026-08-06T10:20:10.061816595Z [err]  2026-08-06 10:20:10 | discord.client | WARNING | PyNaCl is not installed, voice will NOT be supported
+    41→2026-08-06T10:20:10.061819465Z [err]  2026-08-06 10:20:10 | discord.client | WARNING | davey is not installed, voice will NOT be supported
+    42→2026-08-06T10:20:10.061822055Z [err]  2026-08-06 10:20:10 | discord.client | INFO | logging in using static token
+    43→2026-08-06T10:20:10.094064552Z [err]  2026-08-06 10:20:10 | OpheliaAI | ERROR | ❌ Fatal error: 429 Too Many Requests (error code: 0): <!doctype html>
+    44→2026-08-06T10:20:10.094068852Z [err]  <!--[if lt IE 7]> <html class="no-js ie6 oldie" lang="en-US"> <![endif]-->
+    45→2026-08-06T10:20:10.094072442Z [err]  <!--[if IE 7]>    <html class="no-js ie7 oldie" lang="en-US"> <![endif]-->
+    46→2026-08-06T10:20:10.094075972Z [err]  <!--[if IE 8]>    <html class="no-js ie8 oldie" lang="en-US"> <![endif]-->
+    47→2026-08-06T10:20:10.094079542Z [err]  <!--[if gt IE 8]><!-->
+    48→2026-08-06T10:20:10.094082662Z [err]  <html class="no-js" lang="en-US">
+    49→2026-08-06T10:20:10.094086492Z [err]      <!--<![endif]-->
+    50→2026-08-06T10:20:10.094090792Z [err]      <head>
+    51→2026-08-06T10:20:10.094094042Z [err]          <title>Access denied | discord.com used Cloudflare to restrict access | discord.com | Cloudflare</title>
+    52→2026-08-06T10:20:10.094097052Z [err]          <meta charset="UTF-8" />
+    53→2026-08-06T10:20:10.094100142Z [err]  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    54→2026-08-06T10:20:10.094103482Z [err]  <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    55→2026-08-06T10:20:10.094107052Z [err]  <meta name="robots" content="noindex, nofollow" />
+    56→2026-08-06T10:20:10.094110622Z [err]  <meta name="viewport" content="width=device-width,initial-scale=1" />
+    57→2026-08-06T10:20:10.094113712Z [err]  <link rel="stylesheet" id="cf_styles-css" href="/cdn-cgi/styles/main.css" /> <script>
+    58→2026-08-06T10:20:10.094117112Z [err]    (function(){if(document.addEventListener&&window.XMLHttpRequest&&JSON&&JSON.stringify){var e=function(a){var c=document.getElementById("error-feedback-survey"),d=document.getElementById("error-feedback-success"),b=new XMLHttpRequest;a={event:"feedback clicked",properties:{errorCode: 1015 },helpful:a,version: 1 };b.open("POST","https://sparrow.cloudflare.com/api/v1/event");b.setRequestHeader("Content-Type","application/json");b.setRequestHeader("Sparrow-Source-Key","c771f0e4b54944bebf4261d44bd79a1e");
+    59→2026-08-06T10:20:10.095374327Z [err]                  <header
+    60→2026-08-06T10:20:10.095381717Z [err]  b.send(JSON.stringify(a));c.classList.add("feedback-hidden");d.classList.remove("feedback-hidden")};document.addEventListener("DOMContentLoaded",function(){var a=document.getElementById("error-feedback"),c=document.getElementById("feedback-button-yes"),d=document.getElementById("feedback-button-no");"classList"in a&&(a.classList.remove("feedback-hidden"),c.addEventListener("click",function(){e(!0)}),d.addEventListener("click",function(){e(!1)}))})}})();
+    61→2026-08-06T10:20:10.095387837Z [err]                      class="mx-auto pt-10 lg:pt-6 lg:px-8 w-240 lg:w-full mb-15 antialiased"
+    62→2026-08-06T10:20:10.095390227Z [err]  </script>
+    63→2026-08-06T10:20:10.095396677Z [err]          <script
+    64→2026-08-06T10:20:10.095397007Z [err]                  >
+    65→2026-08-06T10:20:10.095402057Z [err]              defer
+    66→2026-08-06T10:20:10.095404897Z [err]                      <h1
+    67→2026-08-06T10:20:10.095408967Z [err]              src="https://performance.radar.cloudflare.com/beacon.js"
+    68→2026-08-06T10:20:10.095413946Z [err]          ></script>
+    69→2026-08-06T10:20:10.095414296Z [err]                          class="inline-block md:block mr-2 md:mb-2 font-light text-60 md:text-3xl text-black-dark leading-tight"
+    70→2026-08-06T10:20:10.095418876Z [err]      </head>
+    71→2026-08-06T10:20:10.095422826Z [err]      <body>
+    72→2026-08-06T10:20:10.095425966Z [err]          <div id="cf-wrapper">
+    73→2026-08-06T10:20:10.095428956Z [err]              <div
+    74→2026-08-06T10:20:10.095432766Z [err]                  class="cf-alert cf-alert-error cf-cookie-error hidden"
+    75→2026-08-06T10:20:10.095435676Z [err]                  id="cookie-alert"
+    76→2026-08-06T10:20:10.095438326Z [err]                  data-translate="enable_cookies"
+    77→2026-08-06T10:20:10.095441086Z [err]              >
+    78→2026-08-06T10:20:10.095443816Z [err]                  Please enable cookies.
+    79→2026-08-06T10:20:10.095446116Z [err]              </div>
+    80→2026-08-06T10:20:10.095448916Z [err]              <div id="cf-error-details" class="p-0">
+    81→2026-08-06T10:20:10.097026628Z [err]                      >
+    82→2026-08-06T10:20:10.097035148Z [err]                          <span data-translate="error">Error</span>
+    83→2026-08-06T10:20:10.097039058Z [err]                          <span>1015</span>
+    84→2026-08-06T10:20:10.097043018Z [err]                      </h1>
+    85→2026-08-06T10:20:10.097050298Z [err]                      <span
+    86→2026-08-06T10:20:10.097053858Z [err]                          class="inline-block md:block heading-ray-id font-mono text-15 lg:text-sm lg:leading-relaxed"
+    87→2026-08-06T10:20:10.097057038Z [err]                          >Ray ID: a26d4eb30add055e &bull;</span
+    88→2026-08-06T10:20:10.097060408Z [err]                      >
+    89→2026-08-06T10:20:10.097063638Z [err]                      <span
+    90→2026-08-06T10:20:10.097067258Z [err]                          class="inline-block md:block heading-ray-id font-mono text-15 lg:text-sm lg:leading-relaxed"
+    91→2026-08-06T10:20:10.097070168Z [err]                          >2026-08-06 10:20:10 UTC</span
+    92→2026-08-06T10:20:10.097073328Z [err]                      >
+    93→2026-08-06T10:20:10.097076608Z [err]                      <h2
+    94→2026-08-06T10:20:10.097079708Z [err]                          class="text-gray-600 leading-1.3 text-3xl lg:text-2xl font-light"
+    95→2026-08-06T10:20:10.097083398Z [err]                      >
+    96→2026-08-06T10:20:10.097086308Z [err]                          You are being rate limited
+    97→2026-08-06T10:20:10.097089477Z [err]                      </h2>
+    98→2026-08-06T10:20:10.097092877Z [err]                  </header>
+    99→2026-08-06T10:20:10.097095837Z [err]                  
+   100→2026-08-06T10:20:10.097099187Z [err]                  
+   101→2026-08-06T10:20:10.097102467Z [err]                  <section class="w-240 lg:w-full mx-auto mb-8 lg:px-8">
+   102→2026-08-06T10:20:10.097106337Z [err]                      <div id="what-happened-section" class="w-1/2 md:w-full">
+   103→2026-08-06T10:20:10.097113417Z [err]                          <h2
+   104→2026-08-06T10:20:10.098327623Z [err]                              class="text-3xl leading-tight font-normal mb-4 text-black-dark antialiased"
+   105→2026-08-06T10:20:10.098335743Z [err]                                  target="_blank"
+   106→2026-08-06T10:20:10.098335843Z [err]                              data-translate="what_happened"
+   107→2026-08-06T10:20:10.098341713Z [err]                          >
+   108→2026-08-06T10:20:10.098357213Z [err]                              What happened?
+   109→2026-08-06T10:20:10.098361893Z [err]                          </h2>
+   110→2026-08-06T10:20:10.098367382Z [err]                          
+   111→2026-08-06T10:20:10.098371032Z [err]                                  >https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-1xxx-errors/error-1015/</a
+   112→2026-08-06T10:20:10.098375432Z [err]                              <p>The owner of this website (discord.com) has banned you temporarily from accessing this website.</p>
+   113→2026-08-06T10:20:10.098381782Z [err]                              >
+   114→2026-08-06T10:20:10.098384622Z [err]                          
+   115→2026-08-06T10:20:10.098392122Z [err]                              for more details.
+   116→2026-08-06T10:20:10.098392182Z [err]                          
+   117→2026-08-06T10:20:10.098400942Z [err]                          </p>
+   118→2026-08-06T10:20:10.098402232Z [err]                          <p>
+   119→2026-08-06T10:20:10.098411752Z [err]                          
+   120→2026-08-06T10:20:10.098411972Z [err]                              Please see
+   121→2026-08-06T10:20:10.098420992Z [err]                              <a
+   122→2026-08-06T10:20:10.098421672Z [err]                      </div>
+   123→2026-08-06T10:20:10.098426092Z [err]                                  rel="noopener noreferrer"
+   124→2026-08-06T10:20:10.098429692Z [err]                                  href="https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-1xxx-errors/error-1015/"
+   125→2026-08-06T10:20:10.099792465Z [err]  
+   126→2026-08-06T10:20:10.099800605Z [err]      </div>
+   127→2026-08-06T10:20:10.099801095Z [err]                      
+   128→2026-08-06T10:20:10.099804265Z [err]              Yes
+   129→2026-08-06T10:20:10.099808545Z [err]                  </section>
+   130→2026-08-06T10:20:10.099811085Z [err]  </div> <div class="cf-error-footer cf-wrapper w-240 lg:w-full py-10 sm:py-4 sm:px-8 mx-auto text-center sm:text-left border-solid border-0 border-t border-gray-300">
+   131→2026-08-06T10:20:10.099812045Z [err]          </button>
+   132→2026-08-06T10:20:10.099814605Z [err]                  
+   133→2026-08-06T10:20:10.099818515Z [err]          <button
+   134→2026-08-06T10:20:10.099819865Z [err]  
+   135→2026-08-06T10:20:10.099825215Z [err]              class="border border-solid bg-white cf-button cursor-pointer ml-4 px-4 py-2 rounded"
+   136→2026-08-06T10:20:10.099828065Z [err]                  <div class="feedback-hidden py-8 text-center" id="error-feedback">
+   137→2026-08-06T10:20:10.099828885Z [err]              No
+   138→2026-08-06T10:20:10.099830605Z [err]              id="feedback-button-no"
+   139→2026-08-06T10:20:10.099832795Z [err]      <div id="error-feedback-survey" class="footer-line-wrapper">
+   140→2026-08-06T10:20:10.099835515Z [err]              type="button"
+   141→2026-08-06T10:20:10.099839625Z [err]          Was this page helpful?
+   142→2026-08-06T10:20:10.099842655Z [err]          >
+   143→2026-08-06T10:20:10.099843445Z [err]          </button>
+   144→2026-08-06T10:20:10.099846935Z [err]          <button
+   145→2026-08-06T10:20:10.099854025Z [err]              class="border border-solid bg-white cf-button cursor-pointer ml-4 px-4 py-2 rounded"
+   146→2026-08-06T10:20:10.099854795Z [err]      </div>
+   147→2026-08-06T10:20:10.099860435Z [err]              id="feedback-button-yes"
+   148→2026-08-06T10:20:10.099863415Z [err]      <div class="feedback-success feedback-hidden" id="error-feedback-success">
+   149→2026-08-06T10:20:10.099866585Z [err]              type="button"
+   150→2026-08-06T10:20:10.099872684Z [err]          >
+   151→2026-08-06T10:20:10.099874114Z [err]          Thank you for your feedback!
+   152→2026-08-06T10:20:10.101153529Z [err]      <p class="text-13">
+   153→2026-08-06T10:20:10.101158239Z [err]        <span class="cf-footer-item sm:block sm:mb-1">Cloudflare Ray ID: <strong class="font-semibold">a26d4eb30add055e</strong></span>
+   154→2026-08-06T10:20:10.101161339Z [err]        <span class="cf-footer-separator sm:hidden">&bull;</span>
+   155→2026-08-06T10:20:10.101163649Z [err]        <span id="cf-footer-item-ip" class="cf-footer-item hidden sm:block sm:mb-1">
+   156→2026-08-06T10:20:10.101165969Z [err]          Your IP:
+   157→2026-08-06T10:20:10.101168829Z [err]          <button type="button" id="cf-footer-ip-reveal" class="cf-footer-ip-reveal-btn">Click to reveal</button>
+   158→2026-08-06T10:20:10.101171169Z [err]          <span class="hidden" id="cf-footer-ip">152.55.176.230</span>
+   159→2026-08-06T10:20:10.101174009Z [err]          <span class="cf-footer-separator sm:hidden">&bull;</span>
+   160→2026-08-06T10:20:10.101176649Z [err]        </span>
+   161→2026-08-06T10:20:10.101178929Z [err]        <span class="cf-footer-item sm:block sm:mb-1"><span>Performance &amp; security by</span> <a rel="noopener noreferrer" href="https://www.cloudflare.com/5xx-error-landing" id="brand_link" target="_blank">Cloudflare</a></span>
+   162→2026-08-06T10:20:10.101181509Z [err]        
+   163→2026-08-06T10:20:10.101184679Z [err]      </p>
+   164→2026-08-06T10:20:10.101186989Z [err]      <script>(function(){function d(){var b=a.getElementById("cf-footer-item-ip"),c=a.getElementById("cf-footer-ip-reveal");b&&"classList"in b&&(b.classList.remove("hidden"),c.addEventListener("click",function(){c.classList.add("hidden");a.getElementById("cf-footer-ip").classList.remove("hidden")}))}var a=document;document.addEventListener&&a.addEventListener("DOMContentLoaded",d)})();</script>
+   165→2026-08-06T10:20:10.101189459Z [err]    </div><!-- /.error-footer -->
+   166→2026-08-06T10:20:10.101192139Z [err]              </div>
+   167→2026-08-06T10:20:10.101194779Z [err]              <!-- /#cf-error-details -->
+   168→2026-08-06T10:20:10.101197189Z [err]          </div>
+   169→2026-08-06T10:20:10.102306316Z [err]          <!-- /#cf-wrapper -->
+   170→2026-08-06T10:20:10.102308346Z [err]  
+   171→2026-08-06T10:20:10.102310966Z [err]           <script>
+   172→2026-08-06T10:20:10.102313306Z [err]      window._cf_translation = {};
+   173→2026-08-06T10:20:10.102315356Z [err]      
+   174→2026-08-06T10:20:10.102317696Z [err]      
+   175→2026-08-06T10:20:10.102320016Z [err]    </script> 
+   176→2026-08-06T10:20:10.102322545Z [err]          
+   177→2026-08-06T10:20:10.102324835Z [err]      <script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a26d4eb30add055e',t:'MTc4NjAxMTYxMA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+   178→2026-08-06T10:20:10.102327135Z [err]  </html>
+   179→2026-08-06T10:20:10.102330105Z [err]  Traceback (most recent call last):
+   180→2026-08-06T10:20:10.102332925Z [err]    File "/app/discord-ai-bot/bot.py", line 383, in <module>
+   181→2026-08-06T10:20:10.102335475Z [err]      asyncio.run(main())
+   182→2026-08-06T10:20:10.102338345Z [err]    File "/mise/installs/python/3.10.20/lib/python3.10/asyncio/runners.py", line 44, in run
+   183→2026-08-06T10:20:10.102340645Z [err]      return loop.run_until_complete(main)
+   184→2026-08-06T10:20:10.102343255Z [err]    File "/mise/installs/python/3.10.20/lib/python3.10/asyncio/base_events.py", line 649, in run_until_complete
+   185→2026-08-06T10:20:10.103967426Z [err]      return future.result()
+   186→2026-08-06T10:20:10.103969586Z [err]    File "/app/discord-ai-bot/bot.py", line 365, in main
+   187→2026-08-06T10:20:10.103972286Z [err]      await bot.start(config.token)
+   188→2026-08-06T10:20:10.103974436Z [err]    File "/app/.venv/lib/python3.10/site-packages/discord/client.py", line 850, in start
+   189→2026-08-06T10:20:10.103977226Z [err]      await self.login(token)
+   190→2026-08-06T10:20:10.103979376Z [err]    File "/app/.venv/lib/python3.10/site-packages/discord/client.py", line 679, in login
+   191→2026-08-06T10:20:10.103981646Z [err]      data = await self.http.static_login(token)
+   192→2026-08-06T10:20:10.103984086Z [err]    File "/app/.venv/lib/python3.10/site-packages/discord/http.py", line 844, in static_login
+   193→2026-08-06T10:20:10.103986595Z [err]      data = await self.request(Route('GET', '/users/@me'))
+   194→2026-08-06T10:20:10.103988975Z [err]    File "/app/.venv/lib/python3.10/site-packages/discord/http.py", line 714, in request
+   195→2026-08-06T10:20:10.103991105Z [err]      raise HTTPException(response, data)
+   196→2026-08-06T10:20:10.103993565Z [err]  discord.errors.HTTPException: 429 Too Many Requests (error code: 0): <!doctype html>
+   197→2026-08-06T10:20:10.103996085Z [err]  <!--[if lt IE 7]> <html class="no-js ie6 oldie" lang="en-US"> <![endif]-->
+   198→2026-08-06T10:20:10.103999905Z [err]  <!--[if IE 7]>    <html class="no-js ie7 oldie" lang="en-US"> <![endif]-->
+   199→2026-08-06T10:20:10.104002315Z [err]  <!--[if IE 8]>    <html class="no-js ie8 oldie" lang="en-US"> <![endif]-->
+   200→2026-08-06T10:20:10.104004465Z [err]  <!--[if gt IE 8]><!-->
+   201→2026-08-06T10:20:10.104006805Z [err]  <html class="no-js" lang="en-US">
+   202→2026-08-06T10:20:10.104009185Z [err]      <!--<![endif]-->
+   203→2026-08-06T10:20:10.104011685Z [err]      <head>
+   204→2026-08-06T10:20:10.104014235Z [err]          <title>Access denied | discord.com used Cloudflare to restrict access | discord.com | Cloudflare</title>
+   205→2026-08-06T10:20:10.104016435Z [err]          <meta charset="UTF-8" />
+   206→2026-08-06T10:20:10.104863795Z [err]  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+   207→2026-08-06T10:20:10.104866155Z [err]  <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+   208→2026-08-06T10:20:10.104868635Z [err]  <meta name="robots" content="noindex, nofollow" />
+   209→2026-08-06T10:20:10.104870835Z [err]  <meta name="viewport" content="width=device-width,initial-scale=1" />
+   210→2026-08-06T10:20:10.104873015Z [err]  <link rel="stylesheet" id="cf_styles-css" href="/cdn-cgi/styles/main.css" /> <script>
+   211→2026-08-06T10:20:10.104875675Z [err]    (function(){if(document.addEventListener&&window.XMLHttpRequest&&JSON&&JSON.stringify){var e=function(a){var c=document.getElementById("error-feedback-survey"),d=document.getElementById("error-feedback-success"),b=new XMLHttpRequest;a={event:"feedback clicked",properties:{errorCode: 1015 },helpful:a,version: 1 };b.open("POST","https://sparrow.cloudflare.com/api/v1/event");b.setRequestHeader("Content-Type","application/json");b.setRequestHeader("Sparrow-Source-Key","c771f0e4b54944bebf4261d44bd79a1e");
+   212→2026-08-06T10:20:10.104878055Z [err]  b.send(JSON.stringify(a));c.classList.add("feedback-hidden");d.classList.remove("feedback-hidden")};document.addEventListener("DOMContentLoaded",function(){var a=document.getElementById("error-feedback"),c=document.getElementById("feedback-button-yes"),d=document.getElementById("feedback-button-no");"classList"in a&&(a.classList.remove("feedback-hidden"),c.addEventListener("click",function(){e(!0)}),d.addEventListener("click",function(){e(!1)}))})}})();
+   213→2026-08-06T10:20:10.104880345Z [err]  </script>
+   214→2026-08-06T10:20:10.104882995Z [err]          <script
+   215→2026-08-06T10:20:10.104885625Z [err]              defer
+   216→2026-08-06T10:20:10.104887945Z [err]              src="https://performance.radar.cloudflare.com/beacon.js"
+   217→2026-08-06T10:20:10.104890435Z [err]          ></script>
+   218→2026-08-06T10:20:10.104892795Z [err]      </head>
+   219→2026-08-06T10:20:10.104895235Z [err]      <body>
+   220→2026-08-06T10:20:10.106108231Z [err]          <div id="cf-wrapper">
+   221→2026-08-06T10:20:10.106111261Z [err]              <div
+   222→2026-08-06T10:20:10.106114261Z [err]                  class="cf-alert cf-alert-error cf-cookie-error hidden"
+   223→2026-08-06T10:20:10.106117501Z [err]                  id="cookie-alert"
+   224→2026-08-06T10:20:10.106120631Z [err]                  data-translate="enable_cookies"
+   225→2026-08-06T10:20:10.106123780Z [err]              >
+   226→2026-08-06T10:20:10.106126880Z [err]                  Please enable cookies.
+   227→2026-08-06T10:20:10.106130150Z [err]              </div>
+   228→2026-08-06T10:20:10.106133270Z [err]              <div id="cf-error-details" class="p-0">
+   229→2026-08-06T10:20:10.106137030Z [err]                  <header
+   230→2026-08-06T10:20:10.106140160Z [err]                      class="mx-auto pt-10 lg:pt-6 lg:px-8 w-240 lg:w-full mb-15 antialiased"
+   231→2026-08-06T10:20:10.106143140Z [err]                  >
+   232→2026-08-06T10:20:10.106146620Z [err]                      <h1
+   233→2026-08-06T10:20:10.106149800Z [err]                          class="inline-block md:block mr-2 md:mb-2 font-light text-60 md:text-3xl text-black-dark leading-tight"
+   234→2026-08-06T10:20:10.106153050Z [err]                      >
+   235→2026-08-06T10:20:10.106156440Z [err]                          <span data-translate="error">Error</span>
+   236→2026-08-06T10:20:10.106159560Z [err]                          <span>1015</span>
+   237→2026-08-06T10:20:10.106162930Z [err]                      </h1>
+   238→2026-08-06T10:20:10.106167810Z [err]                      <span
+   239→2026-08-06T10:20:10.106171800Z [err]                          class="inline-block md:block heading-ray-id font-mono text-15 lg:text-sm lg:leading-relaxed"
+   240→2026-08-06T10:20:10.106174780Z [err]                          >Ray ID: a26d4eb30add055e &bull;</span
+   241→2026-08-06T10:20:10.106186390Z [err]                      >
+   242→2026-08-06T10:20:10.106189460Z [err]                      <span
+   243→2026-08-06T10:20:10.106192380Z [err]                          class="inline-block md:block heading-ray-id font-mono text-15 lg:text-sm lg:leading-relaxed"
+   244→2026-08-06T10:20:10.107612143Z [err]                          >2026-08-06 10:20:10 UTC</span
+   245→2026-08-06T10:20:10.107615553Z [err]                      >
+   246→2026-08-06T10:20:10.107618723Z [err]                      <h2
+   247→2026-08-06T10:20:10.107622113Z [err]                          class="text-gray-600 leading-1.3 text-3xl lg:text-2xl font-light"
+   248→2026-08-06T10:20:10.107625413Z [err]                      >
+   249→2026-08-06T10:20:10.107628513Z [err]                          You are being rate limited
+   250→2026-08-06T10:20:10.107631573Z [err]                      </h2>
+   251→2026-08-06T10:20:10.107634953Z [err]                  </header>
+   252→2026-08-06T10:20:10.107638602Z [err]                  
+   253→2026-08-06T10:20:10.107641842Z [err]                  
+   254→2026-08-06T10:20:10.107644892Z [err]                  <section class="w-240 lg:w-full mx-auto mb-8 lg:px-8">
+   255→2026-08-06T10:20:10.107647792Z [err]                      <div id="what-happened-section" class="w-1/2 md:w-full">
+   256→2026-08-06T10:20:10.107651612Z [err]                          <h2
+   257→2026-08-06T10:20:10.107655092Z [err]                              class="text-3xl leading-tight font-normal mb-4 text-black-dark antialiased"
+   258→2026-08-06T10:20:10.107658152Z [err]                              data-translate="what_happened"
+   259→2026-08-06T10:20:10.107661362Z [err]                          >
+   260→2026-08-06T10:20:10.107664802Z [err]                              What happened?
+   261→2026-08-06T10:20:10.107667912Z [err]                          </h2>
+   262→2026-08-06T10:20:10.107671252Z [err]                          
+   263→2026-08-06T10:20:10.107674522Z [err]                              <p>The owner of this website (discord.com) has banned you temporarily from accessing this website.</p>
+   264→2026-08-06T10:20:10.107677822Z [err]                          
+   265→2026-08-06T10:20:10.107680952Z [err]                          
+   266→2026-08-06T10:20:10.107684362Z [err]                          <p>
+   267→2026-08-06T10:20:10.107687842Z [err]                              Please see
+   268→2026-08-06T10:20:10.108601990Z [err]                              <a
+   269→2026-08-06T10:20:10.108605770Z [err]                                  rel="noopener noreferrer"
+   270→2026-08-06T10:20:10.108609141Z [err]                                  href="https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-1xxx-errors/error-1015/"
+   271→2026-08-06T10:20:10.108612381Z [err]                                  target="_blank"
+   272→2026-08-06T10:20:10.108616701Z [err]                                  >https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-1xxx-errors/error-1015/</a
+   273→2026-08-06T10:20:10.108620031Z [err]                              >
+   274→2026-08-06T10:20:10.108623891Z [err]                              for more details.
+   275→2026-08-06T10:20:10.108627231Z [err]                          </p>
+   276→2026-08-06T10:20:10.108630761Z [err]                          
+   277→2026-08-06T10:20:10.108634141Z [err]                      </div>
+   278→2026-08-06T10:20:10.108642111Z [err]  
+   279→2026-08-06T10:20:10.108645661Z [err]                      
+   280→2026-08-06T10:20:10.108649241Z [err]                  </section>
+   281→2026-08-06T10:20:10.108652731Z [err]                  
+   282→2026-08-06T10:20:10.108655931Z [err]  
+   283→2026-08-06T10:20:10.108659351Z [err]                  <div class="feedback-hidden py-8 text-center" id="error-feedback">
+   284→2026-08-06T10:20:10.108663421Z [err]      <div id="error-feedback-survey" class="footer-line-wrapper">
+   285→2026-08-06T10:20:10.108667421Z [err]          Was this page helpful?
+   286→2026-08-06T10:20:10.108670501Z [err]          <button
+   287→2026-08-06T10:20:10.108677130Z [err]              class="border border-solid bg-white cf-button cursor-pointer ml-4 px-4 py-2 rounded"
+   288→2026-08-06T10:20:10.108680190Z [err]              id="feedback-button-yes"
+   289→2026-08-06T10:20:10.108683530Z [err]              type="button"
+   290→2026-08-06T10:20:10.108686920Z [err]          >
+   291→2026-08-06T10:20:10.108694170Z [err]              Yes
+   292→2026-08-06T10:20:10.110149543Z [err]          </button>
+   293→2026-08-06T10:20:10.110149713Z [err]        <span class="cf-footer-item sm:block sm:mb-1">Cloudflare Ray ID: <strong class="font-semibold">a26d4eb30add055e</strong></span>
+   294→2026-08-06T10:20:10.110156233Z [err]        <span class="cf-footer-separator sm:hidden">&bull;</span>
+   295→2026-08-06T10:20:10.110156853Z [err]          <button
+   296→2026-08-06T10:20:10.110159663Z [err]        <span id="cf-footer-item-ip" class="cf-footer-item hidden sm:block sm:mb-1">
+   297→2026-08-06T10:20:10.110161783Z [err]              class="border border-solid bg-white cf-button cursor-pointer ml-4 px-4 py-2 rounded"
+   298→2026-08-06T10:20:10.110162783Z [err]          Your IP:
+   299→2026-08-06T10:20:10.110166053Z [err]          <button type="button" id="cf-footer-ip-reveal" class="cf-footer-ip-reveal-btn">Click to reveal</button>
+   300→2026-08-06T10:20:10.110166323Z [err]              id="feedback-button-no"
+   301→2026-08-06T10:20:10.110169273Z [err]          <span class="hidden" id="cf-footer-ip">152.55.176.230</span>
+   302→2026-08-06T10:20:10.110170763Z [err]              type="button"
+   303→2026-08-06T10:20:10.110172483Z [err]          <span class="cf-footer-separator sm:hidden">&bull;</span>
+   304→2026-08-06T10:20:10.110175343Z [err]          >
+   305→2026-08-06T10:20:10.110175663Z [err]        </span>
+   306→2026-08-06T10:20:10.110179283Z [err]              No
+   307→2026-08-06T10:20:10.110183383Z [err]          </button>
+   308→2026-08-06T10:20:10.110187143Z [err]      </div>
+   309→2026-08-06T10:20:10.110191103Z [err]      <div class="feedback-success feedback-hidden" id="error-feedback-success">
+   310→2026-08-06T10:20:10.110194552Z [err]          Thank you for your feedback!
+   311→2026-08-06T10:20:10.110198362Z [err]      </div>
+   312→2026-08-06T10:20:10.110202402Z [err]  </div> <div class="cf-error-footer cf-wrapper w-240 lg:w-full py-10 sm:py-4 sm:px-8 mx-auto text-center sm:text-left border-solid border-0 border-t border-gray-300">
+   313→2026-08-06T10:20:10.110206452Z [err]      <p class="text-13">
+   314→2026-08-06T10:20:10.111517597Z [err]        <span class="cf-footer-item sm:block sm:mb-1"><span>Performance &amp; security by</span> <a rel="noopener noreferrer" href="https://www.cloudflare.com/5xx-error-landing" id="brand_link" target="_blank">Cloudflare</a></span>
+   315→2026-08-06T10:20:10.111520747Z [err]        
+   316→2026-08-06T10:20:10.111523907Z [err]      </p>
+   317→2026-08-06T10:20:10.111527237Z [err]      <script>(function(){function d(){var b=a.getElementById("cf-footer-item-ip"),c=a.getElementById("cf-footer-ip-reveal");b&&"classList"in b&&(b.classList.remove("hidden"),c.addEventListener("click",function(){c.classList.add("hidden");a.getElementById("cf-footer-ip").classList.remove("hidden")}))}var a=document;document.addEventListener&&a.addEventListener("DOMContentLoaded",d)})();</script>
+   318→2026-08-06T10:20:10.111530457Z [err]    </div><!-- /.error-footer -->
+   319→2026-08-06T10:20:10.111534157Z [err]              </div>
+   320→2026-08-06T10:20:10.111537357Z [err]              <!-- /#cf-error-details -->
+   321→2026-08-06T10:20:10.111540446Z [err]          </div>
+   322→2026-08-06T10:20:10.111543956Z [err]          <!-- /#cf-wrapper -->
+   323→2026-08-06T10:20:10.111547596Z [err]  
+   324→2026-08-06T10:20:10.111551056Z [err]           <script>
+   325→2026-08-06T10:20:10.111554236Z [err]      window._cf_translation = {};
+   326→2026-08-06T10:20:10.111557386Z [err]      
+   327→2026-08-06T10:20:10.111560906Z [err]      
+   328→2026-08-06T10:20:10.111564246Z [err]    </script> 
+   329→2026-08-06T10:20:10.111567896Z [err]          
+   330→2026-08-06T10:20:10.111571276Z [err]      <script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a26d4eb30add055e',t:'MTc4NjAxMTYxMA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+   331→2026-08-06T10:20:10.112766812Z [err]  </html>
+   332→2026-08-06T10:20:10.141523462Z [err]  2026-08-06 10:20:10 | asyncio | ERROR | Unclosed connector
+   333→2026-08-06T10:20:10.141528382Z [err]  connections: ['deque([(<aiohttp.client_proto.ResponseHandler object at 0x7f06c743b290>, 6012594.155349072)])']
+   334→2026-08-06T10:20:10.141531941Z [err]  connector: <aiohttp.connector.TCPConnector object at 0x7f06c73ea320>
+   335→2026-08-06T10:20:11.831016436Z [err]  2026-08-06 10:20:11 | discord.client | WARNING | PyNaCl is not installed, voice will NOT be supported
+   336→2026-08-06T10:20:11.831027616Z [err]  2026-08-06 10:20:11 | discord.client | WARNING | davey is not installed, voice will NOT be supported
+   337→2026-08-06T10:20:11.831037266Z [err]  2026-08-06 10:20:11 | discord.client | INFO | logging in using static token
+   338→2026-08-06T10:20:11.854115623Z [err]  <link rel="stylesheet" id="cf_styles-css" href="/cdn-cgi/styles/main.css" /> <script>
+   339→2026-08-06T10:20:11.854121323Z [err]    (function(){if(document.addEventListener&&window.XMLHttpRequest&&JSON&&JSON.stringify){var e=function(a){var c=document.getElementById("error-feedback-survey"),d=document.getElementById("error-feedback-success"),b=new XMLHttpRequest;a={event:"feedback clicked",properties:{errorCode: 1015 },helpful:a,version: 1 };b.open("POST","https://sparrow.cloudflare.com/api/v1/event");b.setRequestHeader("Content-Type","application/json");b.setRequestHeader("Sparrow-Source-Key","c771f0e4b54944bebf4261d44bd79a1e");
+   340→2026-08-06T10:20:11.854123663Z [err]  2026-08-06 10:20:11 | OpheliaAI | ERROR | ❌ Fatal error: 429 Too Many Requests (error code: 0): <!doctype html>
+   341→2026-08-06T10:20:11.854128533Z [err]  <!--[if lt IE 7]> <html class="no-js ie6 oldie" lang="en-US"> <![endif]-->
+   342→2026-08-06T10:20:11.854129953Z [err]          <title>Access denied | discord.com used Cloudflare to restrict access | discord.com | Cloudflare</title>
+   343→2026-08-06T10:20:11.854133063Z [err]  <!--[if IE 7]>    <html class="no-js ie7 oldie" lang="en-US"> <![endif]-->
+   344→2026-08-06T10:20:11.854136143Z [err]          <meta charset="UTF-8" />
+   345→2026-08-06T10:20:11.854138883Z [err]  <!--[if IE 8]>    <html class="no-js ie8 oldie" lang="en-US"> <![endif]-->
+   346→2026-08-06T10:20:11.854142423Z [err]  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+   347→2026-08-06T10:20:11.854148173Z [err]  <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+   348→2026-08-06T10:20:11.854159962Z [err]  <meta name="robots" content="noindex, nofollow" />
+   349→2026-08-06T10:20:11.854160272Z [err]  <!--[if gt IE 8]><!-->
+   350→2026-08-06T10:20:11.854166512Z [err]  <meta name="viewport" content="width=device-width,initial-scale=1" />
+   351→2026-08-06T10:20:11.854174672Z [err]  <html class="no-js" lang="en-US">
+   352→2026-08-06T10:20:11.854180222Z [err]      <!--<![endif]-->
+   353→2026-08-06T10:20:11.854184462Z [err]      <head>
+   354→2026-08-06T10:20:11.857335775Z [err]                  <section class="w-240 lg:w-full mx-auto mb-8 lg:px-8">
+   355→2026-08-06T10:20:11.857344735Z [err]                      <div id="what-happened-section" class="w-1/2 md:w-full">
+   356→2026-08-06T10:20:11.857348135Z [err]  b.send(JSON.stringify(a));c.classList.add("feedback-hidden");d.classList.remove("feedback-hidden")};document.addEventListener("DOMContentLoaded",function(){var a=document.getElementById("error-feedback"),c=document.getElementById("feedback-button-yes"),d=document.getElementById("feedback-button-no");"classList"in a&&(a.classList.remove("feedback-hidden"),c.addEventListener("click",function(){e(!0)}),d.addEventListener("click",function(){e(!1)}))})}})();
+   357→2026-08-06T10:20:11.857354635Z [err]                          <h2
+   358→2026-08-06T10:20:11.857355465Z [err]  </script>
+   359→2026-08-06T10:20:11.857359905Z [err]          <script
+   360→2026-08-06T10:20:11.857365035Z [err]              defer
+   361→2026-08-06T10:20:11.857369525Z [err]              src="https://performance.radar.cloudflare.com/beacon.js"
+   362→2026-08-06T10:20:11.857374175Z [err]          ></script>
+   363→2026-08-06T10:20:11.857378675Z [err]                  Please enable cookies.
+   364→2026-08-06T10:20:11.857379185Z [err]      </head>
+   365→2026-08-06T10:20:11.857383485Z [err]      <body>
+   366→2026-08-06T10:20:11.857390045Z [err]          <div id="cf-wrapper">
+   367→2026-08-06T10:20:11.857393595Z [err]              </div>
+   368→2026-08-06T10:20:11.857397795Z [err]              <div
+   369→2026-08-06T10:20:11.857401924Z [err]              <div id="cf-error-details" class="p-0">
+   370→2026-08-06T10:20:11.857404364Z [err]                  class="cf-alert cf-alert-error cf-cookie-error hidden"
+   371→2026-08-06T10:20:11.857410904Z [err]                  id="cookie-alert"
+   372→2026-08-06T10:20:11.857412424Z [err]                  <header
+   373→2026-08-06T10:20:11.857418714Z [err]                      class="mx-auto pt-10 lg:pt-6 lg:px-8 w-240 lg:w-full mb-15 antialiased"
+   374→2026-08-06T10:20:11.857422744Z [err]                  data-translate="enable_cookies"
+   375→2026-08-06T10:20:11.857425824Z [err]                  >
+   376→2026-08-06T10:20:11.857429504Z [err]              >
+   377→2026-08-06T10:20:11.857432494Z [err]                      <h1
+   378→2026-08-06T10:20:11.857436194Z [err]                          class="inline-block md:block mr-2 md:mb-2 font-light text-60 md:text-3xl text-black-dark leading-tight"
+   379→2026-08-06T10:20:11.857440274Z [err]                      >
+   380→2026-08-06T10:20:11.857443844Z [err]                          <span data-translate="error">Error</span>
+   381→2026-08-06T10:20:11.857451544Z [err]                          <span>1015</span>
+   382→2026-08-06T10:20:11.857455224Z [err]                      </h1>
+   383→2026-08-06T10:20:11.857458814Z [err]                      <span
+   384→2026-08-06T10:20:11.857461814Z [err]                          class="inline-block md:block heading-ray-id font-mono text-15 lg:text-sm lg:leading-relaxed"
+   385→2026-08-06T10:20:11.857464884Z [err]                          >Ray ID: a26d4ebdfa7a053a &bull;</span
+   386→2026-08-06T10:20:11.857468074Z [err]                      >
+   387→2026-08-06T10:20:11.857471644Z [err]                      <span
+   388→2026-08-06T10:20:11.857475604Z [err]                          class="inline-block md:block heading-ray-id font-mono text-15 lg:text-sm lg:leading-relaxed"
+   389→2026-08-06T10:20:11.857478784Z [err]                          >2026-08-06 10:20:11 UTC</span
+   390→2026-08-06T10:20:11.857482023Z [err]                      >
+   391→2026-08-06T10:20:11.857485343Z [err]                      <h2
+   392→2026-08-06T10:20:11.857489593Z [err]                          class="text-gray-600 leading-1.3 text-3xl lg:text-2xl font-light"
+   393→2026-08-06T10:20:11.857492753Z [err]                      >
+   394→2026-08-06T10:20:11.857496593Z [err]                          You are being rate limited
+   395→2026-08-06T10:20:11.857499623Z [err]                      </h2>
+   396→2026-08-06T10:20:11.857502983Z [err]                  </header>
+   397→2026-08-06T10:20:11.857506603Z [err]                  
+   398→2026-08-06T10:20:11.857510093Z [err]                  
+   399→2026-08-06T10:20:11.858613930Z [err]                              class="text-3xl leading-tight font-normal mb-4 text-black-dark antialiased"
+   400→2026-08-06T10:20:11.858617850Z [err]                              data-translate="what_happened"
+   401→2026-08-06T10:20:11.858621550Z [err]                          >
+   402→2026-08-06T10:20:11.858628970Z [err]                              What happened?
+   403→2026-08-06T10:20:11.858633370Z [err]                          </h2>
+   404→2026-08-06T10:20:11.858637610Z [err]                          
+   405→2026-08-06T10:20:11.858641630Z [err]                              <p>The owner of this website (discord.com) has banned you temporarily from accessing this website.</p>
+   406→2026-08-06T10:20:11.858645380Z [err]                          
+   407→2026-08-06T10:20:11.858648950Z [err]                          
+   408→2026-08-06T10:20:11.858652990Z [err]                          <p>
+   409→2026-08-06T10:20:11.858656310Z [err]                              Please see
+   410→2026-08-06T10:20:11.858659570Z [err]                              <a
+   411→2026-08-06T10:20:11.858663130Z [err]                                  rel="noopener noreferrer"
+   412→2026-08-06T10:20:11.858666550Z [err]                                  href="https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-1xxx-errors/error-1015/"
+   413→2026-08-06T10:20:11.858669919Z [err]                                  target="_blank"
+   414→2026-08-06T10:20:11.858673109Z [err]                                  >https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-1xxx-errors/error-1015/</a
+   415→2026-08-06T10:20:11.858676419Z [err]                              >
+   416→2026-08-06T10:20:11.858681149Z [err]                              for more details.
+   417→2026-08-06T10:20:11.858684599Z [err]                          </p>
+   418→2026-08-06T10:20:11.858687719Z [err]                          
+   419→2026-08-06T10:20:11.858690949Z [err]                      </div>
+   420→2026-08-06T10:20:11.859934285Z [err]              No
+   421→2026-08-06T10:20:11.859940985Z [err]          </button>
+   422→2026-08-06T10:20:11.859943325Z [err]  
+   423→2026-08-06T10:20:11.859943705Z [err]          </button>
+   424→2026-08-06T10:20:11.859949524Z [err]      </div>
+   425→2026-08-06T10:20:11.859955834Z [err]                      
+   426→2026-08-06T10:20:11.859956944Z [err]          <button
+   427→2026-08-06T10:20:11.859960464Z [err]      <div class="feedback-success feedback-hidden" id="error-feedback-success">
+   428→2026-08-06T10:20:11.859966834Z [err]              class="border border-solid bg-white cf-button cursor-pointer ml-4 px-4 py-2 rounded"
+   429→2026-08-06T10:20:11.859967004Z [err]                  </section>
+   430→2026-08-06T10:20:11.859967954Z [err]          Thank you for your feedback!
+   431→2026-08-06T10:20:11.859976624Z [err]              id="feedback-button-no"
+   432→2026-08-06T10:20:11.859976814Z [err]                  
+   433→2026-08-06T10:20:11.859977054Z [err]      </div>
+   434→2026-08-06T10:20:11.859985624Z [err]              type="button"
+   435→2026-08-06T10:20:11.859986834Z [err]  </div> <div class="cf-error-footer cf-wrapper w-240 lg:w-full py-10 sm:py-4 sm:px-8 mx-auto text-center sm:text-left border-solid border-0 border-t border-gray-300">
+   436→2026-08-06T10:20:11.859987934Z [err]  
+   437→2026-08-06T10:20:11.859994074Z [err]          >
+   438→2026-08-06T10:20:11.859996514Z [err]                  <div class="feedback-hidden py-8 text-center" id="error-feedback">
+   439→2026-08-06T10:20:11.860001214Z [err]      <div id="error-feedback-survey" class="footer-line-wrapper">
+   440→2026-08-06T10:20:11.860004524Z [err]          Was this page helpful?
+   441→2026-08-06T10:20:11.860008284Z [err]          <button
+   442→2026-08-06T10:20:11.860012164Z [err]              class="border border-solid bg-white cf-button cursor-pointer ml-4 px-4 py-2 rounded"
+   443→2026-08-06T10:20:11.860016014Z [err]              id="feedback-button-yes"
+   444→2026-08-06T10:20:11.860019334Z [err]              type="button"
+   445→2026-08-06T10:20:11.860022594Z [err]          >
+   446→2026-08-06T10:20:11.860026224Z [err]              Yes
+   447→2026-08-06T10:20:11.861179999Z [err]      <p class="text-13">
+   448→2026-08-06T10:20:11.861187779Z [err]        <span class="cf-footer-item sm:block sm:mb-1">Cloudflare Ray ID: <strong class="font-semibold">a26d4ebdfa7a053a</strong></span>
+   449→2026-08-06T10:20:11.861193709Z [err]        <span class="cf-footer-separator sm:hidden">&bull;</span>
+   450→2026-08-06T10:20:11.861199059Z [err]        <span id="cf-footer-item-ip" class="cf-footer-item hidden sm:block sm:mb-1">
+   451→2026-08-06T10:20:11.861214930Z [err]          Your IP:
+   452→2026-08-06T10:20:11.861220290Z [err]          <button type="button" id="cf-footer-ip-reveal" class="cf-footer-ip-reveal-btn">Click to reveal</button>
+   453→2026-08-06T10:20:11.861225280Z [err]          <span class="hidden" id="cf-footer-ip">152.55.176.230</span>
+   454→2026-08-06T10:20:11.861230319Z [err]          <span class="cf-footer-separator sm:hidden">&bull;</span>
+   455→2026-08-06T10:20:11.861236039Z [err]        </span>
+   456→2026-08-06T10:20:11.861241199Z [err]        <span class="cf-footer-item sm:block sm:mb-1"><span>Performance &amp; security by</span> <a rel="noopener noreferrer" href="https://www.cloudflare.com/5xx-error-landing" id="brand_link" target="_blank">Cloudflare</a></span>
+   457→2026-08-06T10:20:11.861246079Z [err]        
+   458→2026-08-06T10:20:11.861251049Z [err]      </p>
+   459→2026-08-06T10:20:11.861257129Z [err]      <script>(function(){function d(){var b=a.getElementById("cf-footer-item-ip"),c=a.getElementById("cf-footer-ip-reveal");b&&"classList"in b&&(b.classList.remove("hidden"),c.addEventListener("click",function(){c.classList.add("hidden");a.getElementById("cf-footer-ip").classList.remove("hidden")}))}var a=document;document.addEventListener&&a.addEventListener("DOMContentLoaded",d)})();</script>
+   460→2026-08-06T10:20:11.861262699Z [err]    </div><!-- /.error-footer -->
+   461→2026-08-06T10:20:11.861267539Z [err]              </div>
+   462→2026-08-06T10:20:11.861272249Z [err]              <!-- /#cf-error-details -->
+   463→2026-08-06T10:20:11.861277269Z [err]          </div>
+   464→2026-08-06T10:20:11.863192346Z [err]          <!-- /#cf-wrapper -->
+   465→2026-08-06T10:20:11.863197156Z [err]  
+   466→2026-08-06T10:20:11.863201166Z [err]           <script>
+   467→2026-08-06T10:20:11.863205556Z [err]      window._cf_translation = {};
+   468→2026-08-06T10:20:11.863209776Z [err]      
+   469→2026-08-06T10:20:11.863213456Z [err]      
+   470→2026-08-06T10:20:11.863216795Z [err]    </script> 
+   471→2026-08-06T10:20:11.863220505Z [err]          
+   472→2026-08-06T10:20:11.863224595Z [err]      <script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a26d4ebdfa7a053a',t:'MTc4NjAxMTYxMQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+   473→2026-08-06T10:20:11.863228625Z [err]  </html>
+   474→2026-08-06T10:20:11.863231755Z [err]  Traceback (most recent call last):
+   475→2026-08-06T10:20:11.863235015Z [err]    File "/app/discord-ai-bot/bot.py", line 383, in <module>
+   476→2026-08-06T10:20:11.863238275Z [err]      asyncio.run(main())
+   477→2026-08-06T10:20:11.863242175Z [err]    File "/mise/installs/python/3.10.20/lib/python3.10/asyncio/runners.py", line 44, in run
+   478→2026-08-06T10:20:11.863245555Z [err]      return loop.run_until_complete(main)
+   479→2026-08-06T10:20:11.863248905Z [err]    File "/mise/installs/python/3.10.20/lib/python3.10/asyncio/base_events.py", line 649, in run_until_complete
+   480→2026-08-06T10:20:11.864449601Z [err]  <!--[if gt IE 8]><!-->
+   481→2026-08-06T10:20:11.864453771Z [err]      return future.result()
+   482→2026-08-06T10:20:11.864456411Z [err]  <html class="no-js" lang="en-US">
+   483→2026-08-06T10:20:11.864462861Z [err]    File "/app/discord-ai-bot/bot.py", line 365, in main
+   484→2026-08-06T10:20:11.864463681Z [err]      <!--<![endif]-->
+   485→2026-08-06T10:20:11.864469261Z [err]      await bot.start(config.token)
+   486→2026-08-06T10:20:11.864471571Z [err]      <head>
+   487→2026-08-06T10:20:11.864476981Z [err]    File "/app/.venv/lib/python3.10/site-packages/discord/client.py", line 850, in start
+   488→2026-08-06T10:20:11.864479131Z [err]          <title>Access denied | discord.com used Cloudflare to restrict access | discord.com | Cloudflare</title>
+   489→2026-08-06T10:20:11.864483830Z [err]      await self.login(token)
+   490→2026-08-06T10:20:11.864486150Z [err]          <meta charset="UTF-8" />
+   491→2026-08-06T10:20:11.864490540Z [err]    File "/app/.venv/lib/python3.10/site-packages/discord/client.py", line 679, in login
+   492→2026-08-06T10:20:11.864493730Z [err]      data = await self.http.static_login(token)
+   493→2026-08-06T10:20:11.864498270Z [err]    File "/app/.venv/lib/python3.10/site-packages/discord/http.py", line 844, in static_login
+   494→2026-08-06T10:20:11.864501700Z [err]      data = await self.request(Route('GET', '/users/@me'))
+   495→2026-08-06T10:20:11.864504950Z [err]    File "/app/.venv/lib/python3.10/site-packages/discord/http.py", line 714, in request
+   496→2026-08-06T10:20:11.864508190Z [err]      raise HTTPException(response, data)
+   497→2026-08-06T10:20:11.864511620Z [err]  discord.errors.HTTPException: 429 Too Many Requests (error code: 0): <!doctype html>
+   498→2026-08-06T10:20:11.864514990Z [err]  <!--[if lt IE 7]> <html class="no-js ie6 oldie" lang="en-US"> <![endif]-->
+   499→2026-08-06T10:20:11.864518010Z [err]  <!--[if IE 7]>    <html class="no-js ie7 oldie" lang="en-US"> <![endif]-->
+   500→2026-08-06T10:20:11.864521310Z [err]  <!--[if IE 8]>    <html class="no-js ie8 oldie" lang="en-US"> <![endif]-->
+   501→2026-08-06T10:20:11.865490799Z [err]  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+   502→2026-08-06T10:20:11.865499699Z [err]  <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+   503→2026-08-06T10:20:11.865500349Z [err]      <body>
+   504→2026-08-06T10:20:11.865505059Z [err]  <link rel="stylesheet" id="cf_styles-css" href="/cdn-cgi/styles/main.css" /> <script>
+   505→2026-08-06T10:20:11.865507229Z [err]  <meta name="robots" content="noindex, nofollow" />
+   506→2026-08-06T10:20:11.865513348Z [err]    (function(){if(document.addEventListener&&window.XMLHttpRequest&&JSON&&JSON.stringify){var e=function(a){var c=document.getElementById("error-feedback-survey"),d=document.getElementById("error-feedback-success"),b=new XMLHttpRequest;a={event:"feedback clicked",properties:{errorCode: 1015 },helpful:a,version: 1 };b.open("POST","https://sparrow.cloudflare.com/api/v1/event");b.setRequestHeader("Content-Type","application/json");b.setRequestHeader("Sparrow-Source-Key","c771f0e4b54944bebf4261d44bd79a1e");
+   507→2026-08-06T10:20:11.865515678Z [err]  <meta name="viewport" content="width=device-width,initial-scale=1" />
+   508→2026-08-06T10:20:11.865520258Z [err]  b.send(JSON.stringify(a));c.classList.add("feedback-hidden");d.classList.remove("feedback-hidden")};document.addEventListener("DOMContentLoaded",function(){var a=document.getElementById("error-feedback"),c=document.getElementById("feedback-button-yes"),d=document.getElementById("feedback-button-no");"classList"in a&&(a.classList.remove("feedback-hidden"),c.addEventListener("click",function(){e(!0)}),d.addEventListener("click",function(){e(!1)}))})}})();
+   509→2026-08-06T10:20:11.865524718Z [err]  </script>
+   510→2026-08-06T10:20:11.865528298Z [err]          <script
+   511→2026-08-06T10:20:11.865531758Z [err]              defer
+   512→2026-08-06T10:20:11.865535188Z [err]              src="https://performance.radar.cloudflare.com/beacon.js"
+   513→2026-08-06T10:20:11.865538428Z [err]          ></script>
+   514→2026-08-06T10:20:11.865542078Z [err]      </head>
+   515→2026-08-06T10:20:11.867709102Z [err]          <div id="cf-wrapper">
+   516→2026-08-06T10:20:11.867716243Z [err]              <div
+   517→2026-08-06T10:20:11.867720633Z [err]                  class="cf-alert cf-alert-error cf-cookie-error hidden"
+   518→2026-08-06T10:20:11.867726552Z [err]                  id="cookie-alert"
+   519→2026-08-06T10:20:11.867730782Z [err]                  data-translate="enable_cookies"
+   520→2026-08-06T10:20:11.867734802Z [err]              >
+   521→2026-08-06T10:20:11.867738662Z [err]                  Please enable cookies.
+   522→2026-08-06T10:20:11.867743912Z [err]              </div>
+   523→2026-08-06T10:20:11.867747522Z [err]              <div id="cf-error-details" class="p-0">
+   524→2026-08-06T10:20:11.867751072Z [err]                  <header
+   525→2026-08-06T10:20:11.867755062Z [err]                      class="mx-auto pt-10 lg:pt-6 lg:px-8 w-240 lg:w-full mb-15 antialiased"
+   526→2026-08-06T10:20:11.867758772Z [err]                  >
+   527→2026-08-06T10:20:11.867762152Z [err]                      <h1
+   528→2026-08-06T10:20:11.867765452Z [err]                          class="inline-block md:block mr-2 md:mb-2 font-light text-60 md:text-3xl text-black-dark leading-tight"
+   529→2026-08-06T10:20:11.867768622Z [err]                      >
+   530→2026-08-06T10:20:11.867772142Z [err]                          <span data-translate="error">Error</span>
+   531→2026-08-06T10:20:11.867775092Z [err]                          <span>1015</span>
+   532→2026-08-06T10:20:11.867778512Z [err]                      </h1>
+   533→2026-08-06T10:20:11.867781902Z [err]                      <span
+   534→2026-08-06T10:20:11.867784792Z [err]                          class="inline-block md:block heading-ray-id font-mono text-15 lg:text-sm lg:leading-relaxed"
+   535→2026-08-06T10:20:11.867788152Z [err]                          >Ray ID: a26d4ebdfa7a053a &bull;</span
+   536→2026-08-06T10:20:11.867792082Z [err]                      >
+   537→2026-08-06T10:20:11.867795292Z [err]                      <span
+   538→2026-08-06T10:20:11.867798692Z [err]                          class="inline-block md:block heading-ray-id font-mono text-15 lg:text-sm lg:leading-relaxed"
+   539→2026-08-06T10:20:11.869183835Z [err]                          
+   540→2026-08-06T10:20:11.869187075Z [err]                          >2026-08-06 10:20:11 UTC</span
+   541→2026-08-06T10:20:11.869187835Z [err]                          <p>
+   542→2026-08-06T10:20:11.869191305Z [err]                              Please see
+   543→2026-08-06T10:20:11.869192855Z [err]                      >
+   544→2026-08-06T10:20:11.869196795Z [err]                      <h2
+   545→2026-08-06T10:20:11.869212635Z [err]                          <h2
+   546→2026-08-06T10:20:11.869216155Z [err]                          class="text-gray-600 leading-1.3 text-3xl lg:text-2xl font-light"
+   547→2026-08-06T10:20:11.869220315Z [err]                              class="text-3xl leading-tight font-normal mb-4 text-black-dark antialiased"
+   548→2026-08-06T10:20:11.869225645Z [err]                      >
+   549→2026-08-06T10:20:11.869227085Z [err]                              data-translate="what_happened"
+   550→2026-08-06T10:20:11.869234314Z [err]                          You are being rate limited
+   551→2026-08-06T10:20:11.869234444Z [err]                          >
+   552→2026-08-06T10:20:11.869242404Z [err]                      </h2>
+   553→2026-08-06T10:20:11.869243184Z [err]                              What happened?
+   554→2026-08-06T10:20:11.869249164Z [err]                  </header>
+   555→2026-08-06T10:20:11.869251444Z [err]                          </h2>
+   556→2026-08-06T10:20:11.869258524Z [err]                  
+   557→2026-08-06T10:20:11.869258704Z [err]                          
+   558→2026-08-06T10:20:11.869266654Z [err]                  
+   559→2026-08-06T10:20:11.869266984Z [err]                              <p>The owner of this website (discord.com) has banned you temporarily from accessing this website.</p>
+   560→2026-08-06T10:20:11.869274004Z [err]                          
+   561→2026-08-06T10:20:11.869274794Z [err]                  <section class="w-240 lg:w-full mx-auto mb-8 lg:px-8">
+   562→2026-08-06T10:20:11.869280014Z [err]                      <div id="what-happened-section" class="w-1/2 md:w-full">
+   563→2026-08-06T10:20:11.870846915Z [err]      <div id="error-feedback-survey" class="footer-line-wrapper">
+   564→2026-08-06T10:20:11.870851055Z [err]          Was this page helpful?
+   565→2026-08-06T10:20:11.870857675Z [err]          <button
+   566→2026-08-06T10:20:11.870860475Z [err]                              <a
+   567→2026-08-06T10:20:11.870863845Z [err]              class="border border-solid bg-white cf-button cursor-pointer ml-4 px-4 py-2 rounded"
+   568→2026-08-06T10:20:11.870867505Z [err]                                  rel="noopener noreferrer"
+   569→2026-08-06T10:20:11.870869885Z [err]              id="feedback-button-yes"
+   570→2026-08-06T10:20:11.870873145Z [err]                                  href="https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-1xxx-errors/error-1015/"
+   571→2026-08-06T10:20:11.870875685Z [err]              type="button"
+   572→2026-08-06T10:20:11.870879715Z [err]                                  target="_blank"
+   573→2026-08-06T10:20:11.870883105Z [err]          >
+   574→2026-08-06T10:20:11.870886925Z [err]                                  >https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-1xxx-errors/error-1015/</a
+   575→2026-08-06T10:20:11.870889745Z [err]              Yes
+   576→2026-08-06T10:20:11.870892625Z [err]                              >
+   577→2026-08-06T10:20:11.870895815Z [err]                              for more details.
+   578→2026-08-06T10:20:11.870898804Z [err]                          </p>
+   579→2026-08-06T10:20:11.870901394Z [err]                          
+   580→2026-08-06T10:20:11.870904144Z [err]                      </div>
+   581→2026-08-06T10:20:11.870906734Z [err]  
+   582→2026-08-06T10:20:11.870909434Z [err]                      
+   583→2026-08-06T10:20:11.870912414Z [err]                  </section>
+   584→2026-08-06T10:20:11.870914984Z [err]                  
+   585→2026-08-06T10:20:11.870917574Z [err]  
+   586→2026-08-06T10:20:11.870920154Z [err]                  <div class="feedback-hidden py-8 text-center" id="error-feedback">
+   587→2026-08-06T10:20:11.872049231Z [err]          <button type="button" id="cf-footer-ip-reveal" class="cf-footer-ip-reveal-btn">Click to reveal</button>
+   588→2026-08-06T10:20:11.872052781Z [err]          </button>
+   589→2026-08-06T10:20:11.872055121Z [err]          <span class="hidden" id="cf-footer-ip">152.55.176.230</span>
+   590→2026-08-06T10:20:11.872060461Z [err]          <button
+   591→2026-08-06T10:20:11.872061521Z [err]          <span class="cf-footer-separator sm:hidden">&bull;</span>
+   592→2026-08-06T10:20:11.872066221Z [err]              class="border border-solid bg-white cf-button cursor-pointer ml-4 px-4 py-2 rounded"
+   593→2026-08-06T10:20:11.872069101Z [err]        </span>
+   594→2026-08-06T10:20:11.872072491Z [err]              id="feedback-button-no"
+   595→2026-08-06T10:20:11.872072701Z [err]      <p class="text-13">
+   596→2026-08-06T10:20:11.872075691Z [err]              type="button"
+   597→2026-08-06T10:20:11.872077101Z [err]        <span class="cf-footer-item sm:block sm:mb-1">Cloudflare Ray ID: <strong class="font-semibold">a26d4ebdfa7a053a</strong></span>
+   598→2026-08-06T10:20:11.872079131Z [err]          >
+   599→2026-08-06T10:20:11.872080671Z [err]        <span class="cf-footer-separator sm:hidden">&bull;</span>
+   600→2026-08-06T10:20:11.872082101Z [err]              No
+   601→2026-08-06T10:20:11.872084641Z [err]        <span id="cf-footer-item-ip" class="cf-footer-item hidden sm:block sm:mb-1">
+   602→2026-08-06T10:20:11.872084711Z [err]          </button>
+   603→2026-08-06T10:20:11.872087281Z [err]      </div>
+   604→2026-08-06T10:20:11.872089311Z [err]          Your IP:
+   605→2026-08-06T10:20:11.872090181Z [err]      <div class="feedback-success feedback-hidden" id="error-feedback-success">
+   606→2026-08-06T10:20:11.872093031Z [err]          Thank you for your feedback!
+   607→2026-08-06T10:20:11.872096030Z [err]      </div>
+   608→2026-08-06T10:20:11.872098510Z [err]  </div> <div class="cf-error-footer cf-wrapper w-240 lg:w-full py-10 sm:py-4 sm:px-8 mx-auto text-center sm:text-left border-solid border-0 border-t border-gray-300">
+   609→2026-08-06T10:20:11.873437795Z [err]        <span class="cf-footer-item sm:block sm:mb-1"><span>Performance &amp; security by</span> <a rel="noopener noreferrer" href="https://www.cloudflare.com/5xx-error-landing" id="brand_link" target="_blank">Cloudflare</a></span>
+   610→2026-08-06T10:20:11.873440785Z [err]        
+   611→2026-08-06T10:20:11.873443285Z [err]      </p>
+   612→2026-08-06T10:20:11.873445895Z [err]      <script>(function(){function d(){var b=a.getElementById("cf-footer-item-ip"),c=a.getElementById("cf-footer-ip-reveal");b&&"classList"in b&&(b.classList.remove("hidden"),c.addEventListener("click",function(){c.classList.add("hidden");a.getElementById("cf-footer-ip").classList.remove("hidden")}))}var a=document;document.addEventListener&&a.addEventListener("DOMContentLoaded",d)})();</script>
+   613→2026-08-06T10:20:11.873448545Z [err]    </div><!-- /.error-footer -->
+   614→2026-08-06T10:20:11.873451035Z [err]              </div>
+   615→2026-08-06T10:20:11.873453744Z [err]              <!-- /#cf-error-details -->
+   616→2026-08-06T10:20:11.873456394Z [err]          </div>
+   617→2026-08-06T10:20:11.873459234Z [err]          <!-- /#cf-wrapper -->
+   618→2026-08-06T10:20:11.873461664Z [err]  
+   619→2026-08-06T10:20:11.873464064Z [err]           <script>
+   620→2026-08-06T10:20:11.873467394Z [err]      window._cf_translation = {};
+   621→2026-08-06T10:20:11.873469664Z [err]      
+   622→2026-08-06T10:20:11.873471884Z [err]      
+   623→2026-08-06T10:20:11.873474634Z [err]    </script> 
+   624→2026-08-06T10:20:11.873477184Z [err]          
+   625→2026-08-06T10:20:11.873479554Z [err]      <script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a26d4ebdfa7a053a',t:'MTc4NjAxMTYxMQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+   626→2026-08-06T10:20:11.874529672Z [err]  </html>
+   627→2026-08-06T10:20:11.935125205Z [err]  2026-08-06 10:20:11 | asyncio | ERROR | Unclosed connector
+   628→2026-08-06T10:20:11.935129255Z [err]  connections: ['deque([(<aiohttp.client_proto.ResponseHandler object at 0x7f3a692cb290>, 6012595.910600059)])']
+   629→2026-08-06T10:20:11.935132055Z [err]  connector: <aiohttp.connector.TCPConnector object at 0x7f3a6924e1a0>
+   630→2026-08-06T10:20:13.756926845Z [err]  <meta name="robots" content="noindex, nofollow" />
+   631→2026-08-06T10:20:13.756933365Z [err]  <meta name="viewport" content="width=device-width,initial-scale=1" />
+   632→2026-08-06T10:20:13.756936985Z [err]  <link rel="stylesheet" id="cf_styles-css" href="/cdn-cgi/styles/main.css" /> <script>
+   633→2026-08-06T10:20:13.756940245Z [err]    (function(){if(document.addEventListener&&window.XMLHttpRequest&&JSON&&JSON.stringify){var e=function(a){var c=document.getElementById("error-feedback-survey"),d=document.getElementById("error-feedback-success"),b=new XMLHttpRequest;a={event:"feedback clicked",properties:{errorCode: 1015 },helpful:a,version: 1 };b.open("POST","https://sparrow.cloudflare.com/api/v1/event");b.setRequestHeader("Content-Type","application/json");b.setRequestHeader("Sparrow-Source-Key","c771f0e4b54944bebf4261d44bd79a1e");
+   634→2026-08-06T10:20:13.756947865Z [err]      <!--<![endif]-->
+   635→2026-08-06T10:20:13.756951205Z [err]      <head>
+   636→2026-08-06T10:20:13.756953815Z [err]          <title>Access denied | discord.com used Cloudflare to restrict access | discord.com | Cloudflare</title>
+   637→2026-08-06T10:20:13.756954435Z [err]  2026-08-06 10:20:13 | discord.client | INFO | logging in using static token
+   638→2026-08-06T10:20:13.756957055Z [err]          <meta charset="UTF-8" />
+   639→2026-08-06T10:20:13.756960514Z [err]  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+   640→2026-08-06T10:20:13.756963954Z [err]  <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+   641→2026-08-06T10:20:13.756964544Z [err]  2026-08-06 10:20:13 | OpheliaAI | ERROR | ❌ Fatal error: 429 Too Many Requests (error code: 0): <!doctype html>
+   642→2026-08-06T10:20:13.756969844Z [err]  <!--[if lt IE 7]> <html class="no-js ie6 oldie" lang="en-US"> <![endif]-->
+   643→2026-08-06T10:20:13.756978134Z [err]  <!--[if IE 7]>    <html class="no-js ie7 oldie" lang="en-US"> <![endif]-->
+   644→2026-08-06T10:20:13.756982664Z [err]  2026-08-06 10:20:13 | discord.client | WARNING | PyNaCl is not installed, voice will NOT be supported
+   645→2026-08-06T10:20:13.756983034Z [err]  <!--[if IE 8]>    <html class="no-js ie8 oldie" lang="en-US"> <![endif]-->
+   646→2026-08-06T10:20:13.756985444Z [err]  2026-08-06 10:20:13 | discord.client | WARNING | davey is not installed, voice will NOT be supported
+   647→2026-08-06T10:20:13.757012714Z [err]  <!--[if gt IE 8]><!-->
+   648→2026-08-06T10:20:13.757017934Z [err]  <html class="no-js" lang="en-US">
+   649→2026-08-06T10:20:13.765742450Z [err]              <div id="cf-error-details" class="p-0">
+   650→2026-08-06T10:20:13.765747550Z [err]          <div id="cf-wrapper">
+   651→2026-08-06T10:20:13.765752510Z [err]                  <header
+   652→2026-08-06T10:20:13.765755980Z [err]              <div
+   653→2026-08-06T10:20:13.765760370Z [err]                      class="mx-auto pt-10 lg:pt-6 lg:px-8 w-240 lg:w-full mb-15 antialiased"
+   654→2026-08-06T10:20:13.765763410Z [err]                  class="cf-alert cf-alert-error cf-cookie-error hidden"
+   655→2026-08-06T10:20:13.765767460Z [err]                  >
+   656→2026-08-06T10:20:13.765771660Z [err]                  id="cookie-alert"
+   657→2026-08-06T10:20:13.765774670Z [err]                      <h1
+   658→2026-08-06T10:20:13.765780859Z [err]                  data-translate="enable_cookies"
+   659→2026-08-06T10:20:13.765781779Z [err]                          class="inline-block md:block mr-2 md:mb-2 font-light text-60 md:text-3xl text-black-dark leading-tight"
+   660→2026-08-06T10:20:13.765786579Z [err]              >
+   661→2026-08-06T10:20:13.765790509Z [err]                  Please enable cookies.
+   662→2026-08-06T10:20:13.765794739Z [err]              </div>
+   663→2026-08-06T10:20:13.765804739Z [err]  b.send(JSON.stringify(a));c.classList.add("feedback-hidden");d.classList.remove("feedback-hidden")};document.addEventListener("DOMContentLoaded",function(){var a=document.getElementById("error-feedback"),c=document.getElementById("feedback-button-yes"),d=document.getElementById("feedback-button-no");"classList"in a&&(a.classList.remove("feedback-hidden"),c.addEventListener("click",function(){e(!0)}),d.addEventListener("click",function(){e(!1)}))})}})();
+   664→2026-08-06T10:20:13.765807939Z [err]  </script>
+   665→2026-08-06T10:20:13.765811459Z [err]          <script
+   666→2026-08-06T10:20:13.765815019Z [err]              defer
+   667→2026-08-06T10:20:13.765819959Z [err]              src="https://performance.radar.cloudflare.com/beacon.js"
+   668→2026-08-06T10:20:13.765824389Z [err]          ></script>
+   669→2026-08-06T10:20:13.765829239Z [err]      </head>
+   670→2026-08-06T10:20:13.765833059Z [err]      <body>
+   671→2026-08-06T10:20:13.773672646Z [err]                      </h1>
+   672→2026-08-06T10:20:13.773676456Z [err]                  
+   673→2026-08-06T10:20:13.773681476Z [err]                      <span
+   674→2026-08-06T10:20:13.773682716Z [err]                  
+   675→2026-08-06T10:20:13.773685996Z [err]                          class="inline-block md:block heading-ray-id font-mono text-15 lg:text-sm lg:leading-relaxed"
+   676→2026-08-06T10:20:13.773689026Z [err]                  <section class="w-240 lg:w-full mx-auto mb-8 lg:px-8">
+   677→2026-08-06T10:20:13.773690166Z [err]                          class="text-gray-600 leading-1.3 text-3xl lg:text-2xl font-light"
+   678→2026-08-06T10:20:13.773691196Z [err]                          >Ray ID: a26d4ec95ab24f1b &bull;</span
+   679→2026-08-06T10:20:13.773695026Z [err]                      <div id="what-happened-section" class="w-1/2 md:w-full">
+   680→2026-08-06T10:20:13.773696266Z [err]                      >
+   681→2026-08-06T10:20:13.773701816Z [err]                          <h2
+   682→2026-08-06T10:20:13.773704056Z [err]                      <span
+   683→2026-08-06T10:20:13.773704206Z [err]                      >
+   684→2026-08-06T10:20:13.773710486Z [err]                          class="inline-block md:block heading-ray-id font-mono text-15 lg:text-sm lg:leading-relaxed"
+   685→2026-08-06T10:20:13.773713496Z [err]                          You are being rate limited
+   686→2026-08-06T10:20:13.773714156Z [err]                      >
+   687→2026-08-06T10:20:13.773718076Z [err]                          >2026-08-06 10:20:13 UTC</span
+   688→2026-08-06T10:20:13.773721986Z [err]                      </h2>
+   689→2026-08-06T10:20:13.773729495Z [err]                      <h2
+   690→2026-08-06T10:20:13.773729635Z [err]                  </header>
+   691→2026-08-06T10:20:13.773766106Z [err]                      >
+   692→2026-08-06T10:20:13.773769786Z [err]                          <span data-translate="error">Error</span>
+   693→2026-08-06T10:20:13.773773636Z [err]                          <span>1015</span>
+   694→2026-08-06T10:20:13.775303368Z [err]                          
+   695→2026-08-06T10:20:13.775308638Z [err]                                  target="_blank"
+   696→2026-08-06T10:20:13.775310478Z [err]                      </div>
+   697→2026-08-06T10:20:13.775315837Z [err]                                  >https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-1xxx-errors/error-1015/</a
+   698→2026-08-06T10:20:13.775319767Z [err]                              >
+   699→2026-08-06T10:20:13.775325767Z [err]                              for more details.
+   700→2026-08-06T10:20:13.775329837Z [err]                          </p>
+   701→2026-08-06T10:20:13.775333177Z [err]                              class="text-3xl leading-tight font-normal mb-4 text-black-dark antialiased"
+   702→2026-08-06T10:20:13.775337057Z [err]                              data-translate="what_happened"
+   703→2026-08-06T10:20:13.775341357Z [err]                          >
+   704→2026-08-06T10:20:13.775345567Z [err]                              What happened?
+   705→2026-08-06T10:20:13.775349477Z [err]                          </h2>
+   706→2026-08-06T10:20:13.775354537Z [err]                          
+   707→2026-08-06T10:20:13.775359017Z [err]                              <p>The owner of this website (discord.com) has banned you temporarily from accessing this website.</p>
+   708→2026-08-06T10:20:13.775363527Z [err]                          
+   709→2026-08-06T10:20:13.775369997Z [err]                          
+   710→2026-08-06T10:20:13.775382217Z [err]                          <p>
+   711→2026-08-06T10:20:13.775389157Z [err]                              Please see
+   712→2026-08-06T10:20:13.775393457Z [err]                              <a
+   713→2026-08-06T10:20:13.775397076Z [err]                                  rel="noopener noreferrer"
+   714→2026-08-06T10:20:13.775403456Z [err]                                  href="https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-1xxx-errors/error-1015/"
+   715→2026-08-06T10:20:13.776831949Z [err]  </div> <div class="cf-error-footer cf-wrapper w-240 lg:w-full py-10 sm:py-4 sm:px-8 mx-auto text-center sm:text-left border-solid border-0 border-t border-gray-300">
+   716→2026-08-06T10:20:13.776843869Z [err]              type="button"
+   717→2026-08-06T10:20:13.776849819Z [err]              No
+   718→2026-08-06T10:20:13.776852989Z [err]          >
+   719→2026-08-06T10:20:13.776858469Z [err]          </button>
+   720→2026-08-06T10:20:13.776863119Z [err]              Yes
+   721→2026-08-06T10:20:13.776864859Z [err]      </div>
+   722→2026-08-06T10:20:13.776870159Z [err]          </button>
+   723→2026-08-06T10:20:13.776873009Z [err]      <div class="feedback-success feedback-hidden" id="error-feedback-success">
+   724→2026-08-06T10:20:13.776874499Z [err]  
+   725→2026-08-06T10:20:13.776877929Z [err]          <button
+   726→2026-08-06T10:20:13.776881159Z [err]          Thank you for your feedback!
+   727→2026-08-06T10:20:13.776887989Z [err]              class="border border-solid bg-white cf-button cursor-pointer ml-4 px-4 py-2 rounded"
+   728→2026-08-06T10:20:13.776891129Z [err]                      
+   729→2026-08-06T10:20:13.776891809Z [err]      </div>
+   730→2026-08-06T10:20:13.776896289Z [err]              id="feedback-button-no"
+   731→2026-08-06T10:20:13.776898898Z [err]                  </section>
+   732→2026-08-06T10:20:13.776904548Z [err]              type="button"
+   733→2026-08-06T10:20:13.776904758Z [err]                  
+   734→2026-08-06T10:20:13.776911638Z [err]  
+   735→2026-08-06T10:20:13.776911958Z [err]          >
+   736→2026-08-06T10:20:13.776916828Z [err]                  <div class="feedback-hidden py-8 text-center" id="error-feedback">
+   737→2026-08-06T10:20:13.776921318Z [err]      <div id="error-feedback-survey" class="footer-line-wrapper">
+   738→2026-08-06T10:20:13.776925268Z [err]          Was this page helpful?
+   739→2026-08-06T10:20:13.776928458Z [err]          <button
+   740→2026-08-06T10:20:13.776931418Z [err]              class="border border-solid bg-white cf-button cursor-pointer ml-4 px-4 py-2 rounded"
+   741→2026-08-06T10:20:13.776934668Z [err]              id="feedback-button-yes"
+   742→2026-08-06T10:20:13.778031805Z [err]        
+   743→2026-08-06T10:20:13.778035605Z [err]      </p>
+   744→2026-08-06T10:20:13.778038575Z [err]      <script>(function(){function d(){var b=a.getElementById("cf-footer-item-ip"),c=a.getElementById("cf-footer-ip-reveal");b&&"classList"in b&&(b.classList.remove("hidden"),c.addEventListener("click",function(){c.classList.add("hidden");a.getElementById("cf-footer-ip").classList.remove("hidden")}))}var a=document;document.addEventListener&&a.addEventListener("DOMContentLoaded",d)})();</script>
+   745→2026-08-06T10:20:13.778042585Z [err]    </div><!-- /.error-footer -->
+   746→2026-08-06T10:20:13.778046655Z [err]              </div>
+   747→2026-08-06T10:20:13.778050365Z [err]              <!-- /#cf-error-details -->
+   748→2026-08-06T10:20:13.778054395Z [err]          </div>
+   749→2026-08-06T10:20:13.778131394Z [err]      <p class="text-13">
+   750→2026-08-06T10:20:13.778134664Z [err]        <span class="cf-footer-item sm:block sm:mb-1">Cloudflare Ray ID: <strong class="font-semibold">a26d4ec95ab24f1b</strong></span>
+   751→2026-08-06T10:20:13.778137704Z [err]        <span class="cf-footer-separator sm:hidden">&bull;</span>
+   752→2026-08-06T10:20:13.778140834Z [err]        <span id="cf-footer-item-ip" class="cf-footer-item hidden sm:block sm:mb-1">
+   753→2026-08-06T10:20:13.778143554Z [err]          Your IP:
+   754→2026-08-06T10:20:13.778146194Z [err]          <button type="button" id="cf-footer-ip-reveal" class="cf-footer-ip-reveal-btn">Click to reveal</button>
+   755→2026-08-06T10:20:13.778148984Z [err]          <span class="hidden" id="cf-footer-ip">152.55.176.230</span>
+   756→2026-08-06T10:20:13.778151654Z [err]          <span class="cf-footer-separator sm:hidden">&bull;</span>
+   757→2026-08-06T10:20:13.778154114Z [err]        </span>
+   758→2026-08-06T10:20:13.778181673Z [err]        <span class="cf-footer-item sm:block sm:mb-1"><span>Performance &amp; security by</span> <a rel="noopener noreferrer" href="https://www.cloudflare.com/5xx-error-landing" id="brand_link" target="_blank">Cloudflare</a></span>
+   759→2026-08-06T10:20:13.779280670Z [err]      return loop.run_until_complete(main)
+   760→2026-08-06T10:20:13.779285390Z [err]    File "/mise/installs/python/3.10.20/lib/python3.10/asyncio/base_events.py", line 649, in run_until_complete
+   761→2026-08-06T10:20:13.779292730Z [err]      <script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a26d4ec95ab24f1b',t:'MTc4NjAxMTYxMw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+   762→2026-08-06T10:20:13.779296060Z [err]          <!-- /#cf-wrapper -->
+   763→2026-08-06T10:20:13.779304720Z [err]  </html>
+   764→2026-08-06T10:20:13.779305680Z [err]  
+   765→2026-08-06T10:20:13.779314070Z [err]  Traceback (most recent call last):
+   766→2026-08-06T10:20:13.779314640Z [err]           <script>
+   767→2026-08-06T10:20:13.779324080Z [err]    File "/app/discord-ai-bot/bot.py", line 383, in <module>
+   768→2026-08-06T10:20:13.779324900Z [err]      window._cf_translation = {};
+   769→2026-08-06T10:20:13.779332910Z [err]      asyncio.run(main())
+   770→2026-08-06T10:20:13.779333050Z [err]      
+   771→2026-08-06T10:20:13.779341860Z [err]      
+   772→2026-08-06T10:20:13.779341990Z [err]    File "/mise/installs/python/3.10.20/lib/python3.10/asyncio/runners.py", line 44, in run
+   773→2026-08-06T10:20:13.779347980Z [err]    </script> 
+   774→2026-08-06T10:20:13.779352139Z [err]          
+   775→2026-08-06T10:20:13.780821712Z [err]  <!--[if gt IE 8]><!-->
+   776→2026-08-06T10:20:13.780828162Z [err]  <html class="no-js" lang="en-US">
+   777→2026-08-06T10:20:13.780833532Z [err]      <!--<![endif]-->
+   778→2026-08-06T10:20:13.780837702Z [err]      await bot.start(config.token)
+   779→2026-08-06T10:20:13.780840822Z [err]      <head>
+   780→2026-08-06T10:20:13.780847152Z [err]    File "/app/.venv/lib/python3.10/site-packages/discord/client.py", line 850, in start
+   781→2026-08-06T10:20:13.780847282Z [err]          <title>Access denied | discord.com used Cloudflare to restrict access | discord.com | Cloudflare</title>
+   782→2026-08-06T10:20:13.780854881Z [err]      await self.login(token)
+   783→2026-08-06T10:20:13.780855421Z [err]          <meta charset="UTF-8" />
+   784→2026-08-06T10:20:13.780860421Z [err]    File "/app/.venv/lib/python3.10/site-packages/discord/client.py", line 679, in login
+   785→2026-08-06T10:20:13.780864551Z [err]      data = await self.http.static_login(token)
+   786→2026-08-06T10:20:13.780868621Z [err]    File "/app/.venv/lib/python3.10/site-packages/discord/http.py", line 844, in static_login
+   787→2026-08-06T10:20:13.780873001Z [err]      data = await self.request(Route('GET', '/users/@me'))
+   788→2026-08-06T10:20:13.780877171Z [err]    File "/app/.venv/lib/python3.10/site-packages/discord/http.py", line 714, in request
+   789→2026-08-06T10:20:13.780880641Z [err]      raise HTTPException(response, data)
+   790→2026-08-06T10:20:13.780885481Z [err]  discord.errors.HTTPException: 429 Too Many Requests (error code: 0): <!doctype html>
+   791→2026-08-06T10:20:13.780890431Z [err]  <!--[if lt IE 7]> <html class="no-js ie6 oldie" lang="en-US"> <![endif]-->
+   792→2026-08-06T10:20:13.780894721Z [err]  <!--[if IE 7]>    <html class="no-js ie7 oldie" lang="en-US"> <![endif]-->
+   793→2026-08-06T10:20:13.780898851Z [err]  <!--[if IE 8]>    <html class="no-js ie8 oldie" lang="en-US"> <![endif]-->
+   794→2026-08-06T10:20:13.780935000Z [err]      return future.result()
+   795→2026-08-06T10:20:13.780939080Z [err]    File "/app/discord-ai-bot/bot.py", line 365, in main
+   796→2026-08-06T10:20:13.782112477Z [err]  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+   797→2026-08-06T10:20:13.782118877Z [err]  <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+   798→2026-08-06T10:20:13.782122866Z [err]  <meta name="robots" content="noindex, nofollow" />
+   799→2026-08-06T10:20:13.782127156Z [err]  <meta name="viewport" content="width=device-width,initial-scale=1" />
+   800→2026-08-06T10:20:13.782130916Z [err]  <link rel="stylesheet" id="cf_styles-css" href="/cdn-cgi/styles/main.css" /> <script>
+   801→2026-08-06T10:20:13.782134556Z [err]    (function(){if(document.addEventListener&&window.XMLHttpRequest&&JSON&&JSON.stringify){var e=function(a){var c=document.getElementById("error-feedback-survey"),d=document.getElementById("error-feedback-success"),b=new XMLHttpRequest;a={event:"feedback clicked",properties:{errorCode: 1015 },helpful:a,version: 1 };b.open("POST","https://sparrow.cloudflare.com/api/v1/event");b.setRequestHeader("Content-Type","application/json");b.setRequestHeader("Sparrow-Source-Key","c771f0e4b54944bebf4261d44bd79a1e");
+   802→2026-08-06T10:20:13.782138206Z [err]  b.send(JSON.stringify(a));c.classList.add("feedback-hidden");d.classList.remove("feedback-hidden")};document.addEventListener("DOMContentLoaded",function(){var a=document.getElementById("error-feedback"),c=document.getElementById("feedback-button-yes"),d=document.getElementById("feedback-button-no");"classList"in a&&(a.classList.remove("feedback-hidden"),c.addEventListener("click",function(){e(!0)}),d.addEventListener("click",function(){e(!1)}))})}})();
+   803→2026-08-06T10:20:13.782141876Z [err]  </script>
+   804→2026-08-06T10:20:13.782146106Z [err]          <script
+   805→2026-08-06T10:20:13.782150466Z [err]              defer
+   806→2026-08-06T10:20:13.782154666Z [err]              src="https://performance.radar.cloudflare.com/beacon.js"
+   807→2026-08-06T10:20:13.782159106Z [err]          ></script>
+   808→2026-08-06T10:20:13.782163326Z [err]      </head>
+   809→2026-08-06T10:20:13.782167436Z [err]      <body>
+   810→2026-08-06T10:20:13.783487220Z [err]          <div id="cf-wrapper">
+   811→2026-08-06T10:20:13.783490350Z [err]              <div
+   812→2026-08-06T10:20:13.783493060Z [err]                  class="cf-alert cf-alert-error cf-cookie-error hidden"
+   813→2026-08-06T10:20:13.783495350Z [err]                  id="cookie-alert"
+   814→2026-08-06T10:20:13.783497650Z [err]                  data-translate="enable_cookies"
+   815→2026-08-06T10:20:13.783500180Z [err]              >
+   816→2026-08-06T10:20:13.783502600Z [err]                  Please enable cookies.
+   817→2026-08-06T10:20:13.783504730Z [err]              </div>
+   818→2026-08-06T10:20:13.783508020Z [err]              <div id="cf-error-details" class="p-0">
+   819→2026-08-06T10:20:13.783510920Z [err]                  <header
+   820→2026-08-06T10:20:13.783513580Z [err]                      class="mx-auto pt-10 lg:pt-6 lg:px-8 w-240 lg:w-full mb-15 antialiased"
+   821→2026-08-06T10:20:13.783515850Z [err]                  >
+   822→2026-08-06T10:20:13.783518190Z [err]                      <h1
+   823→2026-08-06T10:20:13.783520460Z [err]                          class="inline-block md:block mr-2 md:mb-2 font-light text-60 md:text-3xl text-black-dark leading-tight"
+   824→2026-08-06T10:20:13.783522760Z [err]                      >
+   825→2026-08-06T10:20:13.783526070Z [err]                          <span data-translate="error">Error</span>
+   826→2026-08-06T10:20:13.783528530Z [err]                          <span>1015</span>
+   827→2026-08-06T10:20:13.783530780Z [err]                      </h1>
+   828→2026-08-06T10:20:13.783533540Z [err]                      <span
+   829→2026-08-06T10:20:13.783535860Z [err]                          class="inline-block md:block heading-ray-id font-mono text-15 lg:text-sm lg:leading-relaxed"
+   830→2026-08-06T10:20:13.783538110Z [err]                          >Ray ID: a26d4ec95ab24f1b &bull;</span
+   831→2026-08-06T10:20:13.783540660Z [err]                      >
+   832→2026-08-06T10:20:13.783543440Z [err]                      <span
+   833→2026-08-06T10:20:13.783545580Z [err]                          class="inline-block md:block heading-ray-id font-mono text-15 lg:text-sm lg:leading-relaxed"
+   834→2026-08-06T10:20:13.784636607Z [err]                          >2026-08-06 10:20:13 UTC</span
+   835→2026-08-06T10:20:13.784637057Z [err]                              <p>The owner of this website (discord.com) has banned you temporarily from accessing this website.</p>
+   836→2026-08-06T10:20:13.784647157Z [err]                          
+   837→2026-08-06T10:20:13.784648037Z [err]                      >
+   838→2026-08-06T10:20:13.784653507Z [err]                              class="text-3xl leading-tight font-normal mb-4 text-black-dark antialiased"
+   839→2026-08-06T10:20:13.784656207Z [err]                          
+   840→2026-08-06T10:20:13.784658407Z [err]                      <h2
+   841→2026-08-06T10:20:13.784663037Z [err]                          <p>
+   842→2026-08-06T10:20:13.784663857Z [err]                              data-translate="what_happened"
+   843→2026-08-06T10:20:13.784670887Z [err]                              Please see
+   844→2026-08-06T10:20:13.784673147Z [err]                          class="text-gray-600 leading-1.3 text-3xl lg:text-2xl font-light"
+   845→2026-08-06T10:20:13.784674856Z [err]                          >
+   846→2026-08-06T10:20:13.784680586Z [err]                      >
+   847→2026-08-06T10:20:13.784682916Z [err]                              What happened?
+   848→2026-08-06T10:20:13.784690496Z [err]                          You are being rate limited
+   849→2026-08-06T10:20:13.784690656Z [err]                          </h2>
+   850→2026-08-06T10:20:13.784699146Z [err]                      </h2>
+   851→2026-08-06T10:20:13.784699576Z [err]                          
+   852→2026-08-06T10:20:13.784704366Z [err]                  </header>
+   853→2026-08-06T10:20:13.784707946Z [err]                  
+   854→2026-08-06T10:20:13.784711596Z [err]                  
+   855→2026-08-06T10:20:13.784714756Z [err]                  <section class="w-240 lg:w-full mx-auto mb-8 lg:px-8">
+   856→2026-08-06T10:20:13.784717766Z [err]                      <div id="what-happened-section" class="w-1/2 md:w-full">
+   857→2026-08-06T10:20:13.784720546Z [err]                          <h2
+   858→2026-08-06T10:20:13.785371118Z [err]                              <a
+   859→2026-08-06T10:20:13.785377638Z [err]                                  rel="noopener noreferrer"
+   860→2026-08-06T10:20:13.785381908Z [err]          >
+   861→2026-08-06T10:20:13.785386058Z [err]  
+   862→2026-08-06T10:20:13.785386568Z [err]                                  href="https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-1xxx-errors/error-1015/"
+   863→2026-08-06T10:20:13.785393687Z [err]              Yes
+   864→2026-08-06T10:20:13.785396157Z [err]                                  target="_blank"
+   865→2026-08-06T10:20:13.785397517Z [err]                  <div class="feedback-hidden py-8 text-center" id="error-feedback">
+   866→2026-08-06T10:20:13.785403997Z [err]      <div id="error-feedback-survey" class="footer-line-wrapper">
+   867→2026-08-06T10:20:13.785407857Z [err]          Was this page helpful?
+   868→2026-08-06T10:20:13.785411617Z [err]          <button
+   869→2026-08-06T10:20:13.785412587Z [err]                                  >https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-1xxx-errors/error-1015/</a
+   870→2026-08-06T10:20:13.785417857Z [err]              class="border border-solid bg-white cf-button cursor-pointer ml-4 px-4 py-2 rounded"
+   871→2026-08-06T10:20:13.785418967Z [err]                              >
+   872→2026-08-06T10:20:13.785425227Z [err]              id="feedback-button-yes"
+   873→2026-08-06T10:20:13.785425417Z [err]                              for more details.
+   874→2026-08-06T10:20:13.785432027Z [err]                          </p>
+   875→2026-08-06T10:20:13.785432787Z [err]              type="button"
+   876→2026-08-06T10:20:13.785436918Z [err]                          
+   877→2026-08-06T10:20:13.785440098Z [err]                      </div>
+   878→2026-08-06T10:20:13.785443248Z [err]  
+   879→2026-08-06T10:20:13.785445928Z [err]                      
+   880→2026-08-06T10:20:13.785448548Z [err]                  </section>
+   881→2026-08-06T10:20:13.785451268Z [err]                  
+   882→2026-08-06T10:20:13.789223362Z [err]          </button>
+   883→2026-08-06T10:20:13.789227042Z [err]          <button
+   884→2026-08-06T10:20:13.789229902Z [err]              class="border border-solid bg-white cf-button cursor-pointer ml-4 px-4 py-2 rounded"
+   885→2026-08-06T10:20:13.789232892Z [err]              id="feedback-button-no"
+   886→2026-08-06T10:20:13.789236152Z [err]              type="button"
+   887→2026-08-06T10:20:13.789239212Z [err]          >
+   888→2026-08-06T10:20:13.789241772Z [err]              No
+   889→2026-08-06T10:20:13.789244572Z [err]          </button>
+   890→2026-08-06T10:20:13.789247542Z [err]      </div>
+   891→2026-08-06T10:20:13.789250912Z [err]      <div class="feedback-success feedback-hidden" id="error-feedback-success">
+   892→2026-08-06T10:20:13.789253472Z [err]          Thank you for your feedback!
+   893→2026-08-06T10:20:13.789256092Z [err]      </div>
+   894→2026-08-06T10:20:13.789258502Z [err]  </div> <div class="cf-error-footer cf-wrapper w-240 lg:w-full py-10 sm:py-4 sm:px-8 mx-auto text-center sm:text-left border-solid border-0 border-t border-gray-300">
+   895→2026-08-06T10:20:13.789260862Z [err]      <p class="text-13">
+   896→2026-08-06T10:20:13.789263512Z [err]        <span class="cf-footer-item sm:block sm:mb-1">Cloudflare Ray ID: <strong class="font-semibold">a26d4ec95ab24f1b</strong></span>
+   897→2026-08-06T10:20:13.789265632Z [err]        <span class="cf-footer-separator sm:hidden">&bull;</span>
+   898→2026-08-06T10:20:13.789268362Z [err]        <span id="cf-footer-item-ip" class="cf-footer-item hidden sm:block sm:mb-1">
+   899→2026-08-06T10:20:13.789270802Z [err]          Your IP:
+   900→2026-08-06T10:20:13.789273402Z [err]          <button type="button" id="cf-footer-ip-reveal" class="cf-footer-ip-reveal-btn">Click to reveal</button>
+   901→2026-08-06T10:20:13.789276242Z [err]          <span class="hidden" id="cf-footer-ip">152.55.176.230</span>
+   902→2026-08-06T10:20:13.789278862Z [err]          <span class="cf-footer-separator sm:hidden">&bull;</span>
+   903→2026-08-06T10:20:13.789281421Z [err]        </span>
+   904→2026-08-06T10:20:13.793834698Z [err]      <script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a26d4ec95ab24f1b',t:'MTc4NjAxMTYxMw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+   905→2026-08-06T10:20:13.793843998Z [err]        <span class="cf-footer-item sm:block sm:mb-1"><span>Performance &amp; security by</span> <a rel="noopener noreferrer" href="https://www.cloudflare.com/5xx-error-landing" id="brand_link" target="_blank">Cloudflare</a></span>
+   906→2026-08-06T10:20:13.793846918Z [err]        
+   907→2026-08-06T10:20:13.793850998Z [err]      </p>
+   908→2026-08-06T10:20:13.793854958Z [err]      <script>(function(){function d(){var b=a.getElementById("cf-footer-item-ip"),c=a.getElementById("cf-footer-ip-reveal");b&&"classList"in b&&(b.classList.remove("hidden"),c.addEventListener("click",function(){c.classList.add("hidden");a.getElementById("cf-footer-ip").classList.remove("hidden")}))}var a=document;document.addEventListener&&a.addEventListener("DOMContentLoaded",d)})();</script>
+   909→2026-08-06T10:20:13.793859068Z [err]    </div><!-- /.error-footer -->
+   910→2026-08-06T10:20:13.793862998Z [err]              </div>
+   911→2026-08-06T10:20:13.793868058Z [err]              <!-- /#cf-error-details -->
+   912→2026-08-06T10:20:13.793871947Z [err]          </div>
+   913→2026-08-06T10:20:13.793875467Z [err]          <!-- /#cf-wrapper -->
+   914→2026-08-06T10:20:13.793879127Z [err]  
+   915→2026-08-06T10:20:13.793882627Z [err]           <script>
+   916→2026-08-06T10:20:13.793885977Z [err]      window._cf_translation = {};
+   917→2026-08-06T10:20:13.793889177Z [err]      
+   918→2026-08-06T10:20:13.793892957Z [err]      
+   919→2026-08-06T10:20:13.793896847Z [err]    </script> 
+   920→2026-08-06T10:20:13.793900717Z [err]          
+   921→2026-08-06T10:20:13.794779027Z [err]  </html>
+   922→2026-08-06T10:20:13.794782827Z [err]  2026-08-06 10:20:13 | asyncio | ERROR | Unclosed connector
+   923→2026-08-06T10:20:13.794785627Z [err]  connections: ['deque([(<aiohttp.client_proto.ResponseHandler object at 0x7f46da7d7290>, 6012597.722408837)])']
+   924→2026-08-06T10:20:13.794788847Z [err]  connector: <aiohttp.connector.TCPConnector object at 0x7f46da623e80>
+   925→2026-08-06T10:20:15.289170099Z [err]  2026-08-06 10:20:15 | discord.client | WARNING | PyNaCl is not installed, voice will NOT be supported
+   926→2026-08-06T10:20:15.289176079Z [err]  2026-08-06 10:20:15 | discord.client | WARNING | davey is not installed, voice will NOT be supported
+   927→2026-08-06T10:20:15.289179849Z [err]  2026-08-06 10:20:15 | discord.client | INFO | logging in using static token
+   928→2026-08-06T10:20:15.774172072Z [err]  2026-08-06 10:20:15 | OpheliaAI | INFO | 🚀 Ophelia AI 3.0 (Production Grade) starting up...
+   929→2026-08-06T10:20:15.774177322Z [err]  2026-08-06 10:20:15 | OpheliaAI | INFO | 👑 Owners: set()
+   930→2026-08-06T10:20:15.774181602Z [err]  2026-08-06 10:20:15 | OpheliaAI | INFO | 📦 Connecting to Supabase...
+   931→2026-08-06T10:20:15.799247495Z [err]  2026-08-06 10:20:15 | Database | INFO | Database connection established
+   932→2026-08-06T10:20:15.799251485Z [err]  2026-08-06 10:20:15 | OpheliaAI | INFO | ⚡ Initializing persistent cache...
+   933→2026-08-06T10:20:15.799347174Z [err]  2026-08-06 10:20:15 | Cache | INFO | 💾 Persistent cache initialized | Storage: /app/data
+   934→2026-08-06T10:20:15.799356624Z [err]  2026-08-06 10:20:15 | Cache | INFO | 🔥 Warming up cache from database...
+   935→2026-08-06T10:20:16.125284339Z [err]  2026-08-06 10:20:16 | Observability | INFO | 📊 Observability initialized | Log dir: ./data/logs
+   936→2026-08-06T10:20:16.125294929Z [err]  2026-08-06 10:20:16 | OpheliaAI | INFO |    ✅ Structured logging enabled
+   937→2026-08-06T10:20:16.125300728Z [err]  2026-08-06 10:20:16 | httpx | INFO | HTTP Request: GET https://kbnefuykdneujyzalesz.supabase.co/rest/v1/guild_settings?select=%2A "HTTP/2 404 Not Found"
+   938→2026-08-06T10:20:16.125302548Z [err]  2026-08-06 10:20:16 | OpheliaAI | INFO | 🔑 Initializing Groq client (2 keys)...
+   939→2026-08-06T10:20:16.125311608Z [err]  2026-08-06 10:20:16 | Database | ERROR | Error fetching all guild settings: {'message': "Could not find the table 'public.guild_settings' in the schema cache", 'code': 'PGRST205', 'hint': "Perhaps you meant the table 'public.game_global_settings'", 'details': None}
+   940→2026-08-06T10:20:16.125316388Z [err]  2026-08-06 10:20:16 | Cache | INFO | ✅ Cache warmed up! Loaded 0 guild settings in 0.32s
+   941→2026-08-06T10:20:16.125323458Z [err]  2026-08-06 10:20:16 | OpheliaAI | INFO | 🔒 Initializing permission system...
+   942→2026-08-06T10:20:16.125327248Z [err]  2026-08-06 10:20:16 | Permissions | INFO | 🔒 Permission Checker initialized
+   943→2026-08-06T10:20:16.125331238Z [err]  2026-08-06 10:20:16 | Permissions | INFO | 👑 Owner IDs configured: 0 owners
+   944→2026-08-06T10:20:16.125334898Z [err]  2026-08-06 10:20:16 | OpheliaAI | INFO |    ✅ Permission levels: OWNER > ADMIN > MODERATOR > MEMBER
+   945→2026-08-06T10:20:16.125338638Z [err]  2026-08-06 10:20:16 | OpheliaAI | INFO | 🛡️ Initializing safety system...
+   946→2026-08-06T10:20:16.125342408Z [err]  2026-08-06 10:20:16 | SafetySystem | INFO | 🛡️ Safety System initialized | Storage: ./data/safety
+   947→2026-08-06T10:20:16.125345648Z [err]  2026-08-06 10:20:16 | OpheliaAI | INFO |    ✅ Confirmations, audit logging, rollback ready
+   948→2026-08-06T10:20:16.125349168Z [err]  2026-08-06 10:20:16 | OpheliaAI | INFO | 📊 Initializing observability...
+   949→2026-08-06T10:20:16.133928967Z [err]  2026-08-06 10:20:16 | GroqClient | INFO |    • creative: qwen/qwen3.6-27b (Stories, jokes, roleplay)
+   950→2026-08-06T10:20:16.133934007Z [err]  2026-08-06 10:20:16 | GroqClient | INFO |    • analysis: qwen/qwen3.6-27b (Code, data, technical stuff)
+   951→2026-08-06T10:20:16.133940457Z [err]  2026-08-06 10:20:16 | GroqClient | INFO | 🔑 Initialized 2 Groq API client(s)
+   952→2026-08-06T10:20:16.133945137Z [err]  2026-08-06 10:20:16 | GroqClient | INFO | 🤖 Multi-model system ready:
+   953→2026-08-06T10:20:16.133948927Z [err]  2026-08-06 10:20:16 | GroqClient | INFO |    • chat: llama-3.3-70b-versatile (Fun & friendly chat)
+   954→2026-08-06T10:20:16.133952697Z [err]  2026-08-06 10:20:16 | GroqClient | INFO |    • command: llama-3.1-8b-instant (Quick command execution)
+   955→2026-08-06T10:20:16.133957017Z [err]  2026-08-06 10:20:16 | GroqClient | INFO |    • reasoning: qwen/qwen3.6-27b (Deep thinking & analysis)
+   956→2026-08-06T10:20:16.304109474Z [err]  2026-08-06 10:20:16 | httpx | INFO | HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
+   957→2026-08-06T10:20:16.309291163Z [err]  2026-08-06 10:20:16 | OpheliaAI | INFO | ✅ Connected! Multi-model ready! 🚀
+   958→2026-08-06T10:20:16.309295143Z [err]  2026-08-06 10:20:16 | OpheliaAI | INFO | 🧠 Initializing AI Handler V3...
+   959→2026-08-06T10:20:16.309298913Z [err]  2026-08-06 10:20:16 | AIHandlerV3 | INFO | 🧠 AI Handler V3 initialized (Production Grade)
+   960→2026-08-06T10:20:16.309304132Z [err]  2026-08-06 10:20:16 | OpheliaAI | INFO |    ✅ Anti-hallucination enabled
+   961→2026-08-06T10:20:16.309307702Z [err]  2026-08-06 10:20:16 | OpheliaAI | INFO |    ✅ Tool execution guaranteed
+   962→2026-08-06T10:20:16.309310972Z [err]  2026-08-06 10:20:16 | OpheliaAI | INFO | 🗣️ Initializing natural language command parser...
+   963→2026-08-06T10:20:16.309314572Z [err]  2026-08-06 10:20:16 | OpheliaAI | INFO | 🛠️ Initializing MCP Tool System...
+   964→2026-08-06T10:20:16.309318522Z [err]  2026-08-06 10:20:16 | ToolExecutor | INFO | 🛠️ Tool Executor ready with 42 tools!
+   965→2026-08-06T10:20:16.309322172Z [err]  2026-08-06 10:20:16 | ToolExecutor | INFO |    ⚡ Moderation: kick, ban, unban, timeout, mute, unmute
+   966→2026-08-06T10:20:16.309325332Z [err]  2026-08-06 10:20:16 | ToolExecutor | INFO |    📝 Channels: create, delete, rename, list, info
+   967→2026-08-06T10:20:16.309329252Z [err]  2026-08-06 10:20:16 | ToolExecutor | INFO |    👤 Roles: create, delete, assign, remove, list
+   968→2026-08-06T10:20:16.309332512Z [err]  2026-08-06 10:20:16 | ToolExecutor | INFO |    💬 Messages: send, embed, edit, delete, pin, react
+   969→2026-08-06T10:20:16.309335842Z [err]  2026-08-06 10:20:16 | ToolExecutor | INFO |    📊 Server: info, members, bans
+   970→2026-08-06T10:20:16.309339452Z [err]  2026-08-06 10:20:16 | ToolExecutor | INFO |    🔍 Search: search messages, read history
+   971→2026-08-06T10:20:16.309342722Z [err]  2026-08-06 10:20:16 | ToolExecutor | INFO |    🌐 External: web_search, image_gen, code_exec
+   972→2026-08-06T10:20:16.309345922Z [err]  2026-08-06 10:20:16 | OpheliaAI | INFO |    ✅ 42 tools registered
+   973→2026-08-06T10:20:16.313559562Z [err]  2026-08-06 10:20:16 | OpheliaAI | INFO |    ✅ Tools: search_messages, read_channel_messages, send_message, add_reaction, get_member_info, get_server_info...
+   974→2026-08-06T10:20:16.313566092Z [err]  2026-08-06 10:20:16 | OpheliaAI | INFO | 📦 Loading commands...
+   975→2026-08-06T10:20:16.324282925Z [err]  2026-08-06 10:20:16 | Settings | INFO | ✅ Ophelia AI 2.0 Settings Cog loaded (with merged utility commands)!
+   976→2026-08-06T10:20:16.324287235Z [err]  2026-08-06 10:20:16 | OpheliaAI | INFO | ============================================================
+   977→2026-08-06T10:20:16.324289685Z [err]  2026-08-06 10:20:16 | OpheliaAI | INFO | ✅ OPHELIA AI 3.0 FULLY INITIALIZED!
+   978→2026-08-06T10:20:16.324292505Z [err]  2026-08-06 10:20:16 | OpheliaAI | INFO | ============================================================
+   979→2026-08-06T10:20:16.324295444Z [err]  2026-08-06 10:20:16 | OpheliaAI | INFO | Systems loaded:
+   980→2026-08-06T10:20:16.324298224Z [err]  2026-08-06 10:20:16 | OpheliaAI | INFO |   • Database (Supabase)
+   981→2026-08-06T10:20:16.324301664Z [err]  2026-08-06 10:20:16 | OpheliaAI | INFO |   • Persistent Cache (File-based)
+   982→2026-08-06T10:20:16.324304484Z [err]  2026-08-06 10:20:16 | OpheliaAI | INFO |   • Groq Multi-model Client
+   983→2026-08-06T10:20:16.324307064Z [err]  2026-08-06 10:20:16 | OpheliaAI | INFO |   • Permission System (Hierarchical)
+   984→2026-08-06T10:20:16.324309564Z [err]  2026-08-06 10:20:16 | OpheliaAI | INFO |   • Safety System (Audit + Confirmations)
+   985→2026-08-06T10:20:16.324312024Z [err]  2026-08-06 10:20:16 | OpheliaAI | INFO |   • Observability (Structured Logging)
+   986→2026-08-06T10:20:16.324314614Z [err]  2026-08-06 10:20:16 | OpheliaAI | INFO |   • Tool Registry (11+ tools)
+   987→2026-08-06T10:20:16.324317044Z [err]  2026-08-06 10:20:16 | OpheliaAI | INFO |   • AI Handler V3 (Anti-hallucination)
+   988→2026-08-06T10:20:16.324319324Z [err]  2026-08-06 10:20:16 | OpheliaAI | INFO | ============================================================
+   989→2026-08-06T10:20:16.869346367Z [err]  2026-08-06 10:20:16 | discord.gateway | INFO | Shard ID None has connected to Gateway (Session ID: 349de5ae5f0711584b679ff05e19f30a).
+   990→2026-08-06T10:20:18.873877315Z [err]  2026-08-06 10:20:18 | OpheliaAI | INFO | ============================================================
+   991→2026-08-06T10:20:18.873884455Z [err]  2026-08-06 10:20:18 | OpheliaAI | INFO | 🤖 **OPHELIA AI 3.0** IS ONLINE!
+   992→2026-08-06T10:20:18.873890955Z [err]  2026-08-06 10:20:18 | OpheliaAI | INFO | 📊 Serving 1 servers
+   993→2026-08-06T10:20:18.873894835Z [err]  2026-08-06 10:20:18 | OpheliaAI | INFO | 🆔 Bot ID: 1531179226265419797
+   994→2026-08-06T10:20:18.873898445Z [err]  2026-08-06 10:20:18 | OpheliaAI | INFO | 👑 Owners: 0 users with FULL ACCESS
+   995→2026-08-06T10:20:18.873902435Z [err]  2026-08-06 10:20:18 | OpheliaAI | INFO | 🗣️ Natural Language Commands: ENABLED
+   996→2026-08-06T10:20:18.873905615Z [err]  2026-08-06 10:20:18 | OpheliaAI | INFO | 🛠️ MCP Tool Calling: ENABLED (Production Grade!)
+   997→2026-08-06T10:20:18.873909385Z [err]  2026-08-06 10:20:18 | OpheliaAI | INFO | 🔒 Permission System: ACTIVE
+   998→2026-08-06T10:20:18.873913335Z [err]  2026-08-06 10:20:18 | OpheliaAI | INFO | 🛡️ Safety System: ACTIVE
+   999→2026-08-06T10:20:18.873916615Z [err]  2026-08-06 10:20:18 | OpheliaAI | INFO | 📊 Observability: ACTIVE
+  1000→2026-08-06T10:20:18.873919765Z [err]  2026-08-06 10:20:18 | OpheliaAI | INFO | ============================================================
