@@ -293,16 +293,46 @@ class AIHandlerV3:
             settings = await self.get_guild_settings(guild_id)
             
             # 🔧 SMART TOOL SELECTION: Reduce token usage!
-            # If specific action detected, ONLY send that tool (saves tokens!)
+            # Groq free tier: 6000 TPM limit, 53 tools = ~8500 tokens ❌
+            MAX_TOOLS_FOR_CHAT = 20  # Safe limit for Groq free tier
+            
             if action_intent and tool_executor.schemas_for_groq:
-                # Find and send only the requested tool
+                # ACTION COMMAND: Only send that specific tool
                 full_schemas = tool_executor.schemas_for_groq
                 tool_schemas = [s for s in full_schemas if s.get('function', {}).get('name') == action_intent]
                 if not tool_schemas:
-                    tool_schemas = full_schemas  # Fallback to all if not found
+                    tool_schemas = full_schemas[:MAX_TOOLS_FOR_CHAT]  # Fallback with limit
                 logger.info(f"🎯 Smart tool selection: {len(tool_schemas)} tool(s) for '{action_intent}'")
             else:
-                tool_schemas = tool_executor.schemas_for_groq
+                # REGULAR CHAT: Limit tools to prevent 413 error
+                all_schemas = tool_executor.schemas_for_groq or []
+                
+                # Priority tools for chat (most commonly needed)
+                priority_tools = [
+                    'get_server_info', 'get_member_info', 'list_members',
+                    'list_channels', 'list_roles', 'search_messages',
+                    'send_message', 'create_channel', 'create_role',
+                    'ban_user', 'kick_user', 'timeout_user',
+                    'mute_user', 'unban_user', 'create_invite',
+                    'get_banned_users', 'edit_message', 'delete_message',
+                    'pin_message', 'add_reaction'
+                ]
+                
+                # Get priority tools first, then fill remaining slots
+                priority_schemas = []
+                other_schemas = []
+                for s in all_schemas:
+                    name = s.get('function', {}).get('name', '')
+                    if name in priority_tools:
+                        priority_schemas.append(s)
+                    else:
+                        other_schemas.append(s)
+                
+                # Combine: priority first, then others up to limit
+                tool_schemas = priority_schemas + other_schemas[:MAX_TOOLS_FOR_CHAT - len(priority_schemas)]
+                tool_schemas = tool_schemas[:MAX_TOOLS_FOR_CHAT]  # Final safety limit
+                
+                logger.info(f"📋 Chat mode: {len(tool_schemas)} tools (limited from {len(all_schemas)})")
             
             # Build execution context (RICH CONTEXT!)
             exec_context = {

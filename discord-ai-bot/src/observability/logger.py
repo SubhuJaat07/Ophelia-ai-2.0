@@ -221,8 +221,10 @@ class ObservabilityManager:
             self._write_to_file(entry)
         
         # Console output (for errors and warnings)
-        if self.enable_console_logging and level.value in ["WARNING", "ERROR", "CRITICAL"]:
-            print(f"[{level.value}] [{event_type.value}] {message}")
+        level_str = level.value if hasattr(level, 'value') else str(level)
+        if self.enable_console_logging and level_str in ["WARNING", "ERROR", "CRITICAL"]:
+            event_str = event_type.value if hasattr(event_type, 'value') else str(event_type)
+            print(f"[{level_str}] [{event_str}] {message}")
             if entry.error_traceback:
                 print(entry.error_traceback[:500])
         
