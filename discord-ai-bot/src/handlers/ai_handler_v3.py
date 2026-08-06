@@ -326,12 +326,13 @@ class AIHandlerV3:
             # Determine tool strategy
             # ⚠️ CRITICAL: If action detected, FORCE that specific tool!
             if action_intent:
-                tool_choice = action_intent  # Force specific tool like "kick_user"
+                # Groq API requires object format for specific tool
+                tool_choice = {"type": "function", "function": {"name": action_intent}}
                 logger.warning(f"🎯 FORCING TOOL: {action_intent}")
             else:
                 tool_choice = "auto"
             
-            logger.info(f"🎯 Strategy: tool_choice='{tool_choice}'")
+            logger.info(f"🎯 Strategy: tool_choice={tool_choice}")
             
             while iteration < max_tool_iterations:
                 iteration += 1
