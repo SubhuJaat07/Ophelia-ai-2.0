@@ -197,8 +197,8 @@ class ObservabilityManager:
         """
         entry = StructuredLogEntry(
             timestamp=datetime.now(timezone.utc).isoformat(),
-            event_type=event_type.value,
-            level=level.value,
+            event_type=event_type.value if hasattr(event_type, 'value') else str(event_type),
+            level=level.value if hasattr(level, 'value') else str(level),
             message=message,
             **{k: v for k, v in context.items() if k in [
                 'guild_id', 'channel_id', 'user_id', 'duration_ms', 

@@ -291,7 +291,18 @@ class AIHandlerV3:
             
             # Get settings
             settings = await self.get_guild_settings(guild_id)
-            tool_schemas = tool_executor.schemas_for_groq
+            
+            # 🔧 SMART TOOL SELECTION: Reduce token usage!
+            # If specific action detected, ONLY send that tool (saves tokens!)
+            if action_intent and tool_executor.schemas_for_groq:
+                # Find and send only the requested tool
+                full_schemas = tool_executor.schemas_for_groq
+                tool_schemas = [s for s in full_schemas if s.get('function', {}).get('name') == action_intent]
+                if not tool_schemas:
+                    tool_schemas = full_schemas  # Fallback to all if not found
+                logger.info(f"🎯 Smart tool selection: {len(tool_schemas)} tool(s) for '{action_intent}'")
+            else:
+                tool_schemas = tool_executor.schemas_for_groq
             
             # Build execution context (RICH CONTEXT!)
             exec_context = {

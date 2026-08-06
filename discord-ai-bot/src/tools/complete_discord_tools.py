@@ -1615,11 +1615,15 @@ class ListMembersTool(DiscordTool):
     
     async def execute(self, args: Dict[str, Any], context: Dict[str, Any]) -> ToolResult:
         try:
-            limit = min(args.get("limit", 20), 50)
-            status_filter = args.get("status_filter", "all")
-            include_bots = args.get("include_bots", False)
+            # Safety: ensure args and context are dicts
+            safe_args = args if isinstance(args, dict) else {}
+            safe_context = context if isinstance(context, dict) else {}
             
-            guild = context.get("guild")
+            limit = min(safe_args.get("limit", 20), 50)
+            status_filter = safe_args.get("status_filter", "all")
+            include_bots = safe_args.get("include_bots", False)
+            
+            guild = safe_context.get("guild")
             if not guild:
                 return ToolResult(success=False, content="❌ No guild available")
             
