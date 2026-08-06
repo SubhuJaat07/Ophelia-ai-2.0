@@ -809,6 +809,77 @@ class EditNicknameTool(DiscordTool):
             return ToolResult(success=False, content=f"❌ Nickname change failed: {str(e)[:150]}")
 
 
+class ChangeNicknameTool(DiscordTool):
+    """Change a member's nickname (alias for edit_nickname)"""
+    
+    name = "change_nickname"
+    description = """Change a member's nickname in the server."""
+    
+    parameters = [
+        ToolParameter(name="user_id", param_type="string", description="User ID", required=True),
+        ToolParameter(name="nickname", param_type="string", description="New nickname (empty to reset)", required=True),
+    ]
+    
+    permission_level = ToolPermissionLevel.MODERATOR
+    
+    async def execute(self, args: Dict[str, Any], context: Dict[str, Any]) -> ToolResult:
+        try:
+            user_id = args["user_id"]
+            nickname = args["nickname"][:32] if args.get("nickname") else None
+            
+            guild = context.get("guild")
+            if not guild:
+                return ToolResult(success=False, content="❌ No guild available")
+            
+            member = guild.get_member(int(user_id))
+            if not member:
+                return ToolResult(success=False, content="❌ User not found")
+            
+            await member.edit(nick=nickname)
+            nick_display = nickname or "(reset)"
+            return ToolResult(success=True, content=f"✅ **{member.name}** ka nickname change ho gaya: **{nick_display}**")
+        except discord.Forbidden:
+            return ToolResult(success=False, content="❌ Cannot change this nickname!")
+        except Exception as e:
+            return ToolResult(success=False, content=f"❌ Nickname change failed: {str(e)[:150]}")
+
+
+class GetUserAvatarTool(DiscordTool):
+    """Get user's avatar URL"""
+    
+    name = "get_user_avatar"
+    description = """Get a user's profile avatar/DP URL."""
+    
+    parameters = [
+        ToolParameter(name="user_id", param_type="string", description="User ID to get avatar for", required=True),
+    ]
+    
+    permission_level = ToolPermissionLevel.EVERYONE
+    
+    async def execute(self, args: Dict[str, Any], context: Dict[str, Any]) -> ToolResult:
+        try:
+            user_id = args["user_id"]
+            
+            guild = context.get("guild")
+            if not guild:
+                return ToolResult(success=False, content="❌ No guild available")
+            
+            member = guild.get_member(int(user_id))
+            if not member:
+                # Try fetching user directly
+                try:
+                    user = await guild.fetch_member(int(user_id))
+                    avatar_url = user.avatar.url if user.avatar else user.default_avatar.url
+                    return ToolResult(success=True, content=f"🖼️ **{user.name}** ka avatar:\n{avatar_url}", data={"avatar_url": str(avatar_url)})
+                except:
+                    return ToolResult(success=False, content="❌ User not found!")
+            
+            avatar_url = member.avatar.url if member.avatar else member.default_avatar.url
+            return ToolResult(success=True, content=f"🖼️ **{member.display_name}** ka avatar:\n{avatar_url}", data={"avatar_url": str(avatar_url)})
+        except Exception as e:
+            return ToolResult(success=False, content=f"❌ Failed to get avatar: {str(e)[:150]}")
+
+
 # ============================================================
 # 🔧 CHANNEL TOOLS
 # ============================================================
@@ -926,6 +997,78 @@ class RenameChannelTool(DiscordTool):
             return ToolResult(success=False, content="❌ Permission denied!")
         except Exception as e:
             return ToolResult(success=False, content=f"❌ Rename failed: {str(e)[:150]}")
+
+
+class CreateTextChannelTool(DiscordTool):
+    """Create a new text channel"""
+    
+    name = "create_text_channel"
+    description = """Create a new text channel in the server."""
+    
+    parameters = [
+        ToolParameter(name="name", param_type="string", description="Channel name", required=True),
+        ToolParameter(name="category_id", param_type="string", description="Category ID (optional)", required=False, default=None),
+        ToolParameter(name="topic", param_type="string", description="Channel topic", required=False, default=None),
+    ]
+    
+    permission_level = ToolPermissionLevel.MODERATOR
+    
+    async def execute(self, args: Dict[str, Any], context: Dict[str, Any]) -> ToolResult:
+        try:
+            name = args["name"].strip().lower().replace(" ", "-")[:100]
+            category_id = args.get("category_id")
+            topic = args.get("topic")
+            
+            guild = context.get("guild")
+            if not guild:
+                return ToolResult(success=False, content="❌ No guild available")
+            
+            category = None
+            if category_id:
+                category = guild.get_channel(int(category_id))
+            
+            channel = await guild.create_text_channel(name, category=category, topic=topic)
+            return ToolResult(success=True, content=f"✅ Text channel **#{channel.name}** bana diya!", data={"channel_id": channel.id})
+        except discord.Forbidden:
+            return ToolResult(success=False, content="❌ Permission denied! Manage channels chahiye!")
+        except Exception as e:
+            return ToolResult(success=False, content=f"❌ Create text channel failed: {str(e)[:150]}")
+
+
+class CreateVoiceChannelTool(DiscordTool):
+    """Create a new voice channel"""
+    
+    name = "create_voice_channel"
+    description = """Create a new voice channel in the server."""
+    
+    parameters = [
+        ToolParameter(name="name", param_type="string", description="Channel name", required=True),
+        ToolParameter(name="category_id", param_type="string", description="Category ID (optional)", required=False, default=None),
+        ToolParameter(name="bitrate", param_type="integer", description="Audio bitrate (8000-96000)", required=False, default=64000),
+    ]
+    
+    permission_level = ToolPermissionLevel.MODERATOR
+    
+    async def execute(self, args: Dict[str, Any], context: Dict[str, Any]) -> ToolResult:
+        try:
+            name = args["name"].strip()[:100]
+            category_id = args.get("category_id")
+            bitrate = min(max(args.get("bitrate", 64000), 8000), 96000)
+            
+            guild = context.get("guild")
+            if not guild:
+                return ToolResult(success=False, content="❌ No guild available")
+            
+            category = None
+            if category_id:
+                category = guild.get_channel(int(category_id))
+            
+            channel = await guild.create_voice_channel(name, category=category, bitrate=bitrate)
+            return ToolResult(success=True, content=f"🔊 Voice channel **{channel.name}** bana diya!", data={"channel_id": channel.id})
+        except discord.Forbidden:
+            return ToolResult(success=False, content="❌ Permission denied!")
+        except Exception as e:
+            return ToolResult(success=False, content=f"❌ Create voice channel failed: {str(e)[:150]}")
 
 
 class ListChannelsTool(DiscordTool):
@@ -1520,7 +1663,7 @@ ALL_COMPLETE_DISCORD_TOOLS = [
     SendEmbedTool,
     AddReactionTool,
     
-    # 👥 Member Tools (12)
+    # 👥 Member Tools (14)
     GetMemberTool,
     KickUserTool,
     BanUserTool,
@@ -1531,10 +1674,14 @@ ALL_COMPLETE_DISCORD_TOOLS = [
     UnmuteUserTool,
     GetBannedUsersTool,
     EditNicknameTool,
+    ChangeNicknameTool,
+    GetUserAvatarTool,
     ListMembersTool,
     
-    # 🔧 Channel Tools (8)
+    # 🔧 Channel Tools (10)
     CreateChannelTool,
+    CreateTextChannelTool,
+    CreateVoiceChannelTool,
     DeleteChannelTool,
     RenameChannelTool,
     ListChannelsTool,
