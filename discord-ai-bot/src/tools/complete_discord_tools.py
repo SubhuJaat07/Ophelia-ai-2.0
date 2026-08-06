@@ -1484,6 +1484,9 @@ ALL_COMPLETE_DISCORD_TOOLS = [
 
 TOTAL_TOOLS_COUNT = len(ALL_COMPLETE_DISCORD_TOOLS)
 
+# Tool names list for easy reference (imported by tool_executor.py)
+COMPLETE_TOOL_NAMES = [tool.name for tool in ALL_COMPLETE_DISCORD_TOOLS]
+
 
 def get_all_complete_tools(bot=None) -> List[DiscordTool]:
     """Instantiate all complete tools"""
