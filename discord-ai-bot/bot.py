@@ -144,7 +144,7 @@ class OpheliaBot(commands.Bot):
             # Initialize Observability
             logger.info("📊 Initializing observability...")
             obs = init_observability(log_dir="./data/logs")
-            obs.log_event(EventType.SYSTEM_STARTUP, "Ophelia AI 3.0 starting up")
+            obs.log(EventType.SYSTEM_STARTUP, "Ophelia AI 3.0 starting up")
             logger.info(f"   ✅ Structured logging enabled")
             
             # ==========================================
@@ -233,10 +233,11 @@ class OpheliaBot(commands.Bot):
         logger.info(f"📊 Observability: ACTIVE")
         logger.info("=" * 60)
         
-        obs.log_event(
+        obs.log(
             EventType.SYSTEM_STARTUP,
             f"Bot online! Serving {len(self.guilds)} guilds",
-            context={"guild_count": len(self.guilds), "bot_id": self.user.id}
+            guild_count=len(self.guilds),
+            bot_id=self.user.id
         )
         
         # Update presence
@@ -367,7 +368,7 @@ async def main():
         
         # Graceful shutdown - save any pending data
         obs = get_observability()
-        obs.log_event(EventType.SYSTEM_SHUTDOWN, "Bot shutting down gracefully")
+        obs.log(EventType.SYSTEM_SHUTDOWN, "Bot shutting down gracefully")
         
         await bot.close()
     except discord.LoginFailure:
