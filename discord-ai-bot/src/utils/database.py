@@ -14,6 +14,9 @@ logger = logging.getLogger("Database")
 class DatabaseManager:
     """Manages all Supabase database operations"""
     
+    # Track which tables are known to not exist (avoid spamming logs)
+    _missing_tables: set = set()
+    
     def __init__(self, url: str, key: str):
         self.client: Client = create_client(url, key)
         self._ensure_tables_exist()
@@ -23,6 +26,17 @@ class DatabaseManager:
         # Note: Tables should be created via Supabase dashboard or migration
         # This is just a placeholder for initialization
         logger.info("Database connection established")
+    
+    def _is_table_missing_error(self, error: Exception, table_name: str) -> bool:
+        """Check if error is due to missing table"""
+        error_str = str(error)
+        # Check for PostgREST error codes
+        if "PGRST205" in error_str or f"table '{table_name}'" in error_str.lower():
+            if table_name not in self._missing_tables:
+                self._missing_tables.add(table_name)
+                logger.warning(f"⚠️ Table '{table_name}' doesn't exist - feature disabled (this is OK)")
+            return True
+        return False
     
     # ==================== GUILD SETTINGS ====================
     
@@ -42,6 +56,8 @@ class DatabaseManager:
                 return settings
             return None
         except Exception as e:
+            if self._is_table_missing_error(e, "guild_settings"):
+                return None
             logger.error(f"Error fetching guild {guild_id} settings: {e}")
             return None
     
@@ -108,6 +124,9 @@ class DatabaseManager:
             response = self.client.table("conversations").insert(data).execute()
             return True
         except Exception as e:
+            # Don't spam logs for missing table (bot works without it)
+            if self._is_table_missing_error(e, "conversations"):
+                return False  # Silent fail - table doesn't exist
             logger.error(f"Error saving message: {e}")
             return False
     

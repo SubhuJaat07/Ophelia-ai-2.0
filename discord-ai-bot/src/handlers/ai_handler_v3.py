@@ -878,13 +878,24 @@ FAILING TO CALL THE TOOL IS A CRITICAL ERROR.
         if not response:
             return ""
         
-        # Remove any raw function call syntax
-        cleaned = re.sub(r'<function=[^>]*>', '', response)
+        # Remove any raw function call syntax (multiple formats!)
+        # Format 1: <function=name>{...}</function>
+        cleaned = re.sub(r'<function=[^>]*>.*?</function>', '', response, flags=re.DOTALL)
+        # Format 2: <function(name)>{...}</function>
+        cleaned = re.sub(r'<function\([^)]+\)>.*?</function>', '', cleaned, flags=re.DOTALL)
+        # Format 3: Just <function...> tags
+        cleaned = re.sub(r'<function[^>]*>', '', cleaned)
+        cleaned = re.sub(r'</function>', '', cleaned)
+        # Format 4: Code blocks with function calls
         cleaned = re.sub(r'```(?:python|json)?[^```]*```', '', cleaned, flags=re.DOTALL)
         
         # Clean up whitespace
         cleaned = re.sub(r'\n{3,}', '\n\n', cleaned)
         cleaned = cleaned.strip()
+        
+        # If nothing left after cleaning, return a default message
+        if not cleaned:
+            return "(Response was empty after cleaning)"
         
         return cleaned
 
