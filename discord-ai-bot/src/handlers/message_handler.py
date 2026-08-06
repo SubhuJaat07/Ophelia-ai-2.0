@@ -12,6 +12,8 @@ FLOW:
 3. Send to AI with tools enabled
 4. Execute REAL Discord actions
 5. Return response
+
+🔧 FIXED: Mention detection now works correctly!
 """
 import discord
 from discord.ext import commands
@@ -47,55 +49,55 @@ class MessageHandler:
         
         # DMs - always respond
         if not message.guild:
+            logger.info(f"✅ DM from {message.author.name} - will respond")
             return True, "dm_message"
         
-        # Get settings safely
+        # ✅ CHECK 1: Is bot mentioned? (MOST IMPORTANT!)
+        # Using mentioned_in() is more reliable than checking message.mentions
+        is_mentioned = self.bot.user.mentioned_in(message)
+        
+        if is_mentioned:
+            logger.info(f"✅✅ MENTION DETECTED from {message.author.name}! Content: {message.content[:50]}...")
+            return True, "mention"
+        
+        # ✅ CHECK 2: Get settings safely (with fallback)
         try:
             ai = get_ai_handler_v3()
             settings = await ai.get_guild_settings(message.guild.id)
         except Exception as e:
-            logger.debug(f"Settings fetch failed: {e}")
-            settings = {"enabled": True, "require_mention": True, "ai_channel_ids": []}
+            logger.warning(f"Settings fetch failed: {e}, using defaults")
+            settings = {"enabled": True, "require_mention": True, "ai_channel_ids": [], "ping_reply_enabled": True}
         
         # Check if AI is disabled for this guild
         if not settings.get("enabled", True):
             if not is_owner(message.author.id):
                 return False, "ai_disabled"
         
-        # ✅ CHECK 1: Is this an AI channel? (auto-reply channels)
+        # ✅ CHECK 3: Is this an AI channel? (auto-reply channels)
         ai_channel_ids = settings.get("ai_channel_ids", [])
         if message.channel.id in ai_channel_ids:
             return True, "ai_channel"
         
-        # ✅ CHECK 2: Bot mentioned?
-        is_mentioned = self.bot.user in message.mentions
-        
-        if is_mentioned:
-            if settings.get("ping_reply_enabled", True):
-                logger.info(f"✅ Mention detected from {message.author.name}")
-                return True, "mention"
-            else:
-                return False, "ping_reply_disabled"
-        
-        # ✅ CHECK 3: Reply to @everyone/@here ONLY if enabled
+        # ✅ CHECK 4: Reply to @everyone/@here ONLY if enabled
         if settings.get("everyone_ping_reply", False):
             if "@everyone" in message.content or "@here" in message.content:
                 return True, "everyone_ping"
         
-        # ✅ CHECK 4: Owners can bypass mention (but log it!)
+        # ✅ CHECK 5: Owners can bypass mention (but log it!)
         if is_owner(message.author.id) and settings.get("enabled", True):
             logger.info(f"👑 Owner {message.author.name} used command without mention")
             return True, "owner_command"
         
         # ❌ NO MENTION = NO REPLY
-        logger.debug(f"❌ No reply - no mention from {message.author.name}")
+        logger.debug(f"❌ No reply - no mention from {message.author.name} in #{message.channel.name}")
         return False, "no_mention"
     
     async def handle_message(self, message: discord.Message):
         """Main message handler with natural command processing"""
+        msg_key = f"{message.channel.id}-{message.id}"
+        
         try:
             # 🆕 STORE CHANNEL MESSAGE FOR CONTEXT AWARENESS!
-            # This lets Ophelia know what's happening in the server!
             try:
                 ai_handler_instance = get_ai_handler_v3()
                 ai_handler_instance.store_channel_message(
@@ -115,8 +117,8 @@ class MessageHandler:
                 return
             
             # Avoid processing same message multiple times
-            msg_key = f"{message.channel.id}-{message.id}"
             if msg_key in self.processing_messages:
+                logger.debug(f"⏭️ Already processing message {msg_key}")
                 return
             
             self.processing_messages.add(msg_key)
@@ -157,7 +159,6 @@ class MessageHandler:
                     context_info = ""
                 
                 # 🧠🛠️ SEND TO AI WITH TOOLS ENABLED!
-                # Use production-grade tool-enhanced generation
                 try:
                     # PRODUCTION: Use v3 handler with full integration
                     response = await ai.generate_response_with_tools(
@@ -184,7 +185,7 @@ class MessageHandler:
             self.processing_messages.discard(msg_key)
             
         except Exception as e:
-            logger.error(f"❌ Error handling message: {e}")
+            logger.error(f"❌ Error handling message: {e}", exc_info=True)
             import traceback
             traceback.print_exc()
             
@@ -203,10 +204,12 @@ class MessageHandler:
         
         # Remove bot mention from content so it's not sent to API
         if message.guild and self.bot.user.mentioned_in(message):
-            for mention in message.mentions:
-                if mention.id == self.bot.user.id:
-                    content = content.replace(mention.mention, "").strip()
-                    content = content.replace(f"<@!{mention.id}>", "").strip()
+            # Try both formats: <@ID> and <@!ID>
+            bot_mention = self.bot.user.mention
+            bot_mention_bang = f"<@!{self.bot.user.id}>"
+            
+            content = content.replace(bot_mention, "").strip()
+            content = content.replace(bot_mention_bang, "").strip()
         
         # Clean up extra whitespace
         while "  " in content:

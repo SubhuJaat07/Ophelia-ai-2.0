@@ -11,23 +11,21 @@ Tools Categories:
 👥 Members: Lookup users, get info
 🏠 Server: Info, channels list
 ⚡ ACTIONS: Create channel, kick, timeout (REAL Discord API!)
+🌐 EXTERNAL: Web search, Image generation, Code execution!
 
-NEW IN PRODUCTION GRADE:
-- Tool Registry with metadata
-- Permission integration
-- Safety system integration
-- Structured logging
-- Plugin support
+NEW IN v3.1:
+✅ Multi-Provider AI Fallback (Gemini + Groq + NVIDIA)
+✅ External Tools (Tavily Search, Pollinations Images, E2B Code)
+✅ Real Discord Actions (no more fake responses!)
 
 Usage:
     from src.tools import get_tool_executor, get_registry
     executor = get_tool_executor()
     result = await executor.execute_tool("search_messages", {"query": "gaming"})
     
-    # Or use registry directly:
-    registry = get_registry()
-    tool = registry.get("search_messages")
-    result = await tool.run({"query": "gaming"}, context)
+    # External tools:
+    result = await executor.execute_tool("web_search", {"query": "cricket score"})
+    result = await executor.execute_tool("generate_image", {"prompt": "cute cat"})
 """
 
 # Legacy exports (backward compatible)
@@ -48,6 +46,15 @@ from .discord_tools import (
     TimeoutUserTool,
     get_all_tools,
     ALL_DISCORD_TOOLS,
+)
+
+# 🆕 External Tools (Web Search, Image Gen, Code Execution)
+from .external_tools import (
+    WebSearchTool,
+    ImageGenerationTool,
+    CodeExecutionTool,
+    get_external_tools,
+    EXTERNAL_TOOL_NAMES,
 )
 
 # New production-grade exports
@@ -81,6 +88,13 @@ __all__ = [
     'TimeoutUserTool',
     'get_all_tools',
     'ALL_DISCORD_TOOLS',
+    
+    # 🆕 External Tools
+    'WebSearchTool',
+    'ImageGenerationTool',
+    'CodeExecutionTool',
+    'get_external_tools',
+    'EXTERNAL_TOOL_NAMES',
     
     # New Production Grade
     'BaseTool',
