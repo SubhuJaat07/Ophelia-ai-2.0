@@ -1,0 +1,231 @@
+2026-08-06T10:38:20.200839121Z [inf]  Starting Container
+2026-08-06T10:38:20.719199775Z [inf]  2026-08-06 10:38:19 | discord.client | WARNING | PyNaCl is not installed, voice will NOT be supported
+2026-08-06T10:38:20.719202005Z [inf]  2026-08-06 10:38:19 | discord.client | WARNING | davey is not installed, voice will NOT be supported
+2026-08-06T10:38:20.719204315Z [inf]  2026-08-06 10:38:19 | discord.client | INFO | logging in using static token
+2026-08-06T10:38:20.775325592Z [inf]  2026-08-06 10:38:20 | OpheliaAI | INFO | 🚀 Ophelia AI 3.0 (Production Grade) starting up...
+2026-08-06T10:38:20.775328172Z [inf]  2026-08-06 10:38:20 | OpheliaAI | INFO | 👑 Owners: {1169492860278669312, 1463113729959919801, 1443836576802013316}
+2026-08-06T10:38:20.775330512Z [inf]  2026-08-06 10:38:20 | OpheliaAI | INFO | 📦 Connecting to Supabase...
+2026-08-06T10:38:20.815046376Z [inf]  2026-08-06 10:38:20 | Database | INFO | Database connection established
+2026-08-06T10:38:20.815051696Z [inf]  2026-08-06 10:38:20 | OpheliaAI | INFO | ⚡ Initializing persistent cache...
+2026-08-06T10:38:20.815055396Z [inf]  2026-08-06 10:38:20 | Cache | INFO | 💾 Persistent cache initialized | Storage: /app/data
+2026-08-06T10:38:20.815058836Z [inf]  2026-08-06 10:38:20 | Cache | INFO | 🔥 Warming up cache from database...
+2026-08-06T10:38:21.130056242Z [inf]  2026-08-06 10:38:21 | httpx | INFO | HTTP Request: GET https://kbnefuykdneujyzalesz.supabase.co/rest/v1/guild_settings?select=%2A "HTTP/2 404 Not Found"
+2026-08-06T10:38:21.130066612Z [err]  2026-08-06 10:38:21 | Database | ERROR | Error fetching all guild settings: {'message': "Could not find the table 'public.guild_settings' in the schema cache", 'code': 'PGRST205', 'hint': "Perhaps you meant the table 'public.game_global_settings'", 'details': None}
+2026-08-06T10:38:21.130072062Z [inf]  2026-08-06 10:38:21 | Cache | INFO | ✅ Cache warmed up! Loaded 0 guild settings in 0.32s
+2026-08-06T10:38:21.130078432Z [inf]  2026-08-06 10:38:21 | OpheliaAI | INFO | 🔒 Initializing permission system...
+2026-08-06T10:38:21.130082192Z [inf]  2026-08-06 10:38:21 | Permissions | INFO | 🔒 Permission Checker initialized
+2026-08-06T10:38:21.130088912Z [inf]  2026-08-06 10:38:21 | Permissions | INFO | 👑 Owner IDs configured: 3 owners
+2026-08-06T10:38:21.130093502Z [inf]  2026-08-06 10:38:21 | Permissions | INFO | 👑 Owner IDs configured: 3 owners
+2026-08-06T10:38:21.130097092Z [inf]  2026-08-06 10:38:21 | OpheliaAI | INFO |    ✅ Permission levels: OWNER > ADMIN > MODERATOR > MEMBER
+2026-08-06T10:38:21.130100342Z [inf]  2026-08-06 10:38:21 | OpheliaAI | INFO | 🛡️ Initializing safety system...
+2026-08-06T10:38:21.131193489Z [inf]  2026-08-06 10:38:21 | SafetySystem | INFO | 🛡️ Safety System initialized | Storage: ./data/safety
+2026-08-06T10:38:21.131198159Z [inf]  2026-08-06 10:38:21 | OpheliaAI | INFO |    ✅ Confirmations, audit logging, rollback ready
+2026-08-06T10:38:21.131201309Z [inf]  2026-08-06 10:38:21 | OpheliaAI | INFO | 📊 Initializing observability...
+2026-08-06T10:38:21.131204119Z [inf]  2026-08-06 10:38:21 | Observability | INFO | 📊 Observability initialized | Log dir: ./data/logs
+2026-08-06T10:38:21.131206809Z [inf]  2026-08-06 10:38:21 | OpheliaAI | INFO |    ✅ Structured logging enabled
+2026-08-06T10:38:21.131209459Z [inf]  2026-08-06 10:38:21 | OpheliaAI | INFO | 🔑 Initializing Groq client (2 keys)...
+2026-08-06T10:38:21.139064713Z [inf]  2026-08-06 10:38:21 | GroqClient | INFO | 🔑 Initialized 2 Groq API client(s)
+2026-08-06T10:38:21.139069103Z [inf]  2026-08-06 10:38:21 | GroqClient | INFO | 🤖 Multi-model system ready:
+2026-08-06T10:38:21.139072283Z [inf]  2026-08-06 10:38:21 | GroqClient | INFO |    • chat: llama-3.3-70b-versatile (Fun & friendly chat)
+2026-08-06T10:38:21.139075303Z [inf]  2026-08-06 10:38:21 | GroqClient | INFO |    • command: llama-3.1-8b-instant (Quick command execution)
+2026-08-06T10:38:21.139078623Z [inf]  2026-08-06 10:38:21 | GroqClient | INFO |    • reasoning: qwen/qwen3.6-27b (Deep thinking & analysis)
+2026-08-06T10:38:21.139081773Z [inf]  2026-08-06 10:38:21 | GroqClient | INFO |    • creative: qwen/qwen3.6-27b (Stories, jokes, roleplay)
+2026-08-06T10:38:21.139085113Z [inf]  2026-08-06 10:38:21 | GroqClient | INFO |    • analysis: qwen/qwen3.6-27b (Code, data, technical stuff)
+2026-08-06T10:38:21.279164992Z [inf]  2026-08-06 10:38:21 | httpx | INFO | HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
+2026-08-06T10:38:21.290409146Z [inf]  2026-08-06 10:38:21 | OpheliaAI | INFO | ✅ Connected! Multi-model ready! 🚀
+2026-08-06T10:38:21.290412106Z [inf]  2026-08-06 10:38:21 | OpheliaAI | INFO | 🧠 Initializing AI Handler V3...
+2026-08-06T10:38:21.290415186Z [inf]  2026-08-06 10:38:21 | AIHandlerV3 | INFO | 🧠 AI Handler V3 initialized (Production Grade)
+2026-08-06T10:38:21.290418476Z [inf]  2026-08-06 10:38:21 | OpheliaAI | INFO |    ✅ Anti-hallucination enabled
+2026-08-06T10:38:21.290420906Z [inf]  2026-08-06 10:38:21 | OpheliaAI | INFO |    ✅ Tool execution guaranteed
+2026-08-06T10:38:21.290423316Z [inf]  2026-08-06 10:38:21 | OpheliaAI | INFO | 🗣️ Initializing natural language command parser...
+2026-08-06T10:38:21.290425776Z [inf]  2026-08-06 10:38:21 | OpheliaAI | INFO | 🛠️ Initializing MCP Tool System...
+2026-08-06T10:38:21.290428626Z [inf]  2026-08-06 10:38:21 | ToolExecutor | INFO | 🛠️ Tool Executor ready with 42 tools!
+2026-08-06T10:38:21.290431286Z [inf]  2026-08-06 10:38:21 | ToolExecutor | INFO |    ⚡ Moderation: kick, ban, unban, timeout, mute, unmute
+2026-08-06T10:38:21.290433706Z [inf]  2026-08-06 10:38:21 | ToolExecutor | INFO |    📝 Channels: create, delete, rename, list, info
+2026-08-06T10:38:21.290436176Z [inf]  2026-08-06 10:38:21 | ToolExecutor | INFO |    👤 Roles: create, delete, assign, remove, list
+2026-08-06T10:38:21.290438636Z [inf]  2026-08-06 10:38:21 | ToolExecutor | INFO |    💬 Messages: send, embed, edit, delete, pin, react
+2026-08-06T10:38:21.290441126Z [inf]  2026-08-06 10:38:21 | ToolExecutor | INFO |    📊 Server: info, members, bans
+2026-08-06T10:38:21.290443846Z [inf]  2026-08-06 10:38:21 | ToolExecutor | INFO |    🔍 Search: search messages, read history
+2026-08-06T10:38:21.290446306Z [inf]  2026-08-06 10:38:21 | ToolExecutor | INFO |    🌐 External: web_search, image_gen, code_exec
+2026-08-06T10:38:21.290448976Z [inf]  2026-08-06 10:38:21 | OpheliaAI | INFO |    ✅ 42 tools registered
+2026-08-06T10:38:21.291805384Z [inf]  2026-08-06 10:38:21 | OpheliaAI | INFO |    ✅ Tools: search_messages, read_channel_messages, send_message, add_reaction, get_member_info, get_server_info...
+2026-08-06T10:38:21.291808564Z [inf]  2026-08-06 10:38:21 | OpheliaAI | INFO | 📦 Loading commands...
+2026-08-06T10:38:21.300151171Z [inf]  2026-08-06 10:38:21 | Settings | INFO | ✅ Ophelia AI 2.0 Settings Cog loaded (with merged utility commands)!
+2026-08-06T10:38:21.300155581Z [inf]  2026-08-06 10:38:21 | OpheliaAI | INFO | ============================================================
+2026-08-06T10:38:21.300158151Z [inf]  2026-08-06 10:38:21 | OpheliaAI | INFO | ✅ OPHELIA AI 3.0 FULLY INITIALIZED!
+2026-08-06T10:38:21.300160841Z [inf]  2026-08-06 10:38:21 | OpheliaAI | INFO | ============================================================
+2026-08-06T10:38:21.300167231Z [inf]  2026-08-06 10:38:21 | OpheliaAI | INFO | Systems loaded:
+2026-08-06T10:38:21.300170031Z [inf]  2026-08-06 10:38:21 | OpheliaAI | INFO |   • Database (Supabase)
+2026-08-06T10:38:21.300172681Z [inf]  2026-08-06 10:38:21 | OpheliaAI | INFO |   • Persistent Cache (File-based)
+2026-08-06T10:38:21.300175201Z [inf]  2026-08-06 10:38:21 | OpheliaAI | INFO |   • Groq Multi-model Client
+2026-08-06T10:38:21.300177531Z [inf]  2026-08-06 10:38:21 | OpheliaAI | INFO |   • Permission System (Hierarchical)
+2026-08-06T10:38:21.300179971Z [inf]  2026-08-06 10:38:21 | OpheliaAI | INFO |   • Safety System (Audit + Confirmations)
+2026-08-06T10:38:21.300182361Z [inf]  2026-08-06 10:38:21 | OpheliaAI | INFO |   • Observability (Structured Logging)
+2026-08-06T10:38:21.300185001Z [inf]  2026-08-06 10:38:21 | OpheliaAI | INFO |   • Tool Registry (11+ tools)
+2026-08-06T10:38:21.300187681Z [inf]  2026-08-06 10:38:21 | OpheliaAI | INFO |   • AI Handler V3 (Anti-hallucination)
+2026-08-06T10:38:21.300190251Z [inf]  2026-08-06 10:38:21 | OpheliaAI | INFO | ============================================================
+2026-08-06T10:38:21.744138412Z [inf]  2026-08-06 10:38:21 | discord.gateway | INFO | Shard ID None has connected to Gateway (Session ID: 16d39781e548b26e04d4cd5f676233d0).
+2026-08-06T10:38:23.691426068Z [inf]  2026-08-06 10:38:23 | OpheliaAI | INFO | ============================================================
+2026-08-06T10:38:23.691431718Z [inf]  2026-08-06 10:38:23 | OpheliaAI | INFO | 🤖 **OPHELIA AI 3.0** IS ONLINE!
+2026-08-06T10:38:23.691435778Z [inf]  2026-08-06 10:38:23 | OpheliaAI | INFO | 📊 Serving 1 servers
+2026-08-06T10:38:23.691447698Z [inf]  2026-08-06 10:38:23 | OpheliaAI | INFO | 🆔 Bot ID: 1531179226265419797
+2026-08-06T10:38:23.691450828Z [inf]  2026-08-06 10:38:23 | OpheliaAI | INFO | 👑 Owners: 3 users with FULL ACCESS
+2026-08-06T10:38:23.691455838Z [inf]  2026-08-06 10:38:23 | OpheliaAI | INFO | 🗣️ Natural Language Commands: ENABLED
+2026-08-06T10:38:23.691458838Z [inf]  2026-08-06 10:38:23 | OpheliaAI | INFO | 🛡️ Safety System: ACTIVE
+2026-08-06T10:38:23.691464248Z [inf]  2026-08-06 10:38:23 | OpheliaAI | INFO | 📊 Observability: ACTIVE
+2026-08-06T10:38:23.691469278Z [inf]  2026-08-06 10:38:23 | OpheliaAI | INFO | ============================================================
+2026-08-06T10:38:23.691477678Z [inf]  2026-08-06 10:38:23 | OpheliaAI | INFO | 🛠️ MCP Tool Calling: ENABLED (Production Grade!)
+2026-08-06T10:38:23.691481438Z [inf]  2026-08-06 10:38:23 | OpheliaAI | INFO | 🔒 Permission System: ACTIVE
+2026-08-06T10:40:13.531872925Z [inf]  2026-08-06 10:40:08 | MessageHandler | INFO | ✅✅ MENTION DETECTED from subhditi_1314! Content: <@1531179226265419797> ek bnde ko ban krna h...
+2026-08-06T10:40:13.531880155Z [inf]  2026-08-06 10:40:08 | MessageHandler | INFO | 📩 Processing from subhditi_1314 in #general (reason: mention)
+2026-08-06T10:40:13.531884995Z [inf]  2026-08-06 10:40:08 | AIHandlerV3 | INFO | 🛠️ Tools available: 42 | Names: ['search_messages', 'read_channel_messages', 'send_message', 'add_reaction', 'get_member_info']...
+2026-08-06T10:40:13.531888705Z [inf]  2026-08-06 10:40:09 | httpx | INFO | HTTP Request: POST https://kbnefuykdneujyzalesz.supabase.co/rest/v1/conversations "HTTP/2 404 Not Found"
+2026-08-06T10:40:13.531892735Z [err]  2026-08-06 10:40:09 | Database | ERROR | Error saving message: {'message': "Could not find the table 'public.conversations' in the schema cache", 'code': 'PGRST205', 'hint': "Perhaps you meant the table 'public.game_dm_conversations'", 'details': None}
+2026-08-06T10:40:13.531896995Z [inf]  2026-08-06 10:40:09 | AIHandlerV3 | INFO | 🎯 ACTION DETECTED: ban_user
+2026-08-06T10:40:13.531900255Z [inf]  2026-08-06 10:40:09 | AIHandlerV3 | INFO | 📝 Intent: ban_user | Task: command
+2026-08-06T10:40:13.531903685Z [inf]  2026-08-06 10:40:09 | httpx | INFO | HTTP Request: GET https://kbnefuykdneujyzalesz.supabase.co/rest/v1/conversations?select=%2A&guild_id=eq.1475168249355178106&channel_id=eq.1475168250781237291&order=created_at.desc&limit=20 "HTTP/2 404 Not Found"
+2026-08-06T10:40:13.531907065Z [err]  2026-08-06 10:40:09 | Database | ERROR | Error fetching conversation history: {'message': "Could not find the table 'public.conversations' in the schema cache", 'code': 'PGRST205', 'hint': "Perhaps you meant the table 'public.game_dm_conversations'", 'details': None}
+2026-08-06T10:40:13.531911146Z [inf]  2026-08-06 10:40:09 | httpx | INFO | HTTP Request: GET https://kbnefuykdneujyzalesz.supabase.co/rest/v1/guild_settings?select=%2A&guild_id=eq.1475168249355178106 "HTTP/2 404 Not Found"
+2026-08-06T10:40:13.533082581Z [err]  2026-08-06 10:40:09 | Database | ERROR | Error fetching guild 1475168249355178106 settings: {'message': "Could not find the table 'public.guild_settings' in the schema cache", 'code': 'PGRST205', 'hint': "Perhaps you meant the table 'public.game_global_settings'", 'details': None}
+2026-08-06T10:40:13.533085811Z [inf]  2026-08-06 10:40:09 | AIHandlerV3 | WARNING | 🎯 FORCING TOOL: ban_user
+2026-08-06T10:40:13.533088491Z [inf]  2026-08-06 10:40:09 | AIHandlerV3 | INFO | 🎯 Strategy: tool_choice='ban_user'
+2026-08-06T10:40:13.533090881Z [inf]  2026-08-06 10:40:09 | AIHandlerV3 | INFO | 
+2026-08-06T10:40:13.533093391Z [inf]  ==================================================
+2026-08-06T10:40:13.533095891Z [inf]  2026-08-06 10:40:09 | AIHandlerV3 | INFO | 🔄 Iteration 1/5
+2026-08-06T10:40:13.533098281Z [inf]  2026-08-06 10:40:09 | AIHandlerV3 | INFO | ==================================================
+2026-08-06T10:40:13.533100861Z [inf]  2026-08-06 10:40:09 | GroqClient | INFO | 🔧 Tool-Enabled Request | Model: llama-3.1-8b-instant | Tools: 53
+2026-08-06T10:40:13.533103301Z [inf]  2026-08-06 10:40:09 | httpx | INFO | HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 400 Bad Request"
+2026-08-06T10:40:13.533105801Z [inf]  2026-08-06 10:40:09 | GroqClient | WARNING | Tool request failed (attempt 1): Error code: 400 - {'error': {'message': "'tool_choice' : value must be a string (auto or none) or an object like `{'type': 'function', 'function': {'name': 'my_function'}}`", 'type': 'invalid_request_error'}}
+2026-08-06T10:40:13.533108321Z [inf]  2026-08-06 10:40:09 | GroqClient | INFO | 🔄 Trying fallback model: groq/compound-mini
+2026-08-06T10:40:13.533110821Z [inf]  2026-08-06 10:40:09 | GroqClient | INFO | 🔄 Rotated to API key #2
+2026-08-06T10:40:13.533113031Z [inf]  2026-08-06 10:40:10 | httpx | INFO | HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 400 Bad Request"
+2026-08-06T10:40:13.534446878Z [inf]  2026-08-06 10:40:10 | GroqClient | WARNING | Tool request failed (attempt 2): Error code: 400 - {'error': {'message': "'tool_choice' : value must be a string (auto or none) or an object like `{'type': 'function', 'function': {'name': 'my_function'}}`", 'type': 'invalid_request_error'}}
+2026-08-06T10:40:13.534451658Z [inf]  2026-08-06 10:40:10 | GroqClient | INFO | 🔄 Rotated to API key #1
+2026-08-06T10:40:13.534455038Z [inf]  2026-08-06 10:40:11 | httpx | INFO | HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 400 Bad Request"
+2026-08-06T10:40:13.534458828Z [inf]  2026-08-06 10:40:11 | GroqClient | WARNING | Tool request failed (attempt 3): Error code: 400 - {'error': {'message': "'tool_choice' : value must be a string (auto or none) or an object like `{'type': 'function', 'function': {'name': 'my_function'}}`", 'type': 'invalid_request_error'}}
+2026-08-06T10:40:13.534461878Z [inf]  2026-08-06 10:40:11 | GroqClient | INFO | 🔄 Rotated to API key #2
+2026-08-06T10:40:13.534464358Z [err]  2026-08-06 10:40:12 | GroqClient | ERROR | All tool requests failed. Last error: Error code: 400 - {'error': {'message': "'tool_choice' : value must be a string (auto or none) or an object like `{'type': 'function', 'function': {'name': 'my_function'}}`", 'type': 'invalid_request_error'}}
+2026-08-06T10:40:13.534466838Z [err]  2026-08-06 10:40:12 | AIHandlerV3 | ERROR | ❌ FATAL ERROR in generate_response_with_tools: Tool-enabled request failed after 3 attempts: Error code: 400 - {'error': {'message': "'tool_choice' : value must be a string (auto or none) or an object like `{'type': 'function', 'function': {'name': 'my_function'}}`", 'type': 'invalid_request_error'}}
+2026-08-06T10:40:13.534469258Z [err]  Traceback (most recent call last):
+2026-08-06T10:40:13.534472368Z [err]    File "/app/discord-ai-bot/src/handlers/ai_handler_v3.py", line 343, in generate_response_with_tools
+2026-08-06T10:40:13.534475168Z [err]      result = await self.groq.chat_completion_with_tools(
+2026-08-06T10:40:13.536006896Z [err]    File "/app/discord-ai-bot/src/utils/groq_client.py", line 392, in chat_completion_with_tools
+2026-08-06T10:40:13.536012076Z [err]      raise RuntimeError(f"Tool-enabled request failed after {max_retries} attempts: {last_error}")
+2026-08-06T10:40:13.536016336Z [err]  RuntimeError: Tool-enabled request failed after 3 attempts: Error code: 400 - {'error': {'message': "'tool_choice' : value must be a string (auto or none) or an object like `{'type': 'function', 'function': {'name': 'my_function'}}`", 'type': 'invalid_request_error'}}
+2026-08-06T10:40:13.536020186Z [err]  2026-08-06 10:40:12 | MessageHandler | ERROR | ❌ Tool generation failed: 'int' object has no attribute 'value'
+2026-08-06T10:40:13.536024646Z [err]  Traceback (most recent call last):
+2026-08-06T10:40:13.536028136Z [err]    File "/app/discord-ai-bot/src/handlers/ai_handler_v3.py", line 343, in generate_response_with_tools
+2026-08-06T10:40:13.536031376Z [err]      result = await self.groq.chat_completion_with_tools(
+2026-08-06T10:40:13.536034456Z [err]    File "/app/discord-ai-bot/src/utils/groq_client.py", line 392, in chat_completion_with_tools
+2026-08-06T10:40:13.536037346Z [err]      raise RuntimeError(f"Tool-enabled request failed after {max_retries} attempts: {last_error}")
+2026-08-06T10:40:13.536040146Z [err]  RuntimeError: Tool-enabled request failed after 3 attempts: Error code: 400 - {'error': {'message': "'tool_choice' : value must be a string (auto or none) or an object like `{'type': 'function', 'function': {'name': 'my_function'}}`", 'type': 'invalid_request_error'}}
+2026-08-06T10:40:13.536044026Z [err]  
+2026-08-06T10:40:13.536047476Z [err]  During handling of the above exception, another exception occurred:
+2026-08-06T10:40:13.536050496Z [err]  
+2026-08-06T10:40:13.536123916Z [err]  Traceback (most recent call last):
+2026-08-06T10:40:13.536128316Z [err]    File "/app/discord-ai-bot/src/handlers/message_handler.py", line 164, in handle_message
+2026-08-06T10:40:13.537026041Z [err]      response = await ai.generate_response_with_tools(
+2026-08-06T10:40:13.537099341Z [err]    File "/app/discord-ai-bot/src/handlers/ai_handler_v3.py", line 505, in generate_response_with_tools
+2026-08-06T10:40:13.537104501Z [err]      obs.log(
+2026-08-06T10:40:13.537108231Z [err]    File "/app/discord-ai-bot/src/observability/logger.py", line 201, in log
+2026-08-06T10:40:13.537112221Z [err]      level=level.value,
+2026-08-06T10:40:13.537115331Z [err]  AttributeError: 'int' object has no attribute 'value'
+2026-08-06T10:54:37.794300611Z [inf]  2026-08-06 10:54:37 | discord.gateway | INFO | Shard ID None has successfully RESUMED session 16d39781e548b26e04d4cd5f676233d0.
+2026-08-06T11:48:44.174818816Z [inf]  2026-08-06 11:48:43 | MessageHandler | INFO | ✅✅ MENTION DETECTED from subhditi_1314! Content: <@1531179226265419797>...
+2026-08-06T11:48:44.174822196Z [inf]  2026-08-06 11:48:43 | MessageHandler | INFO | 📩 Processing from subhditi_1314 in #general (reason: mention)
+2026-08-06T11:48:44.174825646Z [inf]  2026-08-06 11:48:43 | AIHandlerV3 | INFO | 🛠️ Tools available: 42 | Names: ['search_messages', 'read_channel_messages', 'send_message', 'add_reaction', 'get_member_info']...
+2026-08-06T11:48:44.174828696Z [inf]  2026-08-06 11:48:43 | httpx | INFO | HTTP Request: POST https://kbnefuykdneujyzalesz.supabase.co/rest/v1/conversations "HTTP/2 404 Not Found"
+2026-08-06T11:48:44.174832076Z [err]  2026-08-06 11:48:43 | Database | ERROR | Error saving message: {'message': "Could not find the table 'public.conversations' in the schema cache", 'code': 'PGRST205', 'hint': "Perhaps you meant the table 'public.game_dm_conversations'", 'details': None}
+2026-08-06T11:48:44.174835736Z [inf]  2026-08-06 11:48:43 | AIHandlerV3 | INFO | 📝 Intent: CHAT/INFO | Task: chat
+2026-08-06T11:48:44.691623344Z [inf]  2026-08-06 11:48:44 | httpx | INFO | HTTP Request: GET https://kbnefuykdneujyzalesz.supabase.co/rest/v1/conversations?select=%2A&guild_id=eq.1475168249355178106&channel_id=eq.1475168250781237291&order=created_at.desc&limit=20 "HTTP/2 404 Not Found"
+2026-08-06T11:48:44.691626064Z [err]  2026-08-06 11:48:44 | Database | ERROR | Error fetching conversation history: {'message': "Could not find the table 'public.conversations' in the schema cache", 'code': 'PGRST205', 'hint': "Perhaps you meant the table 'public.game_dm_conversations'", 'details': None}
+2026-08-06T11:48:45.118943319Z [inf]  2026-08-06 11:48:44 | httpx | INFO | HTTP Request: GET https://kbnefuykdneujyzalesz.supabase.co/rest/v1/guild_settings?select=%2A&guild_id=eq.1475168249355178106 "HTTP/2 404 Not Found"
+2026-08-06T11:48:45.118946939Z [err]  2026-08-06 11:48:44 | Database | ERROR | Error fetching guild 1475168249355178106 settings: {'message': "Could not find the table 'public.guild_settings' in the schema cache", 'code': 'PGRST205', 'hint': "Perhaps you meant the table 'public.game_global_settings'", 'details': None}
+2026-08-06T11:48:45.118950379Z [inf]  2026-08-06 11:48:44 | AIHandlerV3 | INFO | 🎯 Strategy: tool_choice='auto'
+2026-08-06T11:48:45.118954209Z [inf]  2026-08-06 11:48:44 | AIHandlerV3 | INFO | 
+2026-08-06T11:48:45.118959209Z [inf]  ==================================================
+2026-08-06T11:48:45.118962869Z [inf]  2026-08-06 11:48:44 | AIHandlerV3 | INFO | 🔄 Iteration 1/5
+2026-08-06T11:48:45.118966409Z [inf]  2026-08-06 11:48:44 | AIHandlerV3 | INFO | ==================================================
+2026-08-06T11:48:45.118969989Z [inf]  2026-08-06 11:48:44 | GroqClient | INFO | 🔧 Tool-Enabled Request | Model: llama-3.3-70b-versatile | Tools: 53
+2026-08-06T11:48:45.688010743Z [inf]  2026-08-06 11:48:45 | httpx | INFO | HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
+2026-08-06T11:48:45.688017023Z [inf]  2026-08-06 11:48:45 | GroqClient | INFO | 🤖 AI requested 1 tool call(s)
+2026-08-06T11:48:45.688022533Z [inf]  2026-08-06 11:48:45 | AIHandlerV3 | INFO | 📊 Response: 1 tool calls | Content: '...'
+2026-08-06T11:48:45.688025473Z [inf]  2026-08-06 11:48:45 | AIHandlerV3 | INFO | 🤖 AI requested 1 tool(s)
+2026-08-06T11:48:45.688027993Z [inf]  2026-08-06 11:48:45 | AIHandlerV3 | INFO |    → kick_user({"reason":"reason_for_kick","user_id":"user_id_of_the_member_to_kick"}...)
+2026-08-06T11:48:45.688030723Z [inf]  2026-08-06 11:48:45 | AIHandlerV3 | INFO | ⚡ Executing tools via Discord API...
+2026-08-06T11:48:45.688033563Z [inf]  2026-08-06 11:48:45 | DiscordTools | INFO | 🔧 Executing tool: kick_user with args: ['reason', 'user_id']
+2026-08-06T11:48:45.688036373Z [inf]  2026-08-06 11:48:45 | ToolExecutor | INFO | ❌ Tool kick_user: ❌ Kick failed: invalid literal for int() with base 10: 'user_id_of_the_member_to...
+2026-08-06T11:48:45.688038643Z [inf]  2026-08-06 11:48:45 | AIHandlerV3 | INFO |    ← RESULT: {"success": false, "content": "\u274c Kick failed: invalid literal for int() with base 10: 'user_id_of_the_member_to_kick'", "data": null, "error": null}...
+2026-08-06T11:48:45.688042193Z [inf]  2026-08-06 11:48:45 | AIHandlerV3 | INFO | 
+2026-08-06T11:48:45.688046733Z [inf]  ==================================================
+2026-08-06T11:48:45.688049253Z [inf]  2026-08-06 11:48:45 | AIHandlerV3 | INFO | 🔄 Iteration 2/5
+2026-08-06T11:48:45.688051783Z [inf]  2026-08-06 11:48:45 | AIHandlerV3 | INFO | ==================================================
+2026-08-06T11:48:45.688054073Z [inf]  2026-08-06 11:48:45 | GroqClient | INFO | 🔧 Tool-Enabled Request | Model: llama-3.3-70b-versatile | Tools: 53
+2026-08-06T11:48:46.172067009Z [inf]  2026-08-06 11:48:46 | AIHandlerV3 | INFO | 📊 Response: 0 tool calls | Content: 'Hello, I see you're trying to communicate in a mix of Hindi and English. If you'd like to create a b...'
+2026-08-06T11:48:46.172078259Z [inf]  2026-08-06 11:48:46 | AIHandlerV3 | INFO | ✅ Using direct response (no tools needed)
+2026-08-06T11:48:46.172137619Z [inf]  2026-08-06 11:48:46 | httpx | INFO | HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
+2026-08-06T11:48:46.449714065Z [inf]  2026-08-06 11:48:46 | httpx | INFO | HTTP Request: POST https://kbnefuykdneujyzalesz.supabase.co/rest/v1/conversations "HTTP/2 404 Not Found"
+2026-08-06T11:48:46.449716865Z [err]  2026-08-06 11:48:46 | Database | ERROR | Error saving message: {'message': "Could not find the table 'public.conversations' in the schema cache", 'code': 'PGRST205', 'hint': "Perhaps you meant the table 'public.game_dm_conversations'", 'details': None}
+2026-08-06T11:48:46.449721865Z [inf]  2026-08-06 11:48:46 | AIHandlerV3 | INFO | 
+2026-08-06T11:48:46.449724525Z [inf]  ==================================================
+2026-08-06T11:48:46.449727315Z [inf]  2026-08-06 11:48:46 | AIHandlerV3 | INFO | ✅ RESPONSE GENERATED in 3025ms
+2026-08-06T11:48:46.449729975Z [inf]  2026-08-06 11:48:46 | AIHandlerV3 | INFO |    Tools used: ['kick_user']
+2026-08-06T11:48:46.449732675Z [inf]  2026-08-06 11:48:46 | AIHandlerV3 | INFO |    Length: 201 chars
+2026-08-06T11:48:46.449735375Z [inf]  2026-08-06 11:48:46 | AIHandlerV3 | INFO | ==================================================
+2026-08-06T11:48:46.449737785Z [inf]  
+2026-08-06T11:48:54.918808359Z [inf]  2026-08-06 11:48:54 | httpx | INFO | HTTP Request: GET https://kbnefuykdneujyzalesz.supabase.co/rest/v1/guild_settings?select=%2A&guild_id=eq.1475168249355178106 "HTTP/2 404 Not Found"
+2026-08-06T11:48:54.918813719Z [err]  2026-08-06 11:48:54 | Database | ERROR | Error fetching guild 1475168249355178106 settings: {'message': "Could not find the table 'public.guild_settings' in the schema cache", 'code': 'PGRST205', 'hint': "Perhaps you meant the table 'public.game_global_settings'", 'details': None}
+2026-08-06T11:48:54.918817489Z [inf]  2026-08-06 11:48:54 | MessageHandler | INFO | 👑 Owner subhditi_1314 used command without mention
+2026-08-06T11:48:54.918820889Z [inf]  2026-08-06 11:48:54 | MessageHandler | INFO | 📩 Processing from subhditi_1314 in #general (reason: owner_command)
+2026-08-06T11:48:55.113672305Z [inf]  2026-08-06 11:48:55 | AIHandlerV3 | INFO | 🛠️ Tools available: 42 | Names: ['search_messages', 'read_channel_messages', 'send_message', 'add_reaction', 'get_member_info']...
+2026-08-06T11:48:55.410895483Z [inf]  2026-08-06 11:48:55 | httpx | INFO | HTTP Request: POST https://kbnefuykdneujyzalesz.supabase.co/rest/v1/conversations "HTTP/2 404 Not Found"
+2026-08-06T11:48:55.410906383Z [err]  2026-08-06 11:48:55 | Database | ERROR | Error saving message: {'message': "Could not find the table 'public.conversations' in the schema cache", 'code': 'PGRST205', 'hint': "Perhaps you meant the table 'public.game_dm_conversations'", 'details': None}
+2026-08-06T11:48:55.410911183Z [inf]  2026-08-06 11:48:55 | AIHandlerV3 | INFO | 🎯 ACTION DETECTED: ban_user
+2026-08-06T11:48:55.410914853Z [inf]  2026-08-06 11:48:55 | AIHandlerV3 | INFO | 📝 Intent: ban_user | Task: command
+2026-08-06T11:48:55.664598202Z [inf]  2026-08-06 11:48:55 | httpx | INFO | HTTP Request: GET https://kbnefuykdneujyzalesz.supabase.co/rest/v1/conversations?select=%2A&guild_id=eq.1475168249355178106&channel_id=eq.1475168250781237291&order=created_at.desc&limit=20 "HTTP/2 404 Not Found"
+2026-08-06T11:48:55.664602452Z [err]  2026-08-06 11:48:55 | Database | ERROR | Error fetching conversation history: {'message': "Could not find the table 'public.conversations' in the schema cache", 'code': 'PGRST205', 'hint': "Perhaps you meant the table 'public.game_dm_conversations'", 'details': None}
+2026-08-06T11:48:56.139874160Z [inf]  2026-08-06 11:48:56 | GroqClient | INFO | 🔄 Trying fallback model: groq/compound-mini
+2026-08-06T11:48:56.139882650Z [inf]  2026-08-06 11:48:56 | GroqClient | INFO | 🔄 Rotated to API key #1
+2026-08-06T11:48:56.139962580Z [inf]  2026-08-06 11:48:55 | httpx | INFO | HTTP Request: GET https://kbnefuykdneujyzalesz.supabase.co/rest/v1/guild_settings?select=%2A&guild_id=eq.1475168249355178106 "HTTP/2 404 Not Found"
+2026-08-06T11:48:56.139966960Z [err]  2026-08-06 11:48:55 | Database | ERROR | Error fetching guild 1475168249355178106 settings: {'message': "Could not find the table 'public.guild_settings' in the schema cache", 'code': 'PGRST205', 'hint': "Perhaps you meant the table 'public.game_global_settings'", 'details': None}
+2026-08-06T11:48:56.139970710Z [inf]  2026-08-06 11:48:55 | AIHandlerV3 | WARNING | 🎯 FORCING TOOL: ban_user
+2026-08-06T11:48:56.139974690Z [inf]  2026-08-06 11:48:55 | AIHandlerV3 | INFO | 🎯 Strategy: tool_choice='ban_user'
+2026-08-06T11:48:56.139978140Z [inf]  2026-08-06 11:48:55 | AIHandlerV3 | INFO | 
+2026-08-06T11:48:56.139981800Z [inf]  ==================================================
+2026-08-06T11:48:56.139985080Z [inf]  2026-08-06 11:48:55 | AIHandlerV3 | INFO | 🔄 Iteration 1/5
+2026-08-06T11:48:56.139988050Z [inf]  2026-08-06 11:48:55 | AIHandlerV3 | INFO | ==================================================
+2026-08-06T11:48:56.139990860Z [inf]  2026-08-06 11:48:55 | GroqClient | INFO | 🔧 Tool-Enabled Request | Model: llama-3.1-8b-instant | Tools: 53
+2026-08-06T11:48:56.139994260Z [inf]  2026-08-06 11:48:56 | httpx | INFO | HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 400 Bad Request"
+2026-08-06T11:48:56.139999710Z [inf]  2026-08-06 11:48:56 | GroqClient | WARNING | Tool request failed (attempt 1): Error code: 400 - {'error': {'message': "'tool_choice' : value must be a string (auto or none) or an object like `{'type': 'function', 'function': {'name': 'my_function'}}`", 'type': 'invalid_request_error'}}
+2026-08-06T11:48:56.559278747Z [inf]  2026-08-06 11:48:56 | httpx | INFO | HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 400 Bad Request"
+2026-08-06T11:48:56.559286037Z [inf]  2026-08-06 11:48:56 | GroqClient | WARNING | Tool request failed (attempt 2): Error code: 400 - {'error': {'message': "'tool_choice' : value must be a string (auto or none) or an object like `{'type': 'function', 'function': {'name': 'my_function'}}`", 'type': 'invalid_request_error'}}
+2026-08-06T11:48:56.559290307Z [inf]  2026-08-06 11:48:56 | GroqClient | INFO | 🔄 Rotated to API key #2
+2026-08-06T11:48:57.604404697Z [inf]  2026-08-06 11:48:57 | httpx | INFO | HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 400 Bad Request"
+2026-08-06T11:48:57.604409917Z [inf]  2026-08-06 11:48:57 | GroqClient | WARNING | Tool request failed (attempt 3): Error code: 400 - {'error': {'message': "'tool_choice' : value must be a string (auto or none) or an object like `{'type': 'function', 'function': {'name': 'my_function'}}`", 'type': 'invalid_request_error'}}
+2026-08-06T11:48:57.604413307Z [inf]  2026-08-06 11:48:57 | GroqClient | INFO | 🔄 Rotated to API key #1
+2026-08-06T11:48:59.199198487Z [err]      raise RuntimeError(f"Tool-enabled request failed after {max_retries} attempts: {last_error}")
+2026-08-06T11:48:59.199204357Z [err]  RuntimeError: Tool-enabled request failed after 3 attempts: Error code: 400 - {'error': {'message': "'tool_choice' : value must be a string (auto or none) or an object like `{'type': 'function', 'function': {'name': 'my_function'}}`", 'type': 'invalid_request_error'}}
+2026-08-06T11:48:59.199230017Z [err]  2026-08-06 11:48:59 | AIHandlerV3 | ERROR | ❌ FATAL ERROR in generate_response_with_tools: Tool-enabled request failed after 3 attempts: Error code: 400 - {'error': {'message': "'tool_choice' : value must be a string (auto or none) or an object like `{'type': 'function', 'function': {'name': 'my_function'}}`", 'type': 'invalid_request_error'}}
+2026-08-06T11:48:59.199236267Z [err]  Traceback (most recent call last):
+2026-08-06T11:48:59.199240637Z [err]    File "/app/discord-ai-bot/src/handlers/ai_handler_v3.py", line 343, in generate_response_with_tools
+2026-08-06T11:48:59.199256337Z [err]      result = await self.groq.chat_completion_with_tools(
+2026-08-06T11:48:59.199261887Z [err]    File "/app/discord-ai-bot/src/utils/groq_client.py", line 392, in chat_completion_with_tools
+2026-08-06T11:48:59.199284477Z [err]  2026-08-06 11:48:59 | MessageHandler | ERROR | ❌ Tool generation failed: 'int' object has no attribute 'value'
+2026-08-06T11:48:59.199287667Z [err]  Traceback (most recent call last):
+2026-08-06T11:48:59.199290417Z [err]    File "/app/discord-ai-bot/src/handlers/ai_handler_v3.py", line 343, in generate_response_with_tools
+2026-08-06T11:48:59.199293427Z [err]      result = await self.groq.chat_completion_with_tools(
+2026-08-06T11:48:59.199302857Z [err]  2026-08-06 11:48:59 | GroqClient | ERROR | All tool requests failed. Last error: Error code: 400 - {'error': {'message': "'tool_choice' : value must be a string (auto or none) or an object like `{'type': 'function', 'function': {'name': 'my_function'}}`", 'type': 'invalid_request_error'}}
+2026-08-06T11:48:59.199427097Z [err]    File "/app/discord-ai-bot/src/utils/groq_client.py", line 392, in chat_completion_with_tools
+2026-08-06T11:48:59.199431137Z [err]      raise RuntimeError(f"Tool-enabled request failed after {max_retries} attempts: {last_error}")
+2026-08-06T11:48:59.199434217Z [err]  RuntimeError: Tool-enabled request failed after 3 attempts: Error code: 400 - {'error': {'message': "'tool_choice' : value must be a string (auto or none) or an object like `{'type': 'function', 'function': {'name': 'my_function'}}`", 'type': 'invalid_request_error'}}
+2026-08-06T11:48:59.199436757Z [err]  
+2026-08-06T11:48:59.199438997Z [err]  During handling of the above exception, another exception occurred:
+2026-08-06T11:48:59.199441467Z [err]  
+2026-08-06T11:48:59.199444177Z [err]  Traceback (most recent call last):
+2026-08-06T11:48:59.199447237Z [err]    File "/app/discord-ai-bot/src/handlers/message_handler.py", line 164, in handle_message
+2026-08-06T11:48:59.199450057Z [err]      response = await ai.generate_response_with_tools(
+2026-08-06T11:48:59.199452677Z [err]    File "/app/discord-ai-bot/src/handlers/ai_handler_v3.py", line 505, in generate_response_with_tools
+2026-08-06T11:48:59.199455517Z [err]      obs.log(
+2026-08-06T11:48:59.199458197Z [err]    File "/app/discord-ai-bot/src/observability/logger.py", line 201, in log
+2026-08-06T11:48:59.199460937Z [err]      level=level.value,
+2026-08-06T11:48:59.199463597Z [err]  AttributeError: 'int' object has no attribute 'value'
