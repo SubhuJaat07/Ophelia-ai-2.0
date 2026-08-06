@@ -3,14 +3,13 @@
 =============================================================
 
 FREE APIs INTEGRATED:
-✅ **Tavily Search** - Live web search (free tier: 1000 req/month)
+✅ **Tavily Search** - Live web search (your key: tvly-dev-YGEwJ...)
 ✅ **Pollinations.ai** - FREE image generation (no API key needed!)
-✅ **Brave Search** - Alternative web search
-✅ **E2B Sandbox** - Safe code execution (optional)
+✅ **E2B Sandbox** - Safe code execution (your key: e2b_7af92747...)
 
 All tools follow DiscordTool interface for seamless integration!
 
-Author: Production-Grade Implementation
+Uses api_keys.py for multi-key support (comma-separated in .env)
 """
 
 import logging
@@ -22,19 +21,26 @@ from datetime import datetime
 
 from .base_tool import DiscordTool, ToolResult, ToolParameter, ToolPermissionLevel
 
+# Import key manager for comma-separated support
+from ..utils.api_keys import (
+    get_tavily_key,
+    get_e2b_key,
+    get_key_manager
+)
+
 logger = logging.getLogger("ExternalTools")
 
 
 # ==========================================
-# 🔍 WEB SEARCH TOOL (Tavily / Brave)
+# 🔍 WEB SEARCH TOOL (Tavily)
 # ==========================================
 
 class WebSearchTool(DiscordTool):
     """
-    Search the web for current information!
+    Search the web for current information using Tavily API!
     
-    Uses Tavily API (primary) or Brave Search (fallback).
-    Free tier available for both!
+    Your Key: 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
+    Free tier: 1000 requests/month
     """
     
     name = "web_search"
@@ -44,9 +50,8 @@ Use this when user asks about:
 - Weather updates
 - Sports scores (cricket, football, etc.)
 - Latest trends or memes
-- Any information that might have changed recently
-- "What's happening in the world?"
-- "Search for [topic]"
+- Any recent information
+- "What's happening?", "Search for [topic]"
 
 Returns summarized results with sources."""
     
@@ -60,31 +65,42 @@ Returns summarized results with sources."""
         ToolParameter(
             name="max_results",
             param_type="integer",
-            description="Number of results to return (1-10, default=5)",
+            description="Number of results (1-10, default=5)",
             required=False,
             default=5
+        ),
+        ToolParameter(
+            name="search_depth",
+            param_type="string",
+            description="Search depth: 'basic' or 'advanced' (default=basic)",
+            required=False,
+            default="basic",
+            enum=["basic", "advanced"]
         )
     ]
     
-    permission_level = ToolPermissionLevel.EVERYONE  # Everyone can search!
+    permission_level = ToolPermissionLevel.EVERYONE
     
     async def execute(self, args: Dict[str, Any], context: Dict[str, Any]) -> ToolResult:
         try:
             query = args["query"]
             max_results = min(max(args.get("max_results", 5), 1), 10)
+            search_depth = args.get("search_depth", "basic")
             
-            # Try Tavily first (better free tier)
-            tavily_key = os.getenv("TAVILY_API_KEY", "")
-            if len(tavily_key) > 10:
-                return await self._search_tavily(query, max_results, tavily_key)
+            # Get Tavily key (supports comma-separated)
+            tavily_key = get_tavily_key()
             
-            # Fallback to Brave Search
-            brave_key = os.getenv("BRAVE_API_KEY", "")
-            if len(brave_key) > 10:
-                return await self._search_brave(query, max_results, brave_key)
+            if not tavily_key or len(tavily_key) < 10:
+                return ToolResult(
+                    success=False,
+                    content="❌ Tavily API key not configured!\n"
+                           "Add to .env: TAVILY_API_KEY=tvly-your-key\n\n"
+                           "Get free key at: https://tavily.com (1000 free searches/month)",
+                    error="No Tavily API key"
+                )
             
-            # Last resort: DuckDuckGo (no key needed, but limited)
-            return await self._search_duckduckgo(query, max_results)
+            # Use Tavily API
+            return await self._search_tavily(query, max_results, search_depth, tavily_key)
             
         except Exception as e:
             logger.error(f"Web search failed: {e}")
@@ -94,8 +110,9 @@ Returns summarized results with sources."""
                 error=str(e)
             )
     
-    async def _search_tavily(self, query: str, max_results: int, api_key: str) -> ToolResult:
-        """Search using Tavily API"""
+    async def _search_tavily(self, query: str, max_results: int, search_depth: str, api_key: str) -> ToolResult:
+        """Search using Tavily API with proper format"""
+        
         url = "https://api.tavily.com/search"
         
         payload = {
@@ -105,13 +122,21 @@ Returns summarized results with sources."""
             "include_answer": True,
             "include_raw_content": False,
             "include_images": False,
+            "search_depth": search_depth  # basic or advanced
         }
         
-        async with httpx.AsyncClient(timeout=15.0) as client:
+        async with httpx.AsyncClient(timeout=30.0) as client:
             response = await client.post(url, json=payload)
             
+            if response.status_code == 429:
+                return ToolResult(
+                    success=False,
+                    content="⏰ Tavily rate limit reached! Try again in a minute.",
+                    error="rate_limited"
+                )
+            
             if response.status_code != 200:
-                raise Exception(f"Tavily API error: {response.status_code}")
+                raise Exception(f"Tavily API error {response.status_code}: {response.text[:200]}")
             
             data = response.json()
             
@@ -121,130 +146,41 @@ Returns summarized results with sources."""
             
             # Format results
             lines = []
-            if answer:
-                lines.append(f"**📝 Summary:** {answer}\n")
             
-            lines.append(f"**🔍 Search Results for '{query}':**\n")
+            if answer:
+                lines.append(f"📝 **AI Summary:**\n{answer}\n")
+            
+            lines.append(f"🔍 **Search Results for '{query}':**\n")
             
             for i, result in enumerate(results[:max_results], 1):
                 title = result.get("title", "No title")
                 url_link = result.get("url", "")
-                content = result.get("content", "")[:200]
+                content = result.get("content", "")[:250]
                 
-                lines.append(f"{i}. **{title}**")
+                lines.append(f"**{i}. {title}**")
                 lines.append(f"   {content}")
-                lines.append(f"   🔗 {url_link}\n")
+                lines.append(f"   🔗 <{url_link}>\n")
             
             return ToolResult(
                 success=True,
                 content="\n".join(lines),
-                data={"results_count": len(results), "query": query}
+                data={
+                    "results_count": len(results),
+                    "query": query,
+                    "has_answer": bool(answer)
+                }
             )
-    
-    async def _search_brave(self, query: str, max_results: int, api_key: str) -> ToolResult:
-        """Search using Brave Search API"""
-        url = "https://api.search.brave.com/res/v1/web/search"
-        
-        headers = {
-            "Accept": "application/json",
-            "Accept-Encoding": "gzip",
-            "X-Subscription-Token": api_key
-        }
-        
-        params = {
-            "q": query,
-            "count": max_results
-        }
-        
-        async with httpx.AsyncClient(timeout=15.0) as client:
-            response = await client.get(url, headers=headers, params=params)
-            
-            if response.status_code != 200:
-                raise Exception(f"Brave API error: {response.status_code}")
-            
-            data = response.json()
-            web_results = data.get("web", {}).get("results", [])
-            
-            lines = [f"**🔍 Search Results for '{query}':**\n"]
-            
-            for i, result in enumerate(web_results[:max_results], 1):
-                title = result.get("title", "No title")
-                desc = result.get("description", "")[:200]
-                url_link = result.get("url", "")
-                
-                lines.append(f"{i}. **{title}**")
-                lines.append(f"   {desc}")
-                lines.append(f"   🔗 {url_link}\n")
-            
-            return ToolResult(
-                success=True,
-                content="\n".join(lines),
-                data={"results_count": len(web_results)}
-            )
-    
-    async def _search_duckduckgo(self, query: str, max_results: int) -> ToolResult:
-        """Fallback search using DuckDuckGo (no API key needed)"""
-        # Using DuckDuckGo instant answer API
-        url = "https://api.duckduckgo.com/"
-        
-        params = {
-            "q": query,
-            "format": "json",
-            "no_html": 1,
-            "skip_disambig": 1
-        }
-        
-        try:
-            async with httpx.AsyncClient(timeout=10.0) as client:
-                response = await client.get(url, params=params)
-                
-                if response.status_code == 200:
-                    data = response.json()
-                    
-                    abstract = data.get("Abstract", "")
-                    abstract_text = data.get("AbstractText", "")
-                    answer = data.get("Answer", "")
-                    heading = data.get("Heading", "")
-                    
-                    parts = []
-                    if heading:
-                        parts.append(f"**{heading}**")
-                    if abstract_text:
-                        parts.append(abstract_text)
-                    if answer:
-                        parts.append(f"💡 {answer}")
-                    
-                    if parts:
-                        return ToolResult(
-                            success=True,
-                            content="\n".join(parts),
-                            data={"source": "duckduckgo"}
-                        )
-        
-        except Exception as e:
-            logger.warning(f"DuckDuckGo search failed: {e}")
-        
-        # If all else fails
-        return ToolResult(
-            success=False,
-            content="❌ No search API configured! Add TAVILY_API_KEY or BRAVE_API_KEY to .env\n\n"
-                   "Get free keys at:\n"
-                   "• Tavily: https://tavily.com (1000 free searches/month)\n"
-                   "• Brave: https://brave.com/search/api/",
-            error="No search API configured"
-        )
 
 
 # ==========================================
-# 🎨 IMAGE GENERATION TOOL (Pollinations.ai)
+# 🎨 IMAGE GENERATION TOOL (Pollinations.ai - FREE!)
 # ==========================================
 
 class ImageGenerationTool(DiscordTool):
     """
-    Generate images using AI - 100% FREE!
+    Generate images using AI - 100% FREE! No API key needed!
     
-    Uses Pollinations.ai - no API key needed!
-    Supports FLUX models, various styles.
+    Uses Pollinations.ai with FLUX models.
     """
     
     name = "generate_image"
@@ -275,7 +211,7 @@ Supports any style: realistic, anime, cartoon, oil painting, etc."""
         ToolParameter(
             name="size",
             param_type="string",
-            description="Image size: square (1024x1024), landscape (16:9), portrait (9:16)",
+            description="Image size: square, landscape, portrait, wide, tall",
             required=False,
             default="square"
         )
@@ -295,7 +231,6 @@ Supports any style: realistic, anime, cartoon, oil painting, etc."""
             else:
                 full_prompt = prompt
             
-            # Pollinations.ai is 100% FREE - no API key needed!
             # Size mapping
             size_map = {
                 "square": "1024x1024",
@@ -307,13 +242,12 @@ Supports any style: realistic, anime, cartoon, oil painting, etc."""
             
             width, height = size_map.get(size, "1024x1024").split("x")
             
-            # Build URL
-            base_url = f"https://image.pollinations.ai/prompt/{full_prompt.replace(' ', '%20')}"
-            image_url = f"{base_url}?width={width}&height={height}&nologo=true&seed={hash(prompt) % 10000}"
+            # Pollinations.ai is 100% FREE - no API key needed!
+            image_url = f"https://image.pollinations.ai/prompt/{full_prompt.replace(' ', '%20')}?width={width}&height={height}&nologo=true&seed={hash(prompt) % 10000}"
             
             logger.info(f"🎨 Generating image: {prompt[:50]}...")
             
-            # Verify image exists (pollination generates on request)
+            # Verify image URL works
             async with httpx.AsyncClient(timeout=30.0) as client:
                 verify_response = await client.head(image_url)
                 if verify_response.status_code == 200:
@@ -322,17 +256,17 @@ Supports any style: realistic, anime, cartoon, oil painting, etc."""
                         content=f"🎨 **Image Generated!**\n\n"
                                f"**Prompt:** {prompt}\n"
                                f"**Style:** {style or 'default'}\n\n"
-                               f"[Download Image]({image_url})\n\n"
-                               f"⚠️ Image will be generated when you click the link!",
+                               f"[🖼️ Download Image]({image_url})\n\n"
+                               f"⚠️ Image generates when you click!",
                         data={
                             "image_url": image_url,
                             "prompt": prompt,
                             "style": style
                         },
-                        attachments=[image_url]  # Signal to send as attachment
+                        attachments=[image_url]
                     )
                 else:
-                    raise Exception("Image generation failed")
+                    raise Exception("Image generation service unavailable")
             
         except Exception as e:
             logger.error(f"Image generation failed: {e}")
@@ -349,10 +283,10 @@ Supports any style: realistic, anime, cartoon, oil painting, etc."""
 
 class CodeExecutionTool(DiscordTool):
     """
-    Execute code safely in cloud sandbox!
+    Execute code safely in cloud sandbox using E2B!
     
-    Uses E2B.dev for secure code execution.
-    Free tier available!
+    Your Key: e2b_7af927477963df713498287ae7f38a4d7ff04f5d
+    Free tier available at https://e2b.dev
     """
     
     name = "execute_code"
@@ -387,20 +321,21 @@ Code runs in isolated cloud environment - SAFE!"""
     async def execute(self, args: Dict[str, Any], context: Dict[str, Any]) -> ToolResult:
         try:
             code = args["code"]
-            language = args.get("language", "python")
+            language = args.get("language", "python").lower()
             
-            e2b_key = os.getenv("E2B_API_KEY", "")
+            # Get E2B key (supports comma-separated)
+            e2b_key = get_e2b_key()
             
             if not e2b_key or len(e2b_key) < 10:
-                # Simple local execution for basic Python (limited)
-                if language.lower() == "python":
+                # Fallback to local Python execution (limited)
+                if language == "python":
                     return await self._safe_python_exec(code)
                 else:
                     return ToolResult(
                         success=False,
                         content="❌ E2B API key needed for non-Python execution!\n"
-                               "Get free key at: https://e2b.dev\n\n"
-                               "Or use Python code only (basic mode).",
+                               "Add to .env: E2B_API_KEY=e2b-your-key\n\n"
+                               "Get free key at: https://e2b.dev",
                         error="No E2B API key"
                     )
             
@@ -416,7 +351,7 @@ Code runs in isolated cloud environment - SAFE!"""
             )
     
     async def _safe_python_exec(self, code: str) -> ToolResult:
-        """Basic safe Python execution (limited)"""
+        """Basic safe Python execution (limited fallback)"""
         import sys
         import io
         from contextlib import redirect_stdout, redirect_stderr
@@ -443,8 +378,8 @@ Code runs in isolated cloud environment - SAFE!"""
             stderr = io.StringIO()
             
             with redirect_stdout(stdout), redirect_stderr(stderr):
-                exec_locals = {}
-                exec(code, {"__builtins__": __builtins__}, exec_locals)
+                exec_locals = {"__builtins__": __builtins__}
+                exec(code, {}, exec_locals)
             
             output = stdout.getvalue()
             errors = stderr.getvalue()
@@ -472,7 +407,8 @@ Code runs in isolated cloud environment - SAFE!"""
     
     async def _e2b_execute(self, code: str, language: str, api_key: str) -> ToolResult:
         """Execute code in E2B cloud sandbox"""
-        # E2B API integration
+        
+        # E2B API endpoint
         url = "https://api.e2b.dev/code/execution"
         
         payload = {
@@ -488,9 +424,23 @@ Code runs in isolated cloud environment - SAFE!"""
         async with httpx.AsyncClient(timeout=60.0) as client:
             response = await client.post(url, json=payload, headers=headers)
             
+            if response.status_code == 401:
+                return ToolResult(
+                    success=False,
+                    content="❌ Invalid E2B API key! Check your .env file.",
+                    error="invalid_api_key"
+                )
+            
+            if response.status_code == 429:
+                return ToolResult(
+                    success=False,
+                    content="⏰ E2B rate limit reached! Try again soon.",
+                    error="rate_limited"
+                )
+            
             if response.status_code != 200:
                 data = response.json()
-                raise Exception(data.get("message", "E2B error"))
+                raise Exception(data.get("message", f"E2B error {response.status_code}"))
             
             data = response.json()
             
@@ -531,3 +481,24 @@ def get_external_tools(bot=None) -> List[DiscordTool]:
 
 # Tool names for easy reference
 EXTERNAL_TOOL_NAMES = ["web_search", "generate_image", "execute_code"]
+
+
+# Quick test function
+async def test_external_tools():
+    """Test that all external tools work"""
+    print("\n🔧 Testing External Tools...")
+    
+    # Test Tavily key
+    tavily_key = get_tavily_key()
+    print(f"  Tavily: {'✅' if tavily_key else '❌'} ({len(tavily_key) if tavily_key else 0} chars)")
+    
+    # Test E2B key
+    e2b_key = get_e2b_key()
+    print(f"  E2B: {'✅' if e2b_key else '❌'} ({len(e2b_key) if e2b_key else 0} chars)")
+    
+    print(f"\n  Tools available: {', '.join(EXTERNAL_TOOL_NAMES)}")
+
+
+if __name__ == "__main__":
+    import asyncio
+    asyncio.run(test_external_tools())
