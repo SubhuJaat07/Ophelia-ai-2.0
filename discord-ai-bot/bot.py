@@ -47,12 +47,33 @@ from src.handlers.message_handler import init_message_handler, get_message_handl
 from src.utils.meta_commands import init_meta_commands
 from src.utils.natural_commands import init_natural_commands
 
-# Configure logging
-logging.basicConfig(
-    level=getattr(logging, config.log_level.upper()),
-    format='%(asctime)s | %(name)s | %(levelname)s | %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S'
-)
+# Configure logging - INFO goes to stdout (white), ERROR goes to stderr (red)
+class RailWayLogFilter(logging.Filter):
+    """Filter: INFO/WARNING -> stdout, ERROR -> stderr"""
+    def filter(self, record):
+        return True
+
+# Root logger
+root_logger = logging.getLogger()
+root_logger.setLevel(getattr(logging, config.log_level.upper(), logging.INFO))
+log_format = logging.Formatter('%(asctime)s | %(name)s | %(levelname)s | %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
+
+# STDOUT handler - for INFO & WARNING (shows white in Railway)
+stdout_handler = logging.StreamHandler(sys.stdout)
+stdout_handler.setLevel(logging.DEBUG)
+stdout_handler.setLevel(logging.INFO)  # Only INFO and above
+stdout_handler.addFilter(lambda r: r.levelno < logging.ERROR)  # No errors here
+stdout_handler.setFormatter(log_format)
+
+# STDERR handler - for ERROR only (shows red in Railway - for real errors!)
+stderr_handler = logging.StreamHandler(sys.stderr)
+stderr_handler.setLevel(logging.ERROR)  # Only errors!
+stderr_handler.setFormatter(log_format)
+
+# Add handlers
+root_logger.addHandler(stdout_handler)
+root_logger.addHandler(stderr_handler)
+
 logger = logging.getLogger("OpheliaAI")
 
 
@@ -373,6 +394,13 @@ async def main():
         await bot.close()
     except discord.LoginFailure:
         logger.error("❌ Invalid Discord token! Check your .env file")
+    except discord.errors.HTTPException as e:
+        if e.status == 429:
+            logger.warning("⚠️ Discord rate limited - waiting before retry...")
+            import asyncio
+            asyncio.run(asyncio.sleep(5))
+        else:
+            logger.error(f"❌ Discord HTTP Error {e.status}: {e.text[:100]}")
     except Exception as e:
         logger.error(f"❌ Fatal error: {e}")
         raise
