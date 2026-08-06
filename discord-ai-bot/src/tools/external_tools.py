@@ -66,7 +66,7 @@ Returns summarized results with sources."""
         )
     ]
     
-    permission_level = ToolPermissionLevel.ALL  # Everyone can search!
+    permission_level = ToolPermissionLevel.EVERYONE  # Everyone can search!
     
     async def execute(self, args: Dict[str, Any], context: Dict[str, Any]) -> ToolResult:
         try:
@@ -281,7 +281,7 @@ Supports any style: realistic, anime, cartoon, oil painting, etc."""
         )
     ]
     
-    permission_level = ToolPermissionLevel.ALL
+    permission_level = ToolPermissionLevel.EVERYONE
     
     async def execute(self, args: Dict[str, Any], context: Dict[str, Any]) -> ToolResult:
         try:
@@ -382,7 +382,7 @@ Code runs in isolated cloud environment - SAFE!"""
         )
     ]
     
-    permission_level = ToolPermissionLevel.ALL
+    permission_level = ToolPermissionLevel.EVERYONE
     
     async def execute(self, args: Dict[str, Any], context: Dict[str, Any]) -> ToolResult:
         try:
