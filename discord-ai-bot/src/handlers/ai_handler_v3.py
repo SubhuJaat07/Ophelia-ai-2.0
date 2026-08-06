@@ -241,7 +241,9 @@ class AIHandlerV3:
             
             task_type = self.groq.detect_task_type(user_message) if self.groq else TaskType.CHAT
             
-            logger.info(f"📝 Intent: {action_intent or 'CHAT/INFO'} | Task: {task_type.value}")
+            # Safe task_type display (might be enum or int)
+            task_display = task_type.value if hasattr(task_type, 'value') else str(task_type)
+            logger.info(f"📝 Intent: {action_intent or 'CHAT/INFO'} | Task: {task_display}")
             
             # Gather available data
             available_data = self.gather_available_data(

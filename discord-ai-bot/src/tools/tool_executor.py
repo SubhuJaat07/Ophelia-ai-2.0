@@ -83,6 +83,8 @@ class ToolExecutor:
     @property
     def tool_names(self) -> List[str]:
         """List of all registered tool names"""
+        if not self._tools:
+            return []
         return list(self._tools.keys())
     
     @property

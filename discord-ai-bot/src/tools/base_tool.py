@@ -184,8 +184,9 @@ class DiscordTool(ABC):
                 )
         
         try:
-            # Execute the tool
-            logger.info(f"🔧 Executing tool: {self.name} with args: {list(args.keys())}")
+            # Execute the tool (safe against None args)
+            safe_args = args or {}
+            logger.info(f"🔧 Executing tool: {self.name} with args: {list(safe_args.keys())}")
             result = await self.execute(args, context or {})
             
             if isinstance(result, ToolResult):
