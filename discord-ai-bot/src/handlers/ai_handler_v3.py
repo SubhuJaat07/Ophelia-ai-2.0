@@ -292,47 +292,21 @@ class AIHandlerV3:
             # Get settings
             settings = await self.get_guild_settings(guild_id)
             
-            # 🔧 SMART TOOL SELECTION: Reduce token usage!
-            # Groq free tier: 6000 TPM limit, 53 tools = ~8500 tokens ❌
-            MAX_TOOLS_FOR_CHAT = 20  # Safe limit for Groq free tier
+            # 🔧 SMART TOOL SELECTION: Only send tools when NEEDED!
+            # CRITICAL FIX: Don't send tools for normal chat to avoid 400 errors!
+            tool_schemas = []
             
             if action_intent and tool_executor.schemas_for_groq:
                 # ACTION COMMAND: Only send that specific tool
                 full_schemas = tool_executor.schemas_for_groq
                 tool_schemas = [s for s in full_schemas if s.get('function', {}).get('name') == action_intent]
                 if not tool_schemas:
-                    tool_schemas = full_schemas[:MAX_TOOLS_FOR_CHAT]  # Fallback with limit
-                logger.info(f"🎯 Smart tool selection: {len(tool_schemas)} tool(s) for '{action_intent}'")
-            else:
-                # REGULAR CHAT: Limit tools to prevent 413 error
-                all_schemas = tool_executor.schemas_for_groq or []
-                
-                # Priority tools for chat (most commonly needed)
-                priority_tools = [
-                    'get_server_info', 'get_member_info', 'list_members',
-                    'list_channels', 'list_roles', 'search_messages',
-                    'send_message', 'create_channel', 'create_role',
-                    'ban_user', 'kick_user', 'timeout_user',
-                    'mute_user', 'unban_user', 'create_invite',
-                    'get_banned_users', 'edit_message', 'delete_message',
-                    'pin_message', 'add_reaction'
-                ]
-                
-                # Get priority tools first, then fill remaining slots
-                priority_schemas = []
-                other_schemas = []
-                for s in all_schemas:
-                    name = s.get('function', {}).get('name', '')
-                    if name in priority_tools:
-                        priority_schemas.append(s)
-                    else:
-                        other_schemas.append(s)
-                
-                # Combine: priority first, then others up to limit
-                tool_schemas = priority_schemas + other_schemas[:MAX_TOOLS_FOR_CHAT - len(priority_schemas)]
-                tool_schemas = tool_schemas[:MAX_TOOLS_FOR_CHAT]  # Final safety limit
-                
-                logger.info(f"📋 Chat mode: {len(tool_schemas)} tools (limited from {len(all_schemas)})")
+                    # Fallback: limit to safe number
+                    tool_schemas = full_schemas[:10]
+                logger.info(f"🎯 Action mode: {len(tool_schemas)} tool(s) for '{action_intent}'")
+            # else: NORMAL CHAT - NO TOOLS! (prevents 400 "Failed to call function" errors)
+            
+            logger.info(f"📋 Tool strategy: {'ACTION' if action_intent else 'CHAT (no tools)'} | Tools: {len(tool_schemas)}")
             
             # Build execution context (RICH CONTEXT!)
             exec_context = {
@@ -374,6 +348,29 @@ class AIHandlerV3:
                 tool_choice = "auto"
             
             logger.info(f"🎯 Strategy: tool_choice={tool_choice}")
+            
+            # 🔥 CRITICAL: Use REGULAR chat for normal messages (no tools = no 400 errors!)
+            if not tool_schemas:
+                logger.info(f"💬 Using regular chat (no tools needed)")
+                final_result = await self.groq.chat_completion(
+                    messages=messages,
+                    temperature=settings.get("temperature", 0.7),
+                    task_type=task_type
+                )
+                
+                final_response = final_result or ""
+                final_response = self._clean_ai_response(final_response)
+                
+                # Save to memory
+                await self._save_message(guild_id, channel_id, user_id, "assistant", final_response)
+                
+                duration_ms = (time.time() - start_time) * 1000
+                logger.info(f"\n{'='*50}")
+                logger.info(f"✅ CHAT RESPONSE in {duration_ms:.0f}ms")
+                logger.info(f"   Length: {len(final_response)} chars")
+                logger.info(f"{'='*50}\n")
+                
+                return final_response
             
             while iteration < max_tool_iterations:
                 iteration += 1
